@@ -130,7 +130,7 @@ router.post('/register-doctor', validateUserRegistration, validateDoctorRegistra
       role: 'doctor'
     });
 
-    // Create doctor profile
+    // Create doctor profile with default availability
     const doctor = await Doctor.create({
       user: user._id,
       licenseNumber,
@@ -139,7 +139,16 @@ router.post('/register-doctor', validateUserRegistration, validateDoctorRegistra
       experience,
       consultationFee,
       bio,
-      languages
+      languages,
+      availability: {
+        monday: { isAvailable: true, startTime: '09:00', endTime: '17:00', slotDuration: 30 },
+        tuesday: { isAvailable: true, startTime: '09:00', endTime: '17:00', slotDuration: 30 },
+        wednesday: { isAvailable: true, startTime: '09:00', endTime: '17:00', slotDuration: 30 },
+        thursday: { isAvailable: true, startTime: '09:00', endTime: '17:00', slotDuration: 30 },
+        friday: { isAvailable: true, startTime: '09:00', endTime: '17:00', slotDuration: 30 },
+        saturday: { isAvailable: false, startTime: '09:00', endTime: '17:00', slotDuration: 30 },
+        sunday: { isAvailable: false, startTime: '09:00', endTime: '17:00', slotDuration: 30 }
+      }
     });
 
 

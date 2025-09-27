@@ -131,14 +131,25 @@ const BookAppointment = () => {
   const fetchAvailableSlots = async (doctorId, date) => {
     try {
       const dateString = date.toISOString().split('T')[0];
+      console.log('Fetching availability for doctor:', doctorId, 'date:', dateString);
       
       const response = await api.get(`/appointments/doctor/${doctorId}/availability?date=${dateString}`);
+      console.log('Availability response:', response.data);
       
-      setAvailableSlots(response.data.data.availableSlots || []);
+      if (response.data.data && response.data.data.availableSlots) {
+        setAvailableSlots(response.data.data.availableSlots);
+      } else if (response.data.data && response.data.data.available === false) {
+        setAvailableSlots([]);
+        setError(response.data.data.message || 'Doctor is not available on this day');
+      } else {
+        setAvailableSlots([]);
+        setError('No availability data found');
+      }
     } catch (err) {
       console.error('Availability error:', err);
       console.error('Error response:', err.response?.data);
       setAvailableSlots([]);
+      setError('Failed to fetch available times. Please try again.');
     }
   };
 
