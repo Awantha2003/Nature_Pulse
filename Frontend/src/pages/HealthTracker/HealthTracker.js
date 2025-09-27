@@ -176,6 +176,7 @@ const HealthTracker = () => {
     
     // Validate the specific field
     const errors = validateHealthLog(updatedFormData);
+    console.log('Validation for field:', name, 'Errors:', errors[name]);
     if (errors[name]) {
       setFieldErrors(prev => ({
         ...prev,
@@ -241,6 +242,7 @@ const HealthTracker = () => {
   useEffect(() => {
     // Only validate if there are changes to specific fields
     const errors = validateHealthLog(formData);
+    console.log('Full form validation errors:', errors);
     setFieldErrors(errors);
   }, [formData]);
 
@@ -2182,10 +2184,25 @@ const HealthTracker = () => {
                     label="Tags"
                     name="tags"
                     value={formData.tags.join(', ')}
-                    onChange={(e) => setFormData({
-                      ...formData,
-                      tags: e.target.value.split(',').map(t => t.trim()).filter(t => t)
-                    })}
+                    onChange={(e) => {
+                      const tags = e.target.value.split(',').map(t => t.trim()).filter(t => t);
+                      setFormData({
+                        ...formData,
+                        tags: tags
+                      });
+                      // Trigger validation
+                      const updatedFormData = { ...formData, tags: tags };
+                      const errors = validateHealthLog(updatedFormData);
+                      if (errors.tags) {
+                        setFieldErrors(prev => ({ ...prev, tags: errors.tags }));
+                      } else {
+                        setFieldErrors(prev => {
+                          const newErrors = { ...prev };
+                          delete newErrors.tags;
+                          return newErrors;
+                        });
+                      }
+                    }}
                     onBlur={handleHealthLogBlur}
                     error={fieldErrors['tags']}
                     helperText="Enter tags separated by commas (e.g., headache, fatigue, stress)"

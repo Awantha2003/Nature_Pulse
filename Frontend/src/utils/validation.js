@@ -571,6 +571,7 @@ export const validateHealthGoal = (formData) => {
 // Health log validation functions
 export const validateHealthLog = (formData) => {
   const errors = {};
+  console.log('Validating health log with data:', formData);
   
   if (!formData.date) {
     errors.date = 'Date is required';
@@ -581,6 +582,7 @@ export const validateHealthLog = (formData) => {
     if (formData.vitalSigns.bloodPressure) {
       if (formData.vitalSigns.bloodPressure.systolic) {
         const systolic = parseInt(formData.vitalSigns.bloodPressure.systolic);
+        console.log('Validating systolic:', formData.vitalSigns.bloodPressure.systolic, 'Parsed:', systolic);
         if (isNaN(systolic) || systolic < 50 || systolic > 250) {
           errors['vitalSigns.bloodPressure.systolic'] = 'Systolic pressure must be between 50-250 mmHg';
         }
@@ -588,6 +590,7 @@ export const validateHealthLog = (formData) => {
       
       if (formData.vitalSigns.bloodPressure.diastolic) {
         const diastolic = parseInt(formData.vitalSigns.bloodPressure.diastolic);
+        console.log('Validating diastolic:', formData.vitalSigns.bloodPressure.diastolic, 'Parsed:', diastolic);
         if (isNaN(diastolic) || diastolic < 30 || diastolic > 150) {
           errors['vitalSigns.bloodPressure.diastolic'] = 'Diastolic pressure must be between 30-150 mmHg';
         }
@@ -597,6 +600,7 @@ export const validateHealthLog = (formData) => {
       if (formData.vitalSigns.bloodPressure.systolic && formData.vitalSigns.bloodPressure.diastolic) {
         const systolic = parseInt(formData.vitalSigns.bloodPressure.systolic);
         const diastolic = parseInt(formData.vitalSigns.bloodPressure.diastolic);
+        console.log('Validating BP relationship:', systolic, 'vs', diastolic);
         if (!isNaN(systolic) && !isNaN(diastolic) && systolic <= diastolic) {
           errors['vitalSigns.bloodPressure.systolic'] = 'Systolic pressure must be higher than diastolic pressure';
         }
@@ -666,6 +670,7 @@ export const validateHealthLog = (formData) => {
   // Validate meals description
   if (formData.nutrition && formData.nutrition.meals) {
     const meals = safeTrim(formData.nutrition.meals);
+    console.log('Validating meals:', meals, 'Length:', meals.length);
     if (meals.length > 500) {
       errors['nutrition.meals'] = 'Meals description must be no more than 500 characters';
     }
@@ -674,6 +679,7 @@ export const validateHealthLog = (formData) => {
   // Validate supplements
   if (formData.nutrition && formData.nutrition.supplements) {
     const supplements = safeTrim(formData.nutrition.supplements);
+    console.log('Validating supplements:', supplements, 'Length:', supplements.length);
     if (supplements.length > 200) {
       errors['nutrition.supplements'] = 'Supplements must be no more than 200 characters';
     }
@@ -682,6 +688,7 @@ export const validateHealthLog = (formData) => {
   // Validate exercise type
   if (formData.exercise && formData.exercise.type) {
     const exerciseType = safeTrim(formData.exercise.type);
+    console.log('Validating exercise type:', exerciseType, 'Length:', exerciseType.length);
     if (exerciseType.length > 100) {
       errors['exercise.type'] = 'Exercise type must be no more than 100 characters';
     }
@@ -690,6 +697,7 @@ export const validateHealthLog = (formData) => {
   // Validate medications
   if (formData.medications) {
     const medications = safeTrim(formData.medications);
+    console.log('Validating medications:', medications, 'Length:', medications.length);
     if (medications.length > 300) {
       errors.medications = 'Medications must be no more than 300 characters';
     }
@@ -698,6 +706,7 @@ export const validateHealthLog = (formData) => {
   // Validate notes
   if (formData.notes) {
     const notes = safeTrim(formData.notes);
+    console.log('Validating notes:', notes, 'Length:', notes.length);
     if (notes.length > 1000) {
       errors.notes = 'Notes must be no more than 1000 characters';
     }
@@ -706,6 +715,7 @@ export const validateHealthLog = (formData) => {
   // Validate tags
   if (formData.tags && Array.isArray(formData.tags)) {
     const tagsString = formData.tags.join(', ');
+    console.log('Validating tags:', formData.tags, 'String:', tagsString, 'Length:', tagsString.length);
     if (tagsString.length > 200) {
       errors.tags = 'Tags must be no more than 200 characters total';
     }
