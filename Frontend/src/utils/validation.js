@@ -572,26 +572,74 @@ export const validateHealthGoal = (formData) => {
 export const validateHealthLog = (formData) => {
   const errors = {};
   
+  // Basic Information - Required fields
   if (!formData.date) {
     errors.date = 'Date is required';
   }
   
-  // Validate vital signs
+  if (!formData.mood) {
+    errors.mood = 'Mood is required';
+  }
+  
+  if (!formData.energyLevel) {
+    errors.energyLevel = 'Energy level is required';
+  }
+  
+  // Validate vital signs - Required fields
   if (formData.vitalSigns) {
-    if (formData.vitalSigns.bloodPressure) {
-      if (formData.vitalSigns.bloodPressure.systolic) {
-        const systolic = parseInt(formData.vitalSigns.bloodPressure.systolic);
-        if (isNaN(systolic) || systolic < 50 || systolic > 250) {
-          errors['vitalSigns.bloodPressure.systolic'] = 'Systolic pressure must be between 50-250 mmHg';
-        }
+    if (!formData.vitalSigns.bloodPressure || !formData.vitalSigns.bloodPressure.systolic) {
+      errors['vitalSigns.bloodPressure.systolic'] = 'Systolic pressure is required';
+    } else {
+      const systolic = parseInt(formData.vitalSigns.bloodPressure.systolic);
+      if (isNaN(systolic) || systolic < 50 || systolic > 250) {
+        errors['vitalSigns.bloodPressure.systolic'] = 'Systolic pressure must be between 50-250 mmHg';
       }
-      
-      if (formData.vitalSigns.bloodPressure.diastolic) {
-        const diastolic = parseInt(formData.vitalSigns.bloodPressure.diastolic);
-        if (isNaN(diastolic) || diastolic < 30 || diastolic > 150) {
-          errors['vitalSigns.bloodPressure.diastolic'] = 'Diastolic pressure must be between 30-150 mmHg';
-        }
+    }
+    
+    if (!formData.vitalSigns.bloodPressure || !formData.vitalSigns.bloodPressure.diastolic) {
+      errors['vitalSigns.bloodPressure.diastolic'] = 'Diastolic pressure is required';
+    } else {
+      const diastolic = parseInt(formData.vitalSigns.bloodPressure.diastolic);
+      if (isNaN(diastolic) || diastolic < 30 || diastolic > 150) {
+        errors['vitalSigns.bloodPressure.diastolic'] = 'Diastolic pressure must be between 30-150 mmHg';
       }
+    }
+    
+    if (!formData.vitalSigns.heartRate) {
+      errors['vitalSigns.heartRate'] = 'Heart rate is required';
+    } else {
+      const heartRate = parseInt(formData.vitalSigns.heartRate);
+      if (isNaN(heartRate) || heartRate < 30 || heartRate > 220) {
+        errors['vitalSigns.heartRate'] = 'Heart rate must be between 30-220 bpm';
+      }
+    }
+    
+    if (!formData.vitalSigns.temperature) {
+      errors['vitalSigns.temperature'] = 'Temperature is required';
+    } else {
+      const temperature = parseFloat(formData.vitalSigns.temperature);
+      if (isNaN(temperature) || temperature < 20 || temperature > 45) {
+        errors['vitalSigns.temperature'] = 'Temperature must be between 20-45°C (68-113°F)';
+      }
+    }
+    
+    if (!formData.vitalSigns.weight) {
+      errors['vitalSigns.weight'] = 'Weight is required';
+    } else {
+      const weight = parseFloat(formData.vitalSigns.weight);
+      if (isNaN(weight) || weight < 20 || weight > 500) {
+        errors['vitalSigns.weight'] = 'Weight must be between 20-500 kg';
+      }
+    }
+    
+    if (!formData.vitalSigns.height) {
+      errors['vitalSigns.height'] = 'Height is required';
+    } else {
+      const height = parseFloat(formData.vitalSigns.height);
+      if (isNaN(height) || height < 50 || height > 250) {
+        errors['vitalSigns.height'] = 'Height must be between 50-250 cm';
+      }
+    }
       
       // Validate blood pressure relationship
       if (formData.vitalSigns.bloodPressure.systolic && formData.vitalSigns.bloodPressure.diastolic) {
@@ -639,28 +687,66 @@ export const validateHealthLog = (formData) => {
     }
   }
   
-  // Validate sleep duration
-  if (formData.sleep && formData.sleep.duration) {
+  // Validate sleep - Required fields
+  if (!formData.sleep || !formData.sleep.duration) {
+    errors['sleep.duration'] = 'Sleep duration is required';
+  } else {
     const duration = parseFloat(formData.sleep.duration);
     if (isNaN(duration) || duration < 0 || duration > 24) {
       errors['sleep.duration'] = 'Sleep duration must be between 0-24 hours';
     }
   }
   
-  // Validate exercise duration
-  if (formData.exercise && formData.exercise.duration) {
+  if (!formData.sleep || !formData.sleep.quality) {
+    errors['sleep.quality'] = 'Sleep quality is required';
+  }
+  
+  // Validate exercise - Required fields
+  if (!formData.exercise || !formData.exercise.type) {
+    errors['exercise.type'] = 'Exercise type is required';
+  }
+  
+  if (!formData.exercise || !formData.exercise.duration) {
+    errors['exercise.duration'] = 'Exercise duration is required';
+  } else {
     const duration = parseFloat(formData.exercise.duration);
     if (isNaN(duration) || duration < 0 || duration > 12) {
       errors['exercise.duration'] = 'Exercise duration must be between 0-12 hours';
     }
   }
   
-  // Validate water intake
-  if (formData.nutrition && formData.nutrition.waterIntake) {
+  if (!formData.exercise || !formData.exercise.intensity) {
+    errors['exercise.intensity'] = 'Exercise intensity is required';
+  }
+  
+  // Validate nutrition - Required fields
+  if (!formData.nutrition || !formData.nutrition.waterIntake) {
+    errors['nutrition.waterIntake'] = 'Water intake is required';
+  } else {
     const waterIntake = parseFloat(formData.nutrition.waterIntake);
     if (isNaN(waterIntake) || waterIntake < 0 || waterIntake > 20) {
       errors['nutrition.waterIntake'] = 'Water intake must be between 0-20 liters';
     }
+  }
+  
+  if (!formData.nutrition || !formData.nutrition.supplements) {
+    errors['nutrition.supplements'] = 'Supplements information is required';
+  }
+  
+  if (!formData.nutrition || !formData.nutrition.meals) {
+    errors['nutrition.meals'] = 'Meals description is required';
+  }
+  
+  if (!formData.medications) {
+    errors.medications = 'Medications information is required';
+  }
+  
+  if (!formData.tags || formData.tags.length === 0) {
+    errors.tags = 'At least one tag is required';
+  }
+  
+  if (!formData.notes) {
+    errors.notes = 'Notes are required';
   }
   
   // Validate meals description
