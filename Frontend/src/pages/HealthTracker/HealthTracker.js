@@ -141,19 +141,43 @@ const HealthTracker = () => {
     console.log('Current formData before update:', formData);
     
     if (name.includes('.')) {
-      const [parentKey, childKey] = name.split('.');
-      console.log('Nested field:', parentKey, childKey);
-      setFormData(prev => {
-        const newData = {
-          ...prev,
-          [parentKey]: {
-            ...prev[parentKey],
-            [childKey]: value,
-          },
-        };
-        console.log('Updated formData (nested):', newData);
-        return newData;
-      });
+      const parts = name.split('.');
+      console.log('Nested field parts:', parts);
+      
+      if (parts.length === 3) {
+        // Handle deeply nested fields like vitalSigns.bloodPressure.systolic
+        const [parentKey, childKey, grandChildKey] = parts;
+        console.log('Deeply nested field:', parentKey, childKey, grandChildKey);
+        setFormData(prev => {
+          const newData = {
+            ...prev,
+            [parentKey]: {
+              ...prev[parentKey],
+              [childKey]: {
+                ...prev[parentKey]?.[childKey],
+                [grandChildKey]: value,
+              },
+            },
+          };
+          console.log('Updated formData (deeply nested):', newData);
+          return newData;
+        });
+      } else if (parts.length === 2) {
+        // Handle regular nested fields like vitalSigns.heartRate
+        const [parentKey, childKey] = parts;
+        console.log('Regular nested field:', parentKey, childKey);
+        setFormData(prev => {
+          const newData = {
+            ...prev,
+            [parentKey]: {
+              ...prev[parentKey],
+              [childKey]: value,
+            },
+          };
+          console.log('Updated formData (nested):', newData);
+          return newData;
+        });
+      }
     } else {
       setFormData(prev => {
         const newData = {
@@ -1703,81 +1727,81 @@ const HealthTracker = () => {
                   </Typography>
                   <Grid container spacing={3}>
                 <Grid size={{ xs: 12, sm: 6 }}>
-                      <ValidatedTextField
+                  <ValidatedTextField
                     fullWidth
                     label="Systolic Pressure (mmHg)"
-                        name="vitalSigns.bloodPressure.systolic"
-                        value={formData.vitalSigns.bloodPressure.systolic || ''}
-                        onChange={handleHealthLogChange}
-                        onBlur={handleHealthLogBlur}
-                        error={fieldErrors['vitalSigns.bloodPressure.systolic']}
-                        helperText={fieldErrors['vitalSigns.bloodPressure.systolic'] ? fieldErrors['vitalSigns.bloodPressure.systolic'] : "Range: 50-250 mmHg (Normal: 90-140 mmHg)"}
-                        placeholder="Enter systolic pressure"
+                    name="vitalSigns.bloodPressure.systolic"
+                    value={formData.vitalSigns.bloodPressure.systolic || ''}
+                    onChange={handleHealthLogChange}
+                    onBlur={handleHealthLogBlur}
+                    error={fieldErrors['vitalSigns.bloodPressure.systolic']}
+                    helperText={fieldErrors['vitalSigns.bloodPressure.systolic'] ? fieldErrors['vitalSigns.bloodPressure.systolic'] : "Range: 50-250 mmHg (Normal: 90-140 mmHg)"}
+                    placeholder="Enter systolic pressure"
                   />
                 </Grid>
                 <Grid size={{ xs: 12, sm: 6 }}>
-                      <ValidatedTextField
+                  <ValidatedTextField
                     fullWidth
                     label="Diastolic Pressure (mmHg)"
-                        name="vitalSigns.bloodPressure.diastolic"
-                        value={formData.vitalSigns.bloodPressure.diastolic || ''}
-                        onChange={handleHealthLogChange}
-                        onBlur={handleHealthLogBlur}
-                        error={fieldErrors['vitalSigns.bloodPressure.diastolic']}
-                        helperText={fieldErrors['vitalSigns.bloodPressure.diastolic'] ? fieldErrors['vitalSigns.bloodPressure.diastolic'] : "Range: 30-150 mmHg (Normal: 60-90 mmHg)"}
-                        placeholder="Enter diastolic pressure"
+                    name="vitalSigns.bloodPressure.diastolic"
+                    value={formData.vitalSigns.bloodPressure.diastolic || ''}
+                    onChange={handleHealthLogChange}
+                    onBlur={handleHealthLogBlur}
+                    error={fieldErrors['vitalSigns.bloodPressure.diastolic']}
+                    helperText={fieldErrors['vitalSigns.bloodPressure.diastolic'] ? fieldErrors['vitalSigns.bloodPressure.diastolic'] : "Range: 30-150 mmHg (Normal: 60-90 mmHg)"}
+                    placeholder="Enter diastolic pressure"
                   />
                 </Grid>
                 <Grid size={{ xs: 12, sm: 6 }}>
-                      <ValidatedTextField
+                  <ValidatedTextField
                     fullWidth
                     label="Heart Rate (bpm)"
-                        name="vitalSigns.heartRate"
-                        value={formData.vitalSigns.heartRate || ''}
-                        onChange={handleHealthLogChange}
-                        onBlur={handleHealthLogBlur}
-                        error={fieldErrors['vitalSigns.heartRate']}
-                        helperText={fieldErrors['vitalSigns.heartRate'] ? fieldErrors['vitalSigns.heartRate'] : "Normal range: 60-100 bpm"}
-                        placeholder="Enter heart rate"
+                    name="vitalSigns.heartRate"
+                    value={formData.vitalSigns.heartRate || ''}
+                    onChange={handleHealthLogChange}
+                    onBlur={handleHealthLogBlur}
+                    error={fieldErrors['vitalSigns.heartRate']}
+                    helperText={fieldErrors['vitalSigns.heartRate'] ? fieldErrors['vitalSigns.heartRate'] : "Normal range: 60-100 bpm"}
+                    placeholder="Enter heart rate"
                   />
                 </Grid>
                 <Grid size={{ xs: 12, sm: 6 }}>
-                      <ValidatedTextField
+                  <ValidatedTextField
                     fullWidth
                     label="Temperature (°C or °F)"
-                        name="vitalSigns.temperature"
-                        value={formData.vitalSigns.temperature || ''}
-                        onChange={handleHealthLogChange}
-                        onBlur={handleHealthLogBlur}
-                        error={fieldErrors['vitalSigns.temperature']}
-                        helperText={fieldErrors['vitalSigns.temperature'] ? fieldErrors['vitalSigns.temperature'] : "Enter temperature in Celsius (20-45) or Fahrenheit (68-113)"}
+                    name="vitalSigns.temperature"
+                    value={formData.vitalSigns.temperature || ''}
+                    onChange={handleHealthLogChange}
+                    onBlur={handleHealthLogBlur}
+                    error={fieldErrors['vitalSigns.temperature']}
+                    helperText={fieldErrors['vitalSigns.temperature'] ? fieldErrors['vitalSigns.temperature'] : "Enter temperature in Celsius (20-45) or Fahrenheit (68-113)"}
                     placeholder="e.g., 37°C or 98.6°F"
                   />
                 </Grid>
                 <Grid size={{ xs: 12, sm: 6 }}>
-                      <ValidatedTextField
+                  <ValidatedTextField
                     fullWidth
                     label="Weight (kg)"
-                        name="vitalSigns.weight"
-                        value={formData.vitalSigns.weight || ''}
-                        onChange={handleHealthLogChange}
-                        onBlur={handleHealthLogBlur}
-                        error={fieldErrors['vitalSigns.weight']}
-                        helperText={fieldErrors['vitalSigns.weight'] ? fieldErrors['vitalSigns.weight'] : "Enter weight in kilograms"}
-                        placeholder="Enter weight"
+                    name="vitalSigns.weight"
+                    value={formData.vitalSigns.weight || ''}
+                    onChange={handleHealthLogChange}
+                    onBlur={handleHealthLogBlur}
+                    error={fieldErrors['vitalSigns.weight']}
+                    helperText={fieldErrors['vitalSigns.weight'] ? fieldErrors['vitalSigns.weight'] : "Enter weight in kilograms"}
+                    placeholder="Enter weight"
                   />
                 </Grid>
                 <Grid size={{ xs: 12, sm: 6 }}>
-                      <ValidatedTextField
+                  <ValidatedTextField
                     fullWidth
                     label="Height (cm)"
-                        name="vitalSigns.height"
-                        value={formData.vitalSigns.height || ''}
-                        onChange={handleHealthLogChange}
-                        onBlur={handleHealthLogBlur}
-                        error={fieldErrors['vitalSigns.height']}
-                        helperText={fieldErrors['vitalSigns.height'] ? fieldErrors['vitalSigns.height'] : "Enter height in centimeters"}
-                        placeholder="Enter height"
+                    name="vitalSigns.height"
+                    value={formData.vitalSigns.height || ''}
+                    onChange={handleHealthLogChange}
+                    onBlur={handleHealthLogBlur}
+                    error={fieldErrors['vitalSigns.height']}
+                    helperText={fieldErrors['vitalSigns.height'] ? fieldErrors['vitalSigns.height'] : "Enter height in centimeters"}
+                    placeholder="Enter height"
                   />
                 </Grid>
                 </Grid>
