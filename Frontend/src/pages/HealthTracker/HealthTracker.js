@@ -1695,7 +1695,12 @@ const HealthTracker = () => {
                     onChange={handleHealthLogChange}
                     onBlur={handleHealthLogBlur}
                     error={fieldErrors['vitalSigns.bloodPressure.systolic']}
-                    helperText="Normal range: 90-140 mmHg"
+                    helperText={fieldErrors['vitalSigns.bloodPressure.systolic'] ? fieldErrors['vitalSigns.bloodPressure.systolic'] : "Range: 50-250 mmHg (Normal: 90-140 mmHg)"}
+                    inputProps={{
+                      min: 50,
+                      max: 250,
+                      step: 1
+                    }}
                   />
                 </Grid>
 
@@ -1709,7 +1714,12 @@ const HealthTracker = () => {
                     onChange={handleHealthLogChange}
                     onBlur={handleHealthLogBlur}
                     error={fieldErrors['vitalSigns.bloodPressure.diastolic']}
-                    helperText="Normal range: 60-90 mmHg"
+                    helperText={fieldErrors['vitalSigns.bloodPressure.diastolic'] ? fieldErrors['vitalSigns.bloodPressure.diastolic'] : "Range: 30-150 mmHg (Normal: 60-90 mmHg)"}
+                    inputProps={{
+                      min: 30,
+                      max: 150,
+                      step: 1
+                    }}
                   />
                 </Grid>
                 
@@ -1837,8 +1847,11 @@ const HealthTracker = () => {
                     onChange={handleHealthLogChange}
                     onBlur={handleHealthLogBlur}
                     error={fieldErrors['exercise.type']}
-                    helperText="e.g., cardio, strength, yoga"
+                    helperText={fieldErrors['exercise.type'] ? fieldErrors['exercise.type'] : "Max 100 characters (e.g., cardio, strength, yoga)"}
                     placeholder="e.g., cardio, strength, yoga"
+                    inputProps={{
+                      maxLength: 100
+                    }}
                   />
                 </Grid>
 
@@ -1899,8 +1912,11 @@ const HealthTracker = () => {
                     onChange={handleHealthLogChange}
                     onBlur={handleHealthLogBlur}
                     error={fieldErrors['nutrition.supplements']}
-                    helperText="List supplements separated by commas"
+                    helperText={fieldErrors['nutrition.supplements'] ? fieldErrors['nutrition.supplements'] : "Max 200 characters - List supplements separated by commas"}
                     placeholder="e.g., Vitamin D, Omega-3"
+                    inputProps={{
+                      maxLength: 200
+                    }}
                   />
                 </Grid>
 
@@ -1915,8 +1931,11 @@ const HealthTracker = () => {
                     onChange={handleHealthLogChange}
                     onBlur={handleHealthLogBlur}
                     error={fieldErrors['nutrition.meals']}
-                    helperText="Describe your meals for the day"
+                    helperText={fieldErrors['nutrition.meals'] ? fieldErrors['nutrition.meals'] : "Max 500 characters - Describe your meals for the day"}
                     placeholder="Describe your meals for the day..."
+                    inputProps={{
+                      maxLength: 500
+                    }}
                   />
                 </Grid>
 
@@ -1930,8 +1949,11 @@ const HealthTracker = () => {
                     onChange={handleHealthLogChange}
                     onBlur={handleHealthLogBlur}
                     error={fieldErrors['medications']}
-                    helperText="List medications taken today"
+                    helperText={fieldErrors['medications'] ? fieldErrors['medications'] : "Max 300 characters - List medications taken today"}
                     placeholder="List any medications taken today..."
+                    inputProps={{
+                      maxLength: 300
+                    }}
                   />
                 </Grid>
 
@@ -1964,8 +1986,11 @@ const HealthTracker = () => {
                     }}
                     onBlur={handleHealthLogBlur}
                     error={fieldErrors['tags']}
-                    helperText="Enter tags separated by commas (e.g., headache, fatigue, stress)"
+                    helperText={fieldErrors['tags'] ? fieldErrors['tags'] : "Max 200 characters total, each tag max 50 chars - Enter tags separated by commas (e.g., headache, fatigue, stress)"}
                     placeholder="e.g., headache, fatigue, stress"
+                    inputProps={{
+                      maxLength: 200
+                    }}
                   />
                 </Grid>
 
@@ -1980,8 +2005,11 @@ const HealthTracker = () => {
                     onChange={handleHealthLogChange}
                     onBlur={handleHealthLogBlur}
                     error={fieldErrors['notes']}
-                    helperText="Additional notes about your health today"
+                    helperText={fieldErrors['notes'] ? fieldErrors['notes'] : "Max 1000 characters - Additional notes about your health today"}
                     placeholder="Additional notes about your health today..."
+                    inputProps={{
+                      maxLength: 1000
+                    }}
                   />
                 </Grid>
               </Grid>
