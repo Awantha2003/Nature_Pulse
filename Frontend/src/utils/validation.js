@@ -1,0 +1,416 @@
+// Validation utility functions for form validation
+
+// Email validation regex
+const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+
+// Phone validation regex (supports various formats)
+const PHONE_REGEX = /^[\+]?[1-9][\d]{0,15}$/;
+
+// Password strength requirements
+const PASSWORD_MIN_LENGTH = 6;
+const PASSWORD_MAX_LENGTH = 128;
+
+// Name validation
+const NAME_MIN_LENGTH = 2;
+const NAME_MAX_LENGTH = 50;
+
+// Address validation
+const ADDRESS_MIN_LENGTH = 5;
+const ADDRESS_MAX_LENGTH = 200;
+
+// License number validation
+const LICENSE_MIN_LENGTH = 5;
+const LICENSE_MAX_LENGTH = 50;
+
+// Specialization validation
+const SPECIALIZATION_MIN_LENGTH = 2;
+const SPECIALIZATION_MAX_LENGTH = 100;
+
+// Bio validation
+const BIO_MAX_LENGTH = 1000;
+
+// Age validation
+const MIN_AGE = 13;
+const MAX_AGE = 120;
+
+// Experience validation
+const MIN_EXPERIENCE = 0;
+const MAX_EXPERIENCE = 50;
+
+// Consultation fee validation (in Sri Lankan Rupees)
+const MIN_FEE = 100; // Minimum 100 LKR
+const MAX_FEE = 50000; // Maximum 50,000 LKR
+
+// Validation functions
+export const validateEmail = (email) => {
+  if (!email || email.trim() === '') {
+    return 'Email is required';
+  }
+  if (!EMAIL_REGEX.test(email)) {
+    return 'Please enter a valid email address';
+  }
+  if (email.length > 254) {
+    return 'Email address is too long';
+  }
+  return null;
+};
+
+export const validatePassword = (password) => {
+  if (!password || password.trim() === '') {
+    return 'Password is required';
+  }
+  if (password.length < PASSWORD_MIN_LENGTH) {
+    return `Password must be at least ${PASSWORD_MIN_LENGTH} characters long`;
+  }
+  if (password.length > PASSWORD_MAX_LENGTH) {
+    return `Password must be no more than ${PASSWORD_MAX_LENGTH} characters long`;
+  }
+  return null;
+};
+
+export const validatePasswordMatch = (password, confirmPassword) => {
+  if (!confirmPassword || confirmPassword.trim() === '') {
+    return 'Please confirm your password';
+  }
+  if (password !== confirmPassword) {
+    return 'Passwords do not match';
+  }
+  return null;
+};
+
+export const validateName = (name, fieldName = 'Name') => {
+  if (!name || name.trim() === '') {
+    return `${fieldName} is required`;
+  }
+  if (name.trim().length < NAME_MIN_LENGTH) {
+    return `${fieldName} must be at least ${NAME_MIN_LENGTH} characters long`;
+  }
+  if (name.trim().length > NAME_MAX_LENGTH) {
+    return `${fieldName} must be no more than ${NAME_MAX_LENGTH} characters long`;
+  }
+  if (!/^[a-zA-Z\s\-'\.]+$/.test(name.trim())) {
+    return `${fieldName} can only contain letters, spaces, hyphens, apostrophes, and periods`;
+  }
+  return null;
+};
+
+export const validatePhone = (phone) => {
+  if (!phone || phone.trim() === '') {
+    return 'Phone number is required';
+  }
+  // Remove all non-digit characters except + at the beginning
+  const cleanPhone = phone.replace(/[^\d+]/g, '');
+  if (cleanPhone.length < 10) {
+    return 'Phone number must be at least 10 digits';
+  }
+  if (cleanPhone.length > 16) {
+    return 'Phone number must be no more than 16 digits';
+  }
+  if (!PHONE_REGEX.test(cleanPhone)) {
+    return 'Please enter a valid phone number';
+  }
+  return null;
+};
+
+export const validateDateOfBirth = (dateOfBirth) => {
+  if (!dateOfBirth) {
+    return 'Date of birth is required';
+  }
+  
+  const birthDate = new Date(dateOfBirth);
+  const today = new Date();
+  const age = today.getFullYear() - birthDate.getFullYear();
+  const monthDiff = today.getMonth() - birthDate.getMonth();
+  
+  // Adjust age if birthday hasn't occurred this year
+  const actualAge = monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate()) 
+    ? age - 1 
+    : age;
+  
+  if (actualAge < MIN_AGE) {
+    return `You must be at least ${MIN_AGE} years old to register`;
+  }
+  if (actualAge > MAX_AGE) {
+    return `Age must be no more than ${MAX_AGE} years`;
+  }
+  if (birthDate > today) {
+    return 'Date of birth cannot be in the future';
+  }
+  return null;
+};
+
+export const validateGender = (gender) => {
+  if (!gender || gender.trim() === '') {
+    return 'Gender is required';
+  }
+  const validGenders = ['male', 'female', 'other'];
+  if (!validGenders.includes(gender)) {
+    return 'Please select a valid gender';
+  }
+  return null;
+};
+
+export const validateAddress = (address, fieldName) => {
+  if (!address || address.trim() === '') {
+    return `${fieldName} is required`;
+  }
+  if (address.trim().length < ADDRESS_MIN_LENGTH) {
+    return `${fieldName} must be at least ${ADDRESS_MIN_LENGTH} characters long`;
+  }
+  if (address.trim().length > ADDRESS_MAX_LENGTH) {
+    return `${fieldName} must be no more than ${ADDRESS_MAX_LENGTH} characters long`;
+  }
+  return null;
+};
+
+export const validateZipCode = (zipCode) => {
+  if (!zipCode || zipCode.trim() === '') {
+    return 'ZIP code is required';
+  }
+  const cleanZip = zipCode.replace(/\s/g, '');
+  if (!/^\d{5}(-\d{4})?$/.test(cleanZip)) {
+    return 'Please enter a valid ZIP code (12345 or 12345-6789)';
+  }
+  return null;
+};
+
+export const validateLicenseNumber = (licenseNumber) => {
+  if (!licenseNumber || licenseNumber.trim() === '') {
+    return 'Medical license number is required';
+  }
+  if (licenseNumber.trim().length < LICENSE_MIN_LENGTH) {
+    return `License number must be at least ${LICENSE_MIN_LENGTH} characters long`;
+  }
+  if (licenseNumber.trim().length > LICENSE_MAX_LENGTH) {
+    return `License number must be no more than ${LICENSE_MAX_LENGTH} characters long`;
+  }
+  return null;
+};
+
+export const validateSpecialization = (specialization) => {
+  if (!specialization || specialization.trim() === '') {
+    return 'Specialization is required';
+  }
+  if (specialization.trim().length < SPECIALIZATION_MIN_LENGTH) {
+    return `Specialization must be at least ${SPECIALIZATION_MIN_LENGTH} characters long`;
+  }
+  if (specialization.trim().length > SPECIALIZATION_MAX_LENGTH) {
+    return `Specialization must be no more than ${SPECIALIZATION_MAX_LENGTH} characters long`;
+  }
+  return null;
+};
+
+export const validateExperience = (experience) => {
+  if (experience === '' || experience === null || experience === undefined) {
+    return 'Years of experience is required';
+  }
+  const exp = parseInt(experience);
+  if (isNaN(exp)) {
+    return 'Please enter a valid number for years of experience';
+  }
+  if (exp < MIN_EXPERIENCE) {
+    return `Experience must be at least ${MIN_EXPERIENCE} years`;
+  }
+  if (exp > MAX_EXPERIENCE) {
+    return `Experience must be no more than ${MAX_EXPERIENCE} years`;
+  }
+  return null;
+};
+
+export const validateConsultationFee = (fee) => {
+  if (fee === '' || fee === null || fee === undefined) {
+    return 'Consultation fee is required';
+  }
+  const feeNum = parseFloat(fee);
+  if (isNaN(feeNum)) {
+    return 'Please enter a valid consultation fee';
+  }
+  if (feeNum < MIN_FEE) {
+    return `Consultation fee must be at least LKR ${MIN_FEE}`;
+  }
+  if (feeNum > MAX_FEE) {
+    return `Consultation fee must be no more than LKR ${MAX_FEE}`;
+  }
+  return null;
+};
+
+export const validateBio = (bio) => {
+  if (bio && bio.length > BIO_MAX_LENGTH) {
+    return `Bio must be no more than ${BIO_MAX_LENGTH} characters long`;
+  }
+  return null;
+};
+
+export const validateQualification = (qualification) => {
+  const errors = {};
+  
+  if (!qualification.degree || qualification.degree.trim() === '') {
+    errors.degree = 'Degree is required';
+  } else if (qualification.degree.trim().length < 2) {
+    errors.degree = 'Degree must be at least 2 characters long';
+  } else if (qualification.degree.trim().length > 100) {
+    errors.degree = 'Degree must be no more than 100 characters long';
+  }
+  
+  if (!qualification.institution || qualification.institution.trim() === '') {
+    errors.institution = 'Institution is required';
+  } else if (qualification.institution.trim().length < 2) {
+    errors.institution = 'Institution must be at least 2 characters long';
+  } else if (qualification.institution.trim().length > 200) {
+    errors.institution = 'Institution must be no more than 200 characters long';
+  }
+  
+  if (!qualification.year || qualification.year.trim() === '') {
+    errors.year = 'Year is required';
+  } else {
+    const year = parseInt(qualification.year);
+    const currentYear = new Date().getFullYear();
+    if (isNaN(year)) {
+      errors.year = 'Please enter a valid year';
+    } else if (year < 1900) {
+      errors.year = 'Year must be 1900 or later';
+    } else if (year > currentYear) {
+      errors.year = 'Year cannot be in the future';
+    }
+  }
+  
+  return Object.keys(errors).length > 0 ? errors : null;
+};
+
+export const validateLanguage = (language) => {
+  if (!language || language.trim() === '') {
+    return 'Language cannot be empty';
+  }
+  if (language.trim().length < 2) {
+    return 'Language must be at least 2 characters long';
+  }
+  if (language.trim().length > 50) {
+    return 'Language must be no more than 50 characters long';
+  }
+  if (!/^[a-zA-Z\s\-']+$/.test(language.trim())) {
+    return 'Language can only contain letters, spaces, hyphens, and apostrophes';
+  }
+  return null;
+};
+
+// Comprehensive validation functions for forms
+export const validateLoginForm = (formData) => {
+  const errors = {};
+  
+  const emailError = validateEmail(formData.email);
+  if (emailError) errors.email = emailError;
+  
+  const passwordError = validatePassword(formData.password);
+  if (passwordError) errors.password = passwordError;
+  
+  return errors;
+};
+
+export const validateRegisterForm = (formData) => {
+  const errors = {};
+  
+  // Personal information
+  const firstNameError = validateName(formData.firstName, 'First name');
+  if (firstNameError) errors.firstName = firstNameError;
+  
+  const lastNameError = validateName(formData.lastName, 'Last name');
+  if (lastNameError) errors.lastName = lastNameError;
+  
+  const emailError = validateEmail(formData.email);
+  if (emailError) errors.email = emailError;
+  
+  const passwordError = validatePassword(formData.password);
+  if (passwordError) errors.password = passwordError;
+  
+  const confirmPasswordError = validatePasswordMatch(formData.password, formData.confirmPassword);
+  if (confirmPasswordError) errors.confirmPassword = confirmPasswordError;
+  
+  const phoneError = validatePhone(formData.phone);
+  if (phoneError) errors.phone = phoneError;
+  
+  const dateOfBirthError = validateDateOfBirth(formData.dateOfBirth);
+  if (dateOfBirthError) errors.dateOfBirth = dateOfBirthError;
+  
+  const genderError = validateGender(formData.gender);
+  if (genderError) errors.gender = genderError;
+  
+  // Address information
+  if (formData.address) {
+    const streetError = validateAddress(formData.address.street, 'Street address');
+    if (streetError) errors['address.street'] = streetError;
+    
+    const cityError = validateAddress(formData.address.city, 'City');
+    if (cityError) errors['address.city'] = cityError;
+    
+    const stateError = validateAddress(formData.address.state, 'State');
+    if (stateError) errors['address.state'] = stateError;
+    
+    const zipCodeError = validateZipCode(formData.address.zipCode);
+    if (zipCodeError) errors['address.zipCode'] = zipCodeError;
+    
+    const countryError = validateAddress(formData.address.country, 'Country');
+    if (countryError) errors['address.country'] = countryError;
+  }
+  
+  return errors;
+};
+
+export const validateDoctorRegisterForm = (formData, qualifications = []) => {
+  const errors = validateRegisterForm(formData);
+  
+  // Professional information
+  const licenseError = validateLicenseNumber(formData.licenseNumber);
+  if (licenseError) errors.licenseNumber = licenseError;
+  
+  const specializationError = validateSpecialization(formData.specialization);
+  if (specializationError) errors.specialization = specializationError;
+  
+  const experienceError = validateExperience(formData.experience);
+  if (experienceError) errors.experience = experienceError;
+  
+  const consultationFeeError = validateConsultationFee(formData.consultationFee);
+  if (consultationFeeError) errors.consultationFee = consultationFeeError;
+  
+  const bioError = validateBio(formData.bio);
+  if (bioError) errors.bio = bioError;
+  
+  // Validate qualifications
+  if (qualifications && qualifications.length > 0) {
+    const validQualifications = qualifications.filter(q => q.degree && q.institution && q.year);
+    if (validQualifications.length === 0) {
+      errors.qualifications = 'At least one complete qualification is required';
+    } else {
+      qualifications.forEach((qual, index) => {
+        const qualErrors = validateQualification(qual);
+        if (qualErrors) {
+          Object.keys(qualErrors).forEach(field => {
+            errors[`qualification_${index}_${field}`] = qualErrors[field];
+          });
+        }
+      });
+    }
+  }
+  
+  // Validate languages
+  if (formData.languages && formData.languages.length > 0) {
+    formData.languages.forEach((language, index) => {
+      const languageError = validateLanguage(language);
+      if (languageError) {
+        errors[`language_${index}`] = languageError;
+      }
+    });
+  }
+  
+  return errors;
+};
+
+// Helper function to check if form is valid
+export const isFormValid = (errors) => {
+  return Object.keys(errors).length === 0;
+};
+
+// Helper function to get first error message
+export const getFirstError = (errors) => {
+  const firstKey = Object.keys(errors)[0];
+  return firstKey ? errors[firstKey] : null;
+};

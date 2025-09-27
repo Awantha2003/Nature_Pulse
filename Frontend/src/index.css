@@ -1,0 +1,164 @@
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+    monospace;
+}
+
+/* Auto-changing image animations */
+@keyframes fadeInOut {
+  0% {
+    opacity: 0;
+    transform: scale(1.05);
+  }
+  10% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  90% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-20px);
+  }
+}
+
+/* Smooth image transitions */
+.hero-background {
+  animation: fadeInOut 4s ease-in-out infinite;
+}
+
+/* Image transition effects */
+.image-fade-enter {
+  opacity: 0;
+  transform: scale(1.1);
+}
+
+.image-fade-enter-active {
+  opacity: 1;
+  transform: scale(1);
+  transition: opacity 1s ease-in-out, transform 1s ease-in-out;
+}
+
+.image-fade-exit {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.image-fade-exit-active {
+  opacity: 0;
+  transform: scale(0.9);
+  transition: opacity 1s ease-in-out, transform 1s ease-in-out;
+}
+
+/* Creative color animations */
+@keyframes rainbow {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+.rainbow-text {
+  background: linear-gradient(45deg, #228B22, #8B4513, #DAA520, #6B8E23, #CD853F);
+  background-size: 300% 300%;
+  animation: rainbow 3s ease infinite;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.pulse-effect {
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.shimmer-effect {
+  position: relative;
+  overflow: hidden;
+}
+
+.shimmer-effect::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+  animation: shimmer 2s infinite;
+}
+
+/* Ayurvedic-inspired patterns */
+@keyframes lotus {
+  0%, 100% { transform: rotate(0deg) scale(1); }
+  50% { transform: rotate(180deg) scale(1.1); }
+}
+
+@keyframes mandala {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes chakra {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.ayurvedic-pattern {
+  background-image: 
+    radial-gradient(circle at 20% 20%, rgba(34, 139, 34, 0.1) 0%, transparent 50%),
+    radial-gradient(circle at 80% 80%, rgba(139, 69, 19, 0.1) 0%, transparent 50%),
+    radial-gradient(circle at 40% 60%, rgba(218, 165, 32, 0.1) 0%, transparent 50%);
+}
+
+.lotus-animation {
+  animation: lotus 4s ease-in-out infinite;
+}
+
+.mandala-animation {
+  animation: mandala 20s linear infinite;
+}
+
+.chakra-gradient {
+  background: linear-gradient(45deg, #228B22, #8B4513, #DAA520, #6B8E23, #CD853F, #228B22);
+  background-size: 400% 400%;
+  animation: chakra 6s ease infinite;
+}
+
+.ayurvedic-border {
+  border: 2px solid;
+  border-image: linear-gradient(45deg, #228B22, #8B4513, #DAA520) 1;
+}
+
+.earth-tone-shadow {
+  box-shadow: 0 4px 20px rgba(139, 69, 19, 0.3);
+}
