@@ -5,6 +5,8 @@ const ValidatedTextField = ({
   error, 
   helperText, 
   showErrorBelow = true,
+  inputProps,
+  slotProps,
   ...props 
 }) => {
   return (
@@ -13,6 +15,8 @@ const ValidatedTextField = ({
         {...props}
         error={!!error}
         helperText={error ? '' : helperText}
+        inputProps={inputProps}
+        slotProps={slotProps}
       />
       {error && showErrorBelow && (
         <Typography 

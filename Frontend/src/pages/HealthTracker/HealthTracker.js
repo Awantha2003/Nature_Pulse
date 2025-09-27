@@ -137,9 +137,11 @@ const HealthTracker = () => {
   // Validation handlers for health logs
   const handleHealthLogChange = (e) => {
     const { name, value } = e.target;
+    console.log('Health log change:', name, value);
     
     if (name.includes('.')) {
       const [parentKey, childKey] = name.split('.');
+      console.log('Nested field:', parentKey, childKey);
       setFormData(prev => ({
         ...prev,
         [parentKey]: {
@@ -1701,6 +1703,13 @@ const HealthTracker = () => {
                       max: 250,
                       step: 1
                     }}
+                    slotProps={{
+                      htmlInput: {
+                        min: 50,
+                        max: 250,
+                        step: 1
+                      }
+                    }}
                   />
                 </Grid>
 
@@ -1719,6 +1728,13 @@ const HealthTracker = () => {
                       min: 30,
                       max: 150,
                       step: 1
+                    }}
+                    slotProps={{
+                      htmlInput: {
+                        min: 30,
+                        max: 150,
+                        step: 1
+                      }
                     }}
                   />
                 </Grid>
