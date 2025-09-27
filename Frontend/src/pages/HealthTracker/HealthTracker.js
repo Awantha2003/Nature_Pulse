@@ -162,6 +162,18 @@ const HealthTracker = () => {
         return newErrors;
       });
     }
+    
+    // Real-time validation
+    const errors = validateHealthLog({
+      ...formData,
+      [name]: value
+    });
+    if (errors[name]) {
+      setFieldErrors(prev => ({
+        ...prev,
+        [name]: errors[name]
+      }));
+    }
   };
 
   const handleHealthLogBlur = (e) => {
@@ -584,6 +596,7 @@ const HealthTracker = () => {
     setValidationErrors({});
   };
 
+  // Sample data function removed
   const fillSampleData = () => {
     console.log('Filling sample data...');
     
@@ -1898,50 +1911,30 @@ const HealthTracker = () => {
 
                 {/* Blood Pressure */}
                 <Grid size={{ xs: 12, sm: 6 }}>
-                  <TextField
+                  <ValidatedTextField
                     fullWidth
                     label="Systolic Pressure (mmHg)"
                     type="number"
+                    name="vitalSigns.bloodPressure.systolic"
                     value={formData.vitalSigns.bloodPressure.systolic}
-                    onChange={(e) => {
-                      setFormData({
-                        ...formData,
-                        vitalSigns: { 
-                          ...formData.vitalSigns, 
-                          bloodPressure: { 
-                            ...formData.vitalSigns.bloodPressure, 
-                            systolic: e.target.value 
-                          } 
-                        }
-                      });
-                      validateField('systolic', e.target.value);
-                    }}
-                    error={!!fieldErrors.systolic}
-                    helperText={fieldErrors.systolic || 'Normal range: 90-140 mmHg'}
+                    onChange={handleHealthLogChange}
+                    onBlur={handleHealthLogBlur}
+                    error={fieldErrors['vitalSigns.bloodPressure.systolic']}
+                    helperText="Normal range: 90-140 mmHg"
                   />
                 </Grid>
 
                 <Grid size={{ xs: 12, sm: 6 }}>
-                  <TextField
+                  <ValidatedTextField
                     fullWidth
                     label="Diastolic Pressure (mmHg)"
                     type="number"
+                    name="vitalSigns.bloodPressure.diastolic"
                     value={formData.vitalSigns.bloodPressure.diastolic}
-                    onChange={(e) => {
-                      setFormData({
-                        ...formData,
-                        vitalSigns: { 
-                          ...formData.vitalSigns, 
-                          bloodPressure: { 
-                            ...formData.vitalSigns.bloodPressure, 
-                            diastolic: e.target.value 
-                          } 
-                        }
-                      });
-                      validateField('diastolic', e.target.value);
-                    }}
-                    error={!!fieldErrors.diastolic}
-                    helperText={fieldErrors.diastolic || 'Normal range: 60-90 mmHg'}
+                    onChange={handleHealthLogChange}
+                    onBlur={handleHealthLogBlur}
+                    error={fieldErrors['vitalSigns.bloodPressure.diastolic']}
+                    helperText="Normal range: 60-90 mmHg"
                   />
                 </Grid>
                 
@@ -1954,132 +1947,109 @@ const HealthTracker = () => {
                 )}
 
                 <Grid size={{ xs: 12, sm: 6 }}>
-                  <TextField
+                  <ValidatedTextField
                     fullWidth
                     label="Heart Rate (bpm)"
                     type="number"
+                    name="vitalSigns.heartRate"
                     value={formData.vitalSigns.heartRate}
-                    onChange={(e) => {
-                      setFormData({
-                        ...formData,
-                        vitalSigns: { ...formData.vitalSigns, heartRate: e.target.value }
-                      });
-                      validateField('heartRate', e.target.value);
-                    }}
-                    error={!!fieldErrors.heartRate}
-                    helperText={fieldErrors.heartRate || 'Normal range: 60-100 bpm'}
+                    onChange={handleHealthLogChange}
+                    onBlur={handleHealthLogBlur}
+                    error={fieldErrors['vitalSigns.heartRate']}
+                    helperText="Normal range: 60-100 bpm"
                   />
                 </Grid>
 
                 <Grid size={{ xs: 12, sm: 6 }}>
-                  <TextField
+                  <ValidatedTextField
                     fullWidth
                     label="Temperature (°C or °F)"
                     type="number"
                     placeholder="e.g., 37°C or 98.6°F"
+                    name="vitalSigns.temperature"
                     value={formData.vitalSigns.temperature}
-                    onChange={(e) => {
-                      setFormData({
-                        ...formData,
-                        vitalSigns: { ...formData.vitalSigns, temperature: e.target.value }
-                      });
-                      validateField('temperature', e.target.value);
-                    }}
-                    error={!!fieldErrors.temperature}
-                    helperText={fieldErrors.temperature || 'Enter temperature in Celsius (20-45) or Fahrenheit (68-113)'}
+                    onChange={handleHealthLogChange}
+                    onBlur={handleHealthLogBlur}
+                    error={fieldErrors['vitalSigns.temperature']}
+                    helperText="Enter temperature in Celsius (20-45) or Fahrenheit (68-113)"
                   />
                 </Grid>
 
                 <Grid size={{ xs: 12, sm: 6 }}>
-                  <TextField
+                  <ValidatedTextField
                     fullWidth
                     label="Weight (kg)"
                     type="number"
+                    name="vitalSigns.weight"
                     value={formData.vitalSigns.weight}
-                    onChange={(e) => {
-                      setFormData({
-                        ...formData,
-                        vitalSigns: { ...formData.vitalSigns, weight: e.target.value }
-                      });
-                      validateField('weight', e.target.value);
-                    }}
-                    error={!!fieldErrors.weight}
-                    helperText={fieldErrors.weight || 'Enter weight in kilograms'}
+                    onChange={handleHealthLogChange}
+                    onBlur={handleHealthLogBlur}
+                    error={fieldErrors['vitalSigns.weight']}
+                    helperText="Enter weight in kilograms"
                   />
                 </Grid>
 
                 <Grid size={{ xs: 12, sm: 6 }}>
-                  <TextField
+                  <ValidatedTextField
                     fullWidth
                     label="Height (cm)"
                     type="number"
+                    name="vitalSigns.height"
                     value={formData.vitalSigns.height}
-                    onChange={(e) => {
-                      setFormData({
-                        ...formData,
-                        vitalSigns: { ...formData.vitalSigns, height: e.target.value }
-                      });
-                      validateField('height', e.target.value);
-                    }}
-                    error={!!fieldErrors.height}
-                    helperText={fieldErrors.height || 'Enter height in centimeters'}
+                    onChange={handleHealthLogChange}
+                    onBlur={handleHealthLogBlur}
+                    error={fieldErrors['vitalSigns.height']}
+                    helperText="Enter height in centimeters"
                   />
                 </Grid>
 
                 <Grid size={{ xs: 12, sm: 6 }}>
-                  <TextField
+                  <ValidatedTextField
                     fullWidth
                     label="Blood Sugar (mg/dL)"
                     type="number"
+                    name="vitalSigns.bloodSugar"
                     value={formData.vitalSigns.bloodSugar}
-                    onChange={(e) => {
-                      setFormData({
-                        ...formData,
-                        vitalSigns: { ...formData.vitalSigns, bloodSugar: e.target.value }
-                      });
-                      validateField('bloodSugar', e.target.value);
-                    }}
-                    error={!!fieldErrors.bloodSugar}
-                    helperText={fieldErrors.bloodSugar || 'Normal range: 70-140 mg/dL'}
+                    onChange={handleHealthLogChange}
+                    onBlur={handleHealthLogBlur}
+                    error={fieldErrors['vitalSigns.bloodSugar']}
+                    helperText="Normal range: 70-140 mg/dL"
                   />
                 </Grid>
 
                 {/* Sleep Tracking */}
                 <Grid size={{ xs: 12, sm: 6 }}>
-                  <TextField
+                  <ValidatedTextField
                     fullWidth
                     label="Sleep Duration (hours)"
                     type="number"
+                    name="sleep.duration"
                     value={formData.sleep.duration}
-                    onChange={(e) => {
-                      setFormData({
-                        ...formData,
-                        sleep: { ...formData.sleep, duration: e.target.value }
-                      });
-                      validateField('sleepDuration', e.target.value);
-                    }}
-                    error={!!fieldErrors.sleepDuration}
-                    helperText={fieldErrors.sleepDuration || 'Recommended: 7-9 hours'}
+                    onChange={handleHealthLogChange}
+                    onBlur={handleHealthLogBlur}
+                    error={fieldErrors['sleep.duration']}
+                    helperText="Recommended: 7-9 hours"
                   />
                 </Grid>
 
                 <Grid size={{ xs: 12, sm: 6 }}>
-                  <FormControl fullWidth>
-                    <InputLabel>Sleep Quality</InputLabel>
-                    <Select
-                      value={formData.sleep.quality}
-                      onChange={(e) => setFormData({
-                        ...formData,
-                        sleep: { ...formData.sleep, quality: e.target.value }
-                      })}
-                    >
-                      <MenuItem value="excellent">Excellent</MenuItem>
-                      <MenuItem value="good">Good</MenuItem>
-                      <MenuItem value="fair">Fair</MenuItem>
-                      <MenuItem value="poor">Poor</MenuItem>
-                      <MenuItem value="terrible">Terrible</MenuItem>
-                    </Select>
-                  </FormControl>
+                  <ValidatedSelect
+                    fullWidth
+                    id="sleep.quality"
+                    name="sleep.quality"
+                    label="Sleep Quality"
+                    value={formData.sleep.quality}
+                    onChange={handleHealthLogChange}
+                    onBlur={handleHealthLogBlur}
+                    error={fieldErrors['sleep.quality']}
+                    helperText="Rate your sleep quality"
+                  >
+                    <MenuItem value="excellent">Excellent</MenuItem>
+                    <MenuItem value="good">Good</MenuItem>
+                    <MenuItem value="fair">Fair</MenuItem>
+                    <MenuItem value="poor">Poor</MenuItem>
+                    <MenuItem value="terrible">Terrible</MenuItem>
+                  </ValidatedSelect>
                 </Grid>
 
                 {/* Exercise Tracking */}
@@ -2096,20 +2066,16 @@ const HealthTracker = () => {
                 </Grid>
 
                 <Grid size={{ xs: 12, sm: 4 }}>
-                  <TextField
+                  <ValidatedTextField
                     fullWidth
                     label="Duration (minutes)"
                     type="number"
+                    name="exercise.duration"
                     value={formData.exercise.duration}
-                    onChange={(e) => {
-                      setFormData({
-                        ...formData,
-                        exercise: { ...formData.exercise, duration: e.target.value }
-                      });
-                      validateField('exerciseDuration', e.target.value);
-                    }}
-                    error={!!fieldErrors.exerciseDuration}
-                    helperText={fieldErrors.exerciseDuration || 'Recommended: 30-60 minutes'}
+                    onChange={handleHealthLogChange}
+                    onBlur={handleHealthLogBlur}
+                    error={fieldErrors['exercise.duration']}
+                    helperText="Recommended: 30-60 minutes"
                   />
                 </Grid>
 
@@ -2133,83 +2099,96 @@ const HealthTracker = () => {
 
                 {/* Nutrition Tracking */}
                 <Grid size={{ xs: 12, sm: 6 }}>
-                  <TextField
+                  <ValidatedTextField
                     fullWidth
                     label="Water Intake (oz)"
                     type="number"
+                    name="nutrition.waterIntake"
                     value={formData.nutrition.waterIntake}
-                    onChange={(e) => {
-                      setFormData({
-                        ...formData,
-                        nutrition: { ...formData.nutrition, waterIntake: e.target.value }
-                      });
-                      validateField('waterIntake', e.target.value);
-                    }}
-                    error={!!fieldErrors.waterIntake}
-                    helperText={fieldErrors.waterIntake || 'Recommended: 64-128 oz daily'}
+                    onChange={handleHealthLogChange}
+                    onBlur={handleHealthLogBlur}
+                    error={fieldErrors['nutrition.waterIntake']}
+                    helperText="Recommended: 64-128 oz daily"
                   />
                 </Grid>
 
                 <Grid size={{ xs: 12, sm: 6 }}>
-                  <TextField
+                  <ValidatedTextField
                     fullWidth
                     label="Supplements"
+                    name="nutrition.supplements"
                     value={formData.nutrition.supplements}
-                    onChange={(e) => setFormData({
-                      ...formData,
-                      nutrition: { ...formData.nutrition, supplements: e.target.value }
-                    })}
+                    onChange={handleHealthLogChange}
+                    onBlur={handleHealthLogBlur}
+                    error={fieldErrors['nutrition.supplements']}
+                    helperText="List supplements separated by commas"
+                    placeholder="e.g., Vitamin D, Omega-3"
                   />
                 </Grid>
 
                 <Grid size={{ xs: 12 }}>
-                  <TextField
+                  <ValidatedTextField
                     fullWidth
                     label="Meals Description"
                     multiline
                     rows={2}
+                    name="nutrition.meals"
                     value={formData.nutrition.meals}
-                    onChange={(e) => setFormData({
-                      ...formData,
-                      nutrition: { ...formData.nutrition, meals: e.target.value }
-                    })}
+                    onChange={handleHealthLogChange}
+                    onBlur={handleHealthLogBlur}
+                    error={fieldErrors['nutrition.meals']}
+                    helperText="Describe your meals for the day"
+                    placeholder="Describe your meals for the day..."
                   />
                 </Grid>
 
                 {/* Medications */}
                 <Grid size={{ xs: 12 }}>
-                  <TextField
+                  <ValidatedTextField
                     fullWidth
                     label="Medications"
+                    name="medications"
                     value={formData.medications}
-                    onChange={(e) => setFormData({ ...formData, medications: e.target.value })}
+                    onChange={handleHealthLogChange}
+                    onBlur={handleHealthLogBlur}
+                    error={fieldErrors['medications']}
                     helperText="List medications taken today"
+                    placeholder="List any medications taken today..."
                   />
                 </Grid>
 
 
                 {/* Tags */}
                 <Grid size={{ xs: 12 }}>
-                  <TextField
+                  <ValidatedTextField
                     fullWidth
                     label="Tags"
+                    name="tags"
                     value={formData.tags.join(', ')}
                     onChange={(e) => setFormData({
                       ...formData,
                       tags: e.target.value.split(',').map(t => t.trim()).filter(t => t)
                     })}
+                    onBlur={handleHealthLogBlur}
+                    error={fieldErrors['tags']}
                     helperText="Enter tags separated by commas (e.g., headache, fatigue, stress)"
+                    placeholder="e.g., headache, fatigue, stress"
                   />
                 </Grid>
 
                 <Grid size={12}>
-                  <TextField
+                  <ValidatedTextField
                     fullWidth
                     multiline
                     rows={3}
                     label="Notes"
+                    name="notes"
                     value={formData.notes}
-                    onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                    onChange={handleHealthLogChange}
+                    onBlur={handleHealthLogBlur}
+                    error={fieldErrors['notes']}
+                    helperText="Additional notes about your health today"
+                    placeholder="Additional notes about your health today..."
                   />
                 </Grid>
               </Grid>
@@ -2225,14 +2204,6 @@ const HealthTracker = () => {
                 disabled={isSubmitting}
               >
                 Reset
-              </Button>
-              <Button 
-                onClick={fillSampleData}
-                variant="outlined"
-                sx={{ borderRadius: '15px', mr: 1 }}
-                disabled={isSubmitting}
-              >
-                Sample Data
               </Button>
               <Button 
                 type="submit" 
