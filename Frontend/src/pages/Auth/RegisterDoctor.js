@@ -363,7 +363,7 @@ const RegisterDoctor = () => {
                   onBlur={handleBlur}
                   disabled={loading}
                   error={!!fieldErrors.phone}
-                  helperText={fieldErrors.phone || 'Enter a valid phone number (10-15 characters)'}
+                  helperText={fieldErrors.phone || 'Enter a valid Sri Lankan mobile number (e.g., 0704949394)'}
                 />
               </Grid>
               <Grid size={{ xs: 12, sm: 6 }}>

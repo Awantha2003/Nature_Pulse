@@ -84,8 +84,8 @@ exports.validateUserUpdate = [
   
   body('phone')
     .optional()
-    .matches(/^[\+]?[1-9][\d]{0,15}$/)
-    .withMessage('Please provide a valid phone number'),
+    .matches(/^0[0-9]{9}$/)
+    .withMessage('Please provide a valid Sri Lankan mobile number (e.g., 0704949394)'),
   
   body('address.street')
     .optional()

@@ -3,8 +3,8 @@
 // Email validation regex
 const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 
-// Phone validation regex (supports various formats)
-const PHONE_REGEX = /^[\+]?[1-9][\d]{0,15}$/;
+// Phone validation regex for Sri Lankan mobile numbers
+const PHONE_REGEX = /^0[0-9]{9}$/; // Sri Lankan mobile format: 0XXXXXXXXX (10 digits starting with 0)
 
 // Password strength requirements
 const PASSWORD_MIN_LENGTH = 6;
@@ -98,17 +98,19 @@ export const validatePhone = (phone) => {
   if (!phone || phone.trim() === '') {
     return 'Phone number is required';
   }
-  // Remove all non-digit characters except + at the beginning
-  const cleanPhone = phone.replace(/[^\d+]/g, '');
-  if (cleanPhone.length < 10) {
-    return 'Phone number must be at least 10 digits';
+  // Remove all non-digit characters
+  const cleanPhone = phone.replace(/[^\d]/g, '');
+  
+  // Check if it's exactly 10 digits
+  if (cleanPhone.length !== 10) {
+    return 'Phone number must be exactly 10 digits (e.g., 0704949394)';
   }
-  if (cleanPhone.length > 16) {
-    return 'Phone number must be no more than 16 digits';
-  }
+  
+  // Check if it starts with 0 and follows Sri Lankan mobile format
   if (!PHONE_REGEX.test(cleanPhone)) {
-    return 'Please enter a valid phone number';
+    return 'Please enter a valid Sri Lankan mobile number (e.g., 0704949394)';
   }
+  
   return null;
 };
 

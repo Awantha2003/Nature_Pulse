@@ -47,9 +47,11 @@ console.log('Invalid characters:', validateName('John123', 'First name')); // Sh
 
 // Test phone validation
 console.log('\nTesting phone validation:');
-console.log('Valid phone:', validatePhone('+1234567890')); // Should be null
+console.log('Valid Sri Lankan phone:', validatePhone('0704949394')); // Should be null
+console.log('Valid Sri Lankan phone:', validatePhone('0771234567')); // Should be null
 console.log('Short phone:', validatePhone('123')); // Should return error message
 console.log('Invalid phone:', validatePhone('abc123')); // Should return error message
+console.log('Wrong format:', validatePhone('+94701234567')); // Should return error message
 
 // Test date of birth validation
 console.log('\nTesting date of birth validation:');
