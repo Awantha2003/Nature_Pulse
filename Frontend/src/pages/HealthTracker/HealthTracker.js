@@ -138,22 +138,31 @@ const HealthTracker = () => {
   const handleHealthLogChange = (e) => {
     const { name, value } = e.target;
     console.log('Health log change:', name, value);
+    console.log('Current formData before update:', formData);
     
     if (name.includes('.')) {
       const [parentKey, childKey] = name.split('.');
       console.log('Nested field:', parentKey, childKey);
-      setFormData(prev => ({
-        ...prev,
-        [parentKey]: {
-          ...prev[parentKey],
-          [childKey]: value,
-        },
-      }));
+      setFormData(prev => {
+        const newData = {
+          ...prev,
+          [parentKey]: {
+            ...prev[parentKey],
+            [childKey]: value,
+          },
+        };
+        console.log('Updated formData (nested):', newData);
+        return newData;
+      });
     } else {
-      setFormData(prev => ({
-        ...prev,
-        [name]: value,
-      }));
+      setFormData(prev => {
+        const newData = {
+          ...prev,
+          [name]: value,
+        };
+        console.log('Updated formData (simple):', newData);
+        return newData;
+      });
     }
     
     // Clear field error when user starts typing
@@ -164,40 +173,25 @@ const HealthTracker = () => {
         return newErrors;
       });
     }
+  };
+
+  const handleHealthLogBlur = (e) => {
+    const { name, value } = e.target;
+    console.log('Field blur:', name, value);
     
-    // Real-time validation for nested fields
-    const updatedFormData = name.includes('.') 
-      ? {
-          ...formData,
-          [name.split('.')[0]]: {
-            ...formData[name.split('.')[0]],
-            [name.split('.')[1]]: value
-          }
-        }
-      : { ...formData, [name]: value };
-    
-    // Validate the specific field
-    const errors = validateHealthLog(updatedFormData);
-    if (errors[name]) {
+    // Validate only the specific field that was blurred
+    const fieldErrors = validateHealthLog({ [name]: value });
+    if (fieldErrors[name]) {
       setFieldErrors(prev => ({
         ...prev,
-        [name]: errors[name]
+        [name]: fieldErrors[name]
       }));
     } else {
-      // Clear error if validation passes
       setFieldErrors(prev => {
         const newErrors = { ...prev };
         delete newErrors[name];
         return newErrors;
       });
-    }
-  };
-
-  const handleHealthLogBlur = (e) => {
-    const { name } = e.target;
-    const errors = validateHealthLog(formData);
-    if (errors[name]) {
-      setFieldErrors(prev => ({ ...prev, [name]: errors[name] }));
     }
   };
 
@@ -240,15 +234,12 @@ const HealthTracker = () => {
   };
 
   // Real-time validation - only validate specific fields on change
-  useEffect(() => {
-    // Only validate if there are changes to specific fields
-    const errors = validateHealthLog(formData);
-    setFieldErrors(errors);
-  }, [formData]);
+  // Removed automatic validation on every formData change to prevent input blocking
 
   // Reset form when dialog opens for new entry
   useEffect(() => {
     if (openDialog && !editingLog) {
+      console.log('Resetting form for new entry');
       resetForm();
     }
   }, [openDialog, editingLog]);
@@ -587,7 +578,8 @@ const HealthTracker = () => {
   };
 
   const resetForm = () => {
-    setFormData({
+    console.log('Resetting form data');
+    const newFormData = {
       date: new Date(),
       vitalSigns: {
         bloodPressure: { systolic: '', diastolic: '' },
@@ -616,7 +608,9 @@ const HealthTracker = () => {
       medications: '',
       notes: '',
       tags: []
-    });
+    };
+    console.log('New form data:', newFormData);
+    setFormData(newFormData);
     setFieldErrors({});
     setValidationErrors({});
   };
@@ -1610,10 +1604,10 @@ const HealthTracker = () => {
               <Box>
                 <Typography variant="h5" component="div">
                   {editingLog ? `Edit Health Log` : 'Add New Health Log'}
-                </Typography>
+            </Typography>
                 <Typography variant="body2" color="text.secondary">
                   Track your daily health metrics and wellness
-                </Typography>
+            </Typography>
               </Box>
               <Chip 
                 label={editingLog ? "Edit Mode" : "New Entry"} 
@@ -1630,7 +1624,7 @@ const HealthTracker = () => {
                   {error}
                 </Alert>
               )}
-
+              
               {/* Success Message */}
               {successMessage && (
                 <Alert severity="success" sx={{ mb: 3, borderRadius: 2 }}>
@@ -1647,22 +1641,22 @@ const HealthTracker = () => {
                     📅 Basic Information
                   </Typography>
                   <Grid container spacing={3}>
-                    <Grid size={{ xs: 12, sm: 6 }}>
-                      <DatePicker
-                        label="Date *"
-                        value={formData.date instanceof Date ? formData.date : new Date(formData.date)}
-                        onChange={(newValue) => setFormData({ ...formData, date: newValue })}
-                        format="yyyy-MM-dd"
-                        slotProps={{
-                          textField: {
-                            fullWidth: true,
-                            error: !!fieldErrors.date,
-                            helperText: fieldErrors.date || 'Select the date for this health log'
-                          }
-                        }}
-                      />
-                    </Grid>
-                    <Grid size={{ xs: 12, sm: 6 }}>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <DatePicker
+                    label="Date *"
+                    value={formData.date instanceof Date ? formData.date : new Date(formData.date)}
+                    onChange={(newValue) => setFormData({ ...formData, date: newValue })}
+                    format="yyyy-MM-dd"
+                    slotProps={{
+                      textField: {
+                        fullWidth: true,
+                        error: !!fieldErrors.date,
+                        helperText: fieldErrors.date || 'Select the date for this health log'
+                      }
+                    }}
+                  />
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6 }}>
                       <ValidatedSelect
                         fullWidth
                         id="mood"
@@ -1680,8 +1674,8 @@ const HealthTracker = () => {
                         <MenuItem value="poor">😔 Poor</MenuItem>
                         <MenuItem value="terrible">😢 Terrible</MenuItem>
                       </ValidatedSelect>
-                    </Grid>
-                    <Grid size={{ xs: 12, sm: 6 }}>
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6 }}>
                       <ValidatedSelect
                         fullWidth
                         id="energyLevel"
@@ -1698,7 +1692,7 @@ const HealthTracker = () => {
                         <MenuItem value="low">🔋 Low</MenuItem>
                         <MenuItem value="very-low">🔋 Very Low</MenuItem>
                       </ValidatedSelect>
-                    </Grid>
+                </Grid>
                   </Grid>
                 </Card>
 
@@ -1708,10 +1702,10 @@ const HealthTracker = () => {
                     ❤️ Vital Signs
                   </Typography>
                   <Grid container spacing={3}>
-                    <Grid size={{ xs: 12, sm: 6 }}>
+                <Grid size={{ xs: 12, sm: 6 }}>
                       <ValidatedTextField
-                        fullWidth
-                        label="Systolic Pressure (mmHg)"
+                    fullWidth
+                    label="Systolic Pressure (mmHg)"
                         name="vitalSigns.bloodPressure.systolic"
                         value={formData.vitalSigns.bloodPressure.systolic || ''}
                         onChange={handleHealthLogChange}
@@ -1719,12 +1713,12 @@ const HealthTracker = () => {
                         error={fieldErrors['vitalSigns.bloodPressure.systolic']}
                         helperText={fieldErrors['vitalSigns.bloodPressure.systolic'] ? fieldErrors['vitalSigns.bloodPressure.systolic'] : "Range: 50-250 mmHg (Normal: 90-140 mmHg)"}
                         placeholder="Enter systolic pressure"
-                      />
-                    </Grid>
-                    <Grid size={{ xs: 12, sm: 6 }}>
+                  />
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6 }}>
                       <ValidatedTextField
-                        fullWidth
-                        label="Diastolic Pressure (mmHg)"
+                    fullWidth
+                    label="Diastolic Pressure (mmHg)"
                         name="vitalSigns.bloodPressure.diastolic"
                         value={formData.vitalSigns.bloodPressure.diastolic || ''}
                         onChange={handleHealthLogChange}
@@ -1732,12 +1726,12 @@ const HealthTracker = () => {
                         error={fieldErrors['vitalSigns.bloodPressure.diastolic']}
                         helperText={fieldErrors['vitalSigns.bloodPressure.diastolic'] ? fieldErrors['vitalSigns.bloodPressure.diastolic'] : "Range: 30-150 mmHg (Normal: 60-90 mmHg)"}
                         placeholder="Enter diastolic pressure"
-                      />
-                    </Grid>
-                    <Grid size={{ xs: 12, sm: 6 }}>
+                  />
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6 }}>
                       <ValidatedTextField
-                        fullWidth
-                        label="Heart Rate (bpm)"
+                    fullWidth
+                    label="Heart Rate (bpm)"
                         name="vitalSigns.heartRate"
                         value={formData.vitalSigns.heartRate || ''}
                         onChange={handleHealthLogChange}
@@ -1745,25 +1739,25 @@ const HealthTracker = () => {
                         error={fieldErrors['vitalSigns.heartRate']}
                         helperText={fieldErrors['vitalSigns.heartRate'] ? fieldErrors['vitalSigns.heartRate'] : "Normal range: 60-100 bpm"}
                         placeholder="Enter heart rate"
-                      />
-                    </Grid>
-                    <Grid size={{ xs: 12, sm: 6 }}>
+                  />
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6 }}>
                       <ValidatedTextField
-                        fullWidth
-                        label="Temperature (°C or °F)"
+                    fullWidth
+                    label="Temperature (°C or °F)"
                         name="vitalSigns.temperature"
                         value={formData.vitalSigns.temperature || ''}
                         onChange={handleHealthLogChange}
                         onBlur={handleHealthLogBlur}
                         error={fieldErrors['vitalSigns.temperature']}
                         helperText={fieldErrors['vitalSigns.temperature'] ? fieldErrors['vitalSigns.temperature'] : "Enter temperature in Celsius (20-45) or Fahrenheit (68-113)"}
-                        placeholder="e.g., 37°C or 98.6°F"
-                      />
-                    </Grid>
-                    <Grid size={{ xs: 12, sm: 6 }}>
+                    placeholder="e.g., 37°C or 98.6°F"
+                  />
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6 }}>
                       <ValidatedTextField
-                        fullWidth
-                        label="Weight (kg)"
+                    fullWidth
+                    label="Weight (kg)"
                         name="vitalSigns.weight"
                         value={formData.vitalSigns.weight || ''}
                         onChange={handleHealthLogChange}
@@ -1771,12 +1765,12 @@ const HealthTracker = () => {
                         error={fieldErrors['vitalSigns.weight']}
                         helperText={fieldErrors['vitalSigns.weight'] ? fieldErrors['vitalSigns.weight'] : "Enter weight in kilograms"}
                         placeholder="Enter weight"
-                      />
-                    </Grid>
-                    <Grid size={{ xs: 12, sm: 6 }}>
+                  />
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6 }}>
                       <ValidatedTextField
-                        fullWidth
-                        label="Height (cm)"
+                    fullWidth
+                    label="Height (cm)"
                         name="vitalSigns.height"
                         value={formData.vitalSigns.height || ''}
                         onChange={handleHealthLogChange}
@@ -1784,9 +1778,9 @@ const HealthTracker = () => {
                         error={fieldErrors['vitalSigns.height']}
                         helperText={fieldErrors['vitalSigns.height'] ? fieldErrors['vitalSigns.height'] : "Enter height in centimeters"}
                         placeholder="Enter height"
-                      />
-                    </Grid>
-                  </Grid>
+                  />
+                </Grid>
+                </Grid>
                 </Card>
 
                 {/* Sleep & Exercise Section */}
@@ -1795,11 +1789,11 @@ const HealthTracker = () => {
                     😴 Sleep & Exercise
                   </Typography>
                   <Grid container spacing={3}>
-                    <Grid size={{ xs: 12, sm: 6 }}>
+                <Grid size={{ xs: 12, sm: 6 }}>
                       <ValidatedTextField
-                        fullWidth
-                        label="Sleep Duration (hours)"
-                        type="number"
+                    fullWidth
+                    label="Sleep Duration (hours)"
+                    type="number"
                         name="sleep.duration"
                         value={formData.sleep.duration || ''}
                         onChange={handleHealthLogChange}
@@ -1807,9 +1801,9 @@ const HealthTracker = () => {
                         error={fieldErrors['sleep.duration']}
                         helperText={fieldErrors['sleep.duration'] ? fieldErrors['sleep.duration'] : "Recommended: 7-9 hours"}
                         placeholder="Enter sleep duration"
-                      />
-                    </Grid>
-                    <Grid size={{ xs: 12, sm: 6 }}>
+                  />
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6 }}>
                       <ValidatedSelect
                         fullWidth
                         id="sleep.quality"
@@ -1827,11 +1821,11 @@ const HealthTracker = () => {
                         <MenuItem value="poor">😔 Poor</MenuItem>
                         <MenuItem value="terrible">😢 Terrible</MenuItem>
                       </ValidatedSelect>
-                    </Grid>
-                    <Grid size={{ xs: 12, sm: 4 }}>
+                </Grid>
+                <Grid size={{ xs: 12, sm: 4 }}>
                       <ValidatedTextField
-                        fullWidth
-                        label="Exercise Type"
+                    fullWidth
+                    label="Exercise Type"
                         name="exercise.type"
                         value={formData.exercise.type || ''}
                         onChange={handleHealthLogChange}
@@ -1839,13 +1833,13 @@ const HealthTracker = () => {
                         error={fieldErrors['exercise.type']}
                         helperText={fieldErrors['exercise.type'] ? fieldErrors['exercise.type'] : "Max 100 characters (e.g., cardio, strength, yoga)"}
                         placeholder="e.g., cardio, strength, yoga"
-                      />
-                    </Grid>
-                    <Grid size={{ xs: 12, sm: 4 }}>
+                  />
+                </Grid>
+                <Grid size={{ xs: 12, sm: 4 }}>
                       <ValidatedTextField
-                        fullWidth
-                        label="Duration (minutes)"
-                        type="number"
+                    fullWidth
+                    label="Duration (minutes)"
+                    type="number"
                         name="exercise.duration"
                         value={formData.exercise.duration || ''}
                         onChange={handleHealthLogChange}
@@ -1853,9 +1847,9 @@ const HealthTracker = () => {
                         error={fieldErrors['exercise.duration']}
                         helperText={fieldErrors['exercise.duration'] ? fieldErrors['exercise.duration'] : "Recommended: 30-60 minutes"}
                         placeholder="Enter duration"
-                      />
-                    </Grid>
-                    <Grid size={{ xs: 12, sm: 4 }}>
+                  />
+                </Grid>
+                <Grid size={{ xs: 12, sm: 4 }}>
                       <ValidatedSelect
                         fullWidth
                         id="exercise.intensity"
@@ -1872,7 +1866,7 @@ const HealthTracker = () => {
                         <MenuItem value="high">🔴 High</MenuItem>
                         <MenuItem value="very-high">🔴 Very High</MenuItem>
                       </ValidatedSelect>
-                    </Grid>
+                </Grid>
                   </Grid>
                 </Card>
 
@@ -1882,11 +1876,11 @@ const HealthTracker = () => {
                     🥗 Nutrition & Notes
                   </Typography>
                   <Grid container spacing={3}>
-                    <Grid size={{ xs: 12, sm: 6 }}>
+                <Grid size={{ xs: 12, sm: 6 }}>
                       <ValidatedTextField
-                        fullWidth
-                        label="Water Intake (oz)"
-                        type="number"
+                    fullWidth
+                    label="Water Intake (oz)"
+                    type="number"
                         name="nutrition.waterIntake"
                         value={formData.nutrition.waterIntake || ''}
                         onChange={handleHealthLogChange}
@@ -1894,12 +1888,12 @@ const HealthTracker = () => {
                         error={fieldErrors['nutrition.waterIntake']}
                         helperText={fieldErrors['nutrition.waterIntake'] ? fieldErrors['nutrition.waterIntake'] : "Recommended: 64-128 oz daily"}
                         placeholder="Enter water intake"
-                      />
-                    </Grid>
-                    <Grid size={{ xs: 12, sm: 6 }}>
+                  />
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6 }}>
                       <ValidatedTextField
-                        fullWidth
-                        label="Supplements"
+                    fullWidth
+                    label="Supplements"
                         name="nutrition.supplements"
                         value={formData.nutrition.supplements || ''}
                         onChange={handleHealthLogChange}
@@ -1907,14 +1901,14 @@ const HealthTracker = () => {
                         error={fieldErrors['nutrition.supplements']}
                         helperText={fieldErrors['nutrition.supplements'] ? fieldErrors['nutrition.supplements'] : "Max 200 characters - List supplements separated by commas"}
                         placeholder="e.g., Vitamin D, Omega-3"
-                      />
-                    </Grid>
-                    <Grid size={{ xs: 12 }}>
+                  />
+                </Grid>
+                <Grid size={{ xs: 12 }}>
                       <ValidatedTextField
-                        fullWidth
-                        label="Meals Description"
-                        multiline
-                        rows={2}
+                    fullWidth
+                    label="Meals Description"
+                    multiline
+                    rows={2}
                         name="nutrition.meals"
                         value={formData.nutrition.meals || ''}
                         onChange={handleHealthLogChange}
@@ -1922,12 +1916,12 @@ const HealthTracker = () => {
                         error={fieldErrors['nutrition.meals']}
                         helperText={fieldErrors['nutrition.meals'] ? fieldErrors['nutrition.meals'] : "Max 500 characters - Describe your meals for the day"}
                         placeholder="Describe your meals for the day..."
-                      />
-                    </Grid>
-                    <Grid size={{ xs: 12 }}>
+                  />
+                </Grid>
+                <Grid size={{ xs: 12 }}>
                       <ValidatedTextField
-                        fullWidth
-                        label="Medications"
+                    fullWidth
+                    label="Medications"
                         name="medications"
                         value={formData.medications || ''}
                         onChange={handleHealthLogChange}
@@ -1935,18 +1929,18 @@ const HealthTracker = () => {
                         error={fieldErrors['medications']}
                         helperText={fieldErrors['medications'] ? fieldErrors['medications'] : "Max 300 characters - List medications taken today"}
                         placeholder="List any medications taken today..."
-                      />
-                    </Grid>
-                    <Grid size={{ xs: 12 }}>
+                  />
+                </Grid>
+                <Grid size={{ xs: 12 }}>
                       <ValidatedTextField
-                        fullWidth
-                        label="Tags"
+                    fullWidth
+                    label="Tags"
                         name="tags"
                         value={formData.tags ? formData.tags.join(', ') : ''}
                         onChange={(e) => {
                           const tags = e.target.value.split(',').map(t => t.trim()).filter(t => t);
                           setFormData({
-                            ...formData,
+                      ...formData,
                             tags: tags
                           });
                           // Trigger validation
@@ -1966,14 +1960,14 @@ const HealthTracker = () => {
                         error={fieldErrors['tags']}
                         helperText={fieldErrors['tags'] ? fieldErrors['tags'] : "Max 200 characters total, each tag max 50 chars - Enter tags separated by commas (e.g., headache, fatigue, stress)"}
                         placeholder="e.g., headache, fatigue, stress"
-                      />
-                    </Grid>
-                    <Grid size={12}>
+                  />
+                </Grid>
+                <Grid size={12}>
                       <ValidatedTextField
-                        fullWidth
-                        multiline
-                        rows={3}
-                        label="Notes"
+                    fullWidth
+                    multiline
+                    rows={3}
+                    label="Notes"
                         name="notes"
                         value={formData.notes || ''}
                         onChange={handleHealthLogChange}
@@ -1981,9 +1975,9 @@ const HealthTracker = () => {
                         error={fieldErrors['notes']}
                         helperText={fieldErrors['notes'] ? fieldErrors['notes'] : "Max 1000 characters - Additional notes about your health today"}
                         placeholder="Additional notes about your health today..."
-                      />
-                    </Grid>
-                  </Grid>
+                  />
+                </Grid>
+              </Grid>
                 </Card>
               </Box>
             </DialogContent>
