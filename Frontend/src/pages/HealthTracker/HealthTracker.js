@@ -176,7 +176,6 @@ const HealthTracker = () => {
     
     // Validate the specific field
     const errors = validateHealthLog(updatedFormData);
-    console.log('Validation for field:', name, 'Errors:', errors[name]);
     if (errors[name]) {
       setFieldErrors(prev => ({
         ...prev,
@@ -242,7 +241,6 @@ const HealthTracker = () => {
   useEffect(() => {
     // Only validate if there are changes to specific fields
     const errors = validateHealthLog(formData);
-    console.log('Full form validation errors:', errors);
     setFieldErrors(errors);
   }, [formData]);
 
