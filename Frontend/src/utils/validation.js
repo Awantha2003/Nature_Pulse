@@ -592,6 +592,15 @@ export const validateHealthLog = (formData) => {
           errors['vitalSigns.bloodPressure.diastolic'] = 'Diastolic pressure must be between 30-150 mmHg';
         }
       }
+      
+      // Validate blood pressure relationship
+      if (formData.vitalSigns.bloodPressure.systolic && formData.vitalSigns.bloodPressure.diastolic) {
+        const systolic = parseInt(formData.vitalSigns.bloodPressure.systolic);
+        const diastolic = parseInt(formData.vitalSigns.bloodPressure.diastolic);
+        if (!isNaN(systolic) && !isNaN(diastolic) && systolic <= diastolic) {
+          errors['vitalSigns.bloodPressure.systolic'] = 'Systolic pressure must be higher than diastolic pressure';
+        }
+      }
     }
     
     if (formData.vitalSigns.heartRate) {
@@ -651,6 +660,63 @@ export const validateHealthLog = (formData) => {
     const waterIntake = parseFloat(formData.nutrition.waterIntake);
     if (isNaN(waterIntake) || waterIntake < 0 || waterIntake > 20) {
       errors['nutrition.waterIntake'] = 'Water intake must be between 0-20 liters';
+    }
+  }
+  
+  // Validate meals description
+  if (formData.nutrition && formData.nutrition.meals) {
+    const meals = safeTrim(formData.nutrition.meals);
+    if (meals.length > 500) {
+      errors['nutrition.meals'] = 'Meals description must be no more than 500 characters';
+    }
+  }
+  
+  // Validate supplements
+  if (formData.nutrition && formData.nutrition.supplements) {
+    const supplements = safeTrim(formData.nutrition.supplements);
+    if (supplements.length > 200) {
+      errors['nutrition.supplements'] = 'Supplements must be no more than 200 characters';
+    }
+  }
+  
+  // Validate exercise type
+  if (formData.exercise && formData.exercise.type) {
+    const exerciseType = safeTrim(formData.exercise.type);
+    if (exerciseType.length > 100) {
+      errors['exercise.type'] = 'Exercise type must be no more than 100 characters';
+    }
+  }
+  
+  // Validate medications
+  if (formData.medications) {
+    const medications = safeTrim(formData.medications);
+    if (medications.length > 300) {
+      errors.medications = 'Medications must be no more than 300 characters';
+    }
+  }
+  
+  // Validate notes
+  if (formData.notes) {
+    const notes = safeTrim(formData.notes);
+    if (notes.length > 1000) {
+      errors.notes = 'Notes must be no more than 1000 characters';
+    }
+  }
+  
+  // Validate tags
+  if (formData.tags && Array.isArray(formData.tags)) {
+    const tagsString = formData.tags.join(', ');
+    if (tagsString.length > 200) {
+      errors.tags = 'Tags must be no more than 200 characters total';
+    }
+    
+    // Check individual tag length
+    for (let i = 0; i < formData.tags.length; i++) {
+      const tag = safeTrim(formData.tags[i]);
+      if (tag.length > 50) {
+        errors.tags = 'Each tag must be no more than 50 characters';
+        break;
+      }
     }
   }
   

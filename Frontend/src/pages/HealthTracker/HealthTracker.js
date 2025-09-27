@@ -174,12 +174,20 @@ const HealthTracker = () => {
         }
       : { ...formData, [name]: value };
     
+    // Validate the specific field
     const errors = validateHealthLog(updatedFormData);
     if (errors[name]) {
       setFieldErrors(prev => ({
         ...prev,
         [name]: errors[name]
       }));
+    } else {
+      // Clear error if validation passes
+      setFieldErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[name];
+        return newErrors;
+      });
     }
   };
 
@@ -229,8 +237,9 @@ const HealthTracker = () => {
     }
   };
 
-  // Real-time validation
+  // Real-time validation - only validate specific fields on change
   useEffect(() => {
+    // Only validate if there are changes to specific fields
     const errors = validateHealthLog(formData);
     setFieldErrors(errors);
   }, [formData]);
