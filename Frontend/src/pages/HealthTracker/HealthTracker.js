@@ -1691,25 +1691,13 @@ const HealthTracker = () => {
                   <ValidatedTextField
                     fullWidth
                     label="Systolic Pressure (mmHg)"
-                    type="number"
                     name="vitalSigns.bloodPressure.systolic"
                     value={formData.vitalSigns.bloodPressure.systolic || ''}
                     onChange={handleHealthLogChange}
                     onBlur={handleHealthLogBlur}
                     error={fieldErrors['vitalSigns.bloodPressure.systolic']}
                     helperText={fieldErrors['vitalSigns.bloodPressure.systolic'] ? fieldErrors['vitalSigns.bloodPressure.systolic'] : "Range: 50-250 mmHg (Normal: 90-140 mmHg)"}
-                    inputProps={{
-                      min: 50,
-                      max: 250,
-                      step: 1
-                    }}
-                    slotProps={{
-                      htmlInput: {
-                        min: 50,
-                        max: 250,
-                        step: 1
-                      }
-                    }}
+                    placeholder="Enter systolic pressure"
                   />
                 </Grid>
 
@@ -1717,25 +1705,13 @@ const HealthTracker = () => {
                   <ValidatedTextField
                     fullWidth
                     label="Diastolic Pressure (mmHg)"
-                    type="number"
                     name="vitalSigns.bloodPressure.diastolic"
                     value={formData.vitalSigns.bloodPressure.diastolic || ''}
                     onChange={handleHealthLogChange}
                     onBlur={handleHealthLogBlur}
                     error={fieldErrors['vitalSigns.bloodPressure.diastolic']}
                     helperText={fieldErrors['vitalSigns.bloodPressure.diastolic'] ? fieldErrors['vitalSigns.bloodPressure.diastolic'] : "Range: 30-150 mmHg (Normal: 60-90 mmHg)"}
-                    inputProps={{
-                      min: 30,
-                      max: 150,
-                      step: 1
-                    }}
-                    slotProps={{
-                      htmlInput: {
-                        min: 30,
-                        max: 150,
-                        step: 1
-                      }
-                    }}
+                    placeholder="Enter diastolic pressure"
                   />
                 </Grid>
                 
