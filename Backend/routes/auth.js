@@ -54,6 +54,34 @@ router.post('/register', validateUserRegistration, handleValidationErrors, async
     });
   } catch (error) {
     console.error('Registration error:', error);
+    
+    // Handle validation errors
+    if (error.name === 'ValidationError') {
+      const errors = Object.values(error.errors).map(err => ({
+        path: err.path,
+        msg: err.message
+      }));
+      
+      return res.status(400).json({
+        status: 'error',
+        message: 'Validation failed',
+        errors: errors
+      });
+    }
+    
+    // Handle duplicate key errors
+    if (error.code === 11000) {
+      const field = Object.keys(error.keyValue)[0];
+      return res.status(400).json({
+        status: 'error',
+        message: `${field} already exists`,
+        errors: [{
+          path: field,
+          msg: `${field} already exists`
+        }]
+      });
+    }
+    
     res.status(500).json({
       status: 'error',
       message: 'Registration failed. Please try again.'
@@ -134,6 +162,34 @@ router.post('/register-doctor', validateUserRegistration, validateDoctorRegistra
     });
   } catch (error) {
     console.error('Doctor registration error:', error);
+    
+    // Handle validation errors
+    if (error.name === 'ValidationError') {
+      const errors = Object.values(error.errors).map(err => ({
+        path: err.path,
+        msg: err.message
+      }));
+      
+      return res.status(400).json({
+        status: 'error',
+        message: 'Validation failed',
+        errors: errors
+      });
+    }
+    
+    // Handle duplicate key errors
+    if (error.code === 11000) {
+      const field = Object.keys(error.keyValue)[0];
+      return res.status(400).json({
+        status: 'error',
+        message: `${field} already exists`,
+        errors: [{
+          path: field,
+          msg: `${field} already exists`
+        }]
+      });
+    }
+    
     res.status(500).json({
       status: 'error',
       message: 'Doctor registration failed. Please try again.'

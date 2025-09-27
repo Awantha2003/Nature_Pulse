@@ -30,7 +30,7 @@ const userSchema = new mongoose.Schema({
   phone: {
     type: String,
     required: false,
-    match: [/^[\+]?[1-9][\d]{0,15}$/, 'Please enter a valid phone number']
+    match: [/^0[0-9]{9}$/, 'Please enter a valid Sri Lankan mobile number (e.g., 0704949394)']
   },
   dateOfBirth: {
     type: Date,
