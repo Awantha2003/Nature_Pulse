@@ -163,11 +163,18 @@ const HealthTracker = () => {
       });
     }
     
-    // Real-time validation
-    const errors = validateHealthLog({
-      ...formData,
-      [name]: value
-    });
+    // Real-time validation for nested fields
+    const updatedFormData = name.includes('.') 
+      ? {
+          ...formData,
+          [name.split('.')[0]]: {
+            ...formData[name.split('.')[0]],
+            [name.split('.')[1]]: value
+          }
+        }
+      : { ...formData, [name]: value };
+    
+    const errors = validateHealthLog(updatedFormData);
     if (errors[name]) {
       setFieldErrors(prev => ({
         ...prev,
@@ -1869,44 +1876,42 @@ const HealthTracker = () => {
                 </Grid>
 
                 <Grid size={{ xs: 12, sm: 6 }}>
-                  <FormControl fullWidth error={!!fieldErrors.mood}>
-                    <InputLabel>Mood</InputLabel>
-                    <Select
-                      value={formData.mood}
-                      onChange={(e) => setFormData({ ...formData, mood: e.target.value })}
-                    >
-                      <MenuItem value="excellent">Excellent</MenuItem>
-                      <MenuItem value="good">Good</MenuItem>
-                      <MenuItem value="fair">Fair</MenuItem>
-                      <MenuItem value="poor">Poor</MenuItem>
-                      <MenuItem value="terrible">Terrible</MenuItem>
-                    </Select>
-                    {fieldErrors.mood && (
-                      <Typography variant="caption" color="error" sx={{ mt: 1, ml: 2 }}>
-                        {fieldErrors.mood}
-                      </Typography>
-                    )}
-                  </FormControl>
+                  <ValidatedSelect
+                    fullWidth
+                    id="mood"
+                    name="mood"
+                    label="Mood"
+                    value={formData.mood}
+                    onChange={handleHealthLogChange}
+                    onBlur={handleHealthLogBlur}
+                    error={fieldErrors['mood']}
+                    helperText="How are you feeling today?"
+                  >
+                    <MenuItem value="excellent">Excellent</MenuItem>
+                    <MenuItem value="good">Good</MenuItem>
+                    <MenuItem value="fair">Fair</MenuItem>
+                    <MenuItem value="poor">Poor</MenuItem>
+                    <MenuItem value="terrible">Terrible</MenuItem>
+                  </ValidatedSelect>
                 </Grid>
 
                 <Grid size={{ xs: 12, sm: 6 }}>
-                  <FormControl fullWidth error={!!fieldErrors.energyLevel}>
-                    <InputLabel>Energy Level</InputLabel>
-                    <Select
-                      value={formData.energyLevel}
-                      onChange={(e) => setFormData({ ...formData, energyLevel: e.target.value })}
-                    >
-                      <MenuItem value="high">High</MenuItem>
-                      <MenuItem value="medium">Medium</MenuItem>
-                      <MenuItem value="low">Low</MenuItem>
-                      <MenuItem value="very-low">Very Low</MenuItem>
-                    </Select>
-                    {fieldErrors.energyLevel && (
-                      <Typography variant="caption" color="error" sx={{ mt: 1, ml: 2 }}>
-                        {fieldErrors.energyLevel}
-                      </Typography>
-                    )}
-                  </FormControl>
+                  <ValidatedSelect
+                    fullWidth
+                    id="energyLevel"
+                    name="energyLevel"
+                    label="Energy Level"
+                    value={formData.energyLevel}
+                    onChange={handleHealthLogChange}
+                    onBlur={handleHealthLogBlur}
+                    error={fieldErrors['energyLevel']}
+                    helperText="Rate your energy level today"
+                  >
+                    <MenuItem value="high">High</MenuItem>
+                    <MenuItem value="medium">Medium</MenuItem>
+                    <MenuItem value="low">Low</MenuItem>
+                    <MenuItem value="very-low">Very Low</MenuItem>
+                  </ValidatedSelect>
                 </Grid>
 
                 {/* Blood Pressure */}
@@ -2054,14 +2059,16 @@ const HealthTracker = () => {
 
                 {/* Exercise Tracking */}
                 <Grid size={{ xs: 12, sm: 4 }}>
-                  <TextField
+                  <ValidatedTextField
                     fullWidth
                     label="Exercise Type"
+                    name="exercise.type"
                     value={formData.exercise.type}
-                    onChange={(e) => setFormData({
-                      ...formData,
-                      exercise: { ...formData.exercise, type: e.target.value }
-                    })}
+                    onChange={handleHealthLogChange}
+                    onBlur={handleHealthLogBlur}
+                    error={fieldErrors['exercise.type']}
+                    helperText="e.g., cardio, strength, yoga"
+                    placeholder="e.g., cardio, strength, yoga"
                   />
                 </Grid>
 
@@ -2080,21 +2087,22 @@ const HealthTracker = () => {
                 </Grid>
 
                 <Grid size={{ xs: 12, sm: 4 }}>
-                  <FormControl fullWidth>
-                    <InputLabel>Intensity</InputLabel>
-                    <Select
-                      value={formData.exercise.intensity}
-                      onChange={(e) => setFormData({
-                        ...formData,
-                        exercise: { ...formData.exercise, intensity: e.target.value }
-                      })}
-                    >
-                      <MenuItem value="low">Low</MenuItem>
-                      <MenuItem value="moderate">Moderate</MenuItem>
-                      <MenuItem value="high">High</MenuItem>
-                      <MenuItem value="very-high">Very High</MenuItem>
-                    </Select>
-                  </FormControl>
+                  <ValidatedSelect
+                    fullWidth
+                    id="exercise.intensity"
+                    name="exercise.intensity"
+                    label="Intensity"
+                    value={formData.exercise.intensity}
+                    onChange={handleHealthLogChange}
+                    onBlur={handleHealthLogBlur}
+                    error={fieldErrors['exercise.intensity']}
+                    helperText="Rate the intensity of your exercise"
+                  >
+                    <MenuItem value="low">Low</MenuItem>
+                    <MenuItem value="moderate">Moderate</MenuItem>
+                    <MenuItem value="high">High</MenuItem>
+                    <MenuItem value="very-high">Very High</MenuItem>
+                  </ValidatedSelect>
                 </Grid>
 
                 {/* Nutrition Tracking */}
