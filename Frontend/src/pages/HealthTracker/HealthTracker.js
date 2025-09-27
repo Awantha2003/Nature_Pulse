@@ -811,270 +811,15 @@ const HealthTracker = () => {
     }
   };
 
-  // Validation functions
+  // Use centralized validation function
   const validateForm = () => {
-    const errors = {};
-    console.log('Validating form with data:', formData);
-    console.log('Form data structure:');
-    console.log('- date:', formData.date);
-    console.log('- mood:', formData.mood);
-    console.log('- energyLevel:', formData.energyLevel);
-    console.log('- vitalSigns:', formData.vitalSigns);
-    console.log('- sleep:', formData.sleep);
-    console.log('- exercise:', formData.exercise);
-    console.log('- nutrition:', formData.nutrition);
-    
-    // Date validation
-    if (!formData.date) {
-      errors.date = 'Date is required';
-    }
-    
-    // Mood validation - now using string values
-    if (formData.mood) {
-      console.log('Validating mood:', formData.mood, 'type:', typeof formData.mood);
-      const validMoods = ['excellent', 'good', 'fair', 'poor', 'terrible'];
-      if (!validMoods.includes(formData.mood)) {
-        console.log('Mood validation failed:', formData.mood, 'not in', validMoods);
-        errors.mood = 'Please select a valid mood';
-      } else {
-        console.log('Mood validation passed');
-      }
-    }
-    
-    // Energy level validation - now using string values
-    if (formData.energyLevel) {
-      console.log('Validating energyLevel:', formData.energyLevel, 'type:', typeof formData.energyLevel);
-      const validEnergyLevels = ['high', 'medium', 'low', 'very-low'];
-      if (!validEnergyLevels.includes(formData.energyLevel)) {
-        console.log('Energy level validation failed:', formData.energyLevel, 'not in', validEnergyLevels);
-        errors.energyLevel = 'Please select a valid energy level';
-      } else {
-        console.log('Energy level validation passed');
-      }
-    }
-    
-    // Vital signs validation
-    if (formData.vitalSigns) {
-      // Blood pressure validation
-      if (formData.vitalSigns.bloodPressure) {
-        const systolic = parseInt(formData.vitalSigns.bloodPressure.systolic);
-        const diastolic = parseInt(formData.vitalSigns.bloodPressure.diastolic);
-        
-        if (formData.vitalSigns.bloodPressure.systolic && (systolic < 50 || systolic > 250)) {
-          errors.systolic = 'Systolic pressure must be between 50-250 mmHg';
-        }
-        
-        if (formData.vitalSigns.bloodPressure.diastolic && (diastolic < 30 || diastolic > 150)) {
-          errors.diastolic = 'Diastolic pressure must be between 30-150 mmHg';
-        }
-        
-        if (formData.vitalSigns.bloodPressure.systolic && formData.vitalSigns.bloodPressure.diastolic) {
-          if (systolic <= diastolic) {
-            errors.bloodPressure = 'Systolic pressure must be higher than diastolic';
-          }
-        }
-      }
-      
-      // Heart rate validation
-      if (formData.vitalSigns.heartRate) {
-        const heartRate = parseInt(formData.vitalSigns.heartRate);
-        if (heartRate < 30 || heartRate > 220) {
-          errors.heartRate = 'Heart rate must be between 30-220 bpm';
-        }
-      }
-      
-      // Temperature validation
-      if (formData.vitalSigns.temperature) {
-        const temp = parseFloat(formData.vitalSigns.temperature);
-        if (temp < 80 || temp > 115) {
-          errors.temperature = 'Temperature must be between 80-115°F';
-        }
-      }
-      
-      // Weight validation
-      if (formData.vitalSigns.weight) {
-        const weight = parseFloat(formData.vitalSigns.weight);
-        if (weight < 20 || weight > 1000) {
-          errors.weight = 'Weight must be between 20-1000 lbs';
-        }
-      }
-      
-      // Height validation
-      if (formData.vitalSigns.height) {
-        const height = parseFloat(formData.vitalSigns.height);
-        if (height < 24 || height > 96) {
-          errors.height = 'Height must be between 24-96 inches';
-        }
-      }
-      
-      // Blood sugar validation
-      if (formData.vitalSigns.bloodSugar) {
-        const bloodSugar = parseFloat(formData.vitalSigns.bloodSugar);
-        if (bloodSugar < 50 || bloodSugar > 500) {
-          errors.bloodSugar = 'Blood sugar must be between 50-500 mg/dL';
-        }
-      }
-    }
-    
-    // Sleep validation
-    if (formData.sleep) {
-      if (formData.sleep.duration) {
-        const duration = parseFloat(formData.sleep.duration);
-        if (duration < 0 || duration > 24) {
-          errors.sleepDuration = 'Sleep duration must be between 0-24 hours';
-        }
-      }
-      if (formData.sleep.quality) {
-        console.log('Validating sleep quality:', formData.sleep.quality, 'type:', typeof formData.sleep.quality);
-        const validSleepQualities = ['excellent', 'good', 'fair', 'poor', 'terrible'];
-        if (!validSleepQualities.includes(formData.sleep.quality)) {
-          console.log('Sleep quality validation failed:', formData.sleep.quality, 'not in', validSleepQualities);
-          errors.sleepQuality = 'Please select a valid sleep quality';
-        } else {
-          console.log('Sleep quality validation passed');
-        }
-      }
-    }
-    
-    // Exercise validation
-    if (formData.exercise) {
-      if (formData.exercise.duration) {
-        const duration = parseFloat(formData.exercise.duration);
-        if (duration < 0 || duration > 600) {
-          errors.exerciseDuration = 'Exercise duration must be between 0-600 minutes';
-        }
-      }
-    }
-    
-    // Nutrition validation
-    if (formData.nutrition) {
-      if (formData.nutrition.waterIntake) {
-        const water = parseFloat(formData.nutrition.waterIntake);
-        if (water < 0 || water > 200) {
-          errors.waterIntake = 'Water intake must be between 0-200 oz';
-        }
-      }
-    }
-    
-    console.log('=== VALIDATION RESULTS ===');
-    console.log('Total errors found:', Object.keys(errors).length);
-    if (Object.keys(errors).length > 0) {
-      console.log('VALIDATION ERRORS:');
-      Object.keys(errors).forEach(key => {
-        console.log(`❌ ${key}: ${errors[key]}`);
-      });
-    } else {
-      console.log('✅ No validation errors found');
-    }
-    console.log('=== END VALIDATION ===');
-    
+    const errors = validateHealthLog(formData);
     setFieldErrors(errors);
     const isValid = Object.keys(errors).length === 0;
     console.log('Form is valid:', isValid);
     return isValid;
   };
 
-  const validateField = (fieldName, value) => {
-    const errors = { ...fieldErrors };
-    
-    switch (fieldName) {
-      case 'systolic':
-        const systolic = parseInt(value);
-        if (value && (systolic < 50 || systolic > 250)) {
-          errors.systolic = 'Systolic pressure must be between 50-250 mmHg';
-        } else {
-          delete errors.systolic;
-        }
-        break;
-        
-      case 'diastolic':
-        const diastolic = parseInt(value);
-        if (value && (diastolic < 30 || diastolic > 150)) {
-          errors.diastolic = 'Diastolic pressure must be between 30-150 mmHg';
-        } else {
-          delete errors.diastolic;
-        }
-        break;
-        
-      case 'heartRate':
-        const heartRate = parseInt(value);
-        if (value && (heartRate < 30 || heartRate > 220)) {
-          errors.heartRate = 'Heart rate must be between 30-220 bpm';
-        } else {
-          delete errors.heartRate;
-        }
-        break;
-        
-      case 'temperature':
-        const temp = parseFloat(value);
-        if (value && (temp < 20 || temp > 45)) {
-          errors.temperature = 'Temperature must be between 20-45°C (68-113°F)';
-        } else {
-          delete errors.temperature;
-        }
-        break;
-        
-      case 'weight':
-        const weight = parseFloat(value);
-        if (value && (weight < 20 || weight > 500)) {
-          errors.weight = 'Weight must be between 20-500 kg';
-        } else {
-          delete errors.weight;
-        }
-        break;
-        
-      case 'height':
-        const height = parseFloat(value);
-        if (value && (height < 50 || height > 250)) {
-          errors.height = 'Height must be between 50-250 cm';
-        } else {
-          delete errors.height;
-        }
-        break;
-        
-      case 'bloodSugar':
-        const bloodSugar = parseFloat(value);
-        if (value && (bloodSugar < 50 || bloodSugar > 500)) {
-          errors.bloodSugar = 'Blood sugar must be between 50-500 mg/dL';
-        } else {
-          delete errors.bloodSugar;
-        }
-        break;
-        
-      case 'sleepDuration':
-        const sleepDuration = parseFloat(value);
-        if (value && (sleepDuration < 0 || sleepDuration > 24)) {
-          errors.sleepDuration = 'Sleep duration must be between 0-24 hours';
-        } else {
-          delete errors.sleepDuration;
-        }
-        break;
-        
-      case 'exerciseDuration':
-        const exerciseDuration = parseFloat(value);
-        if (value && (exerciseDuration < 0 || exerciseDuration > 600)) {
-          errors.exerciseDuration = 'Exercise duration must be between 0-600 minutes';
-        } else {
-          delete errors.exerciseDuration;
-        }
-        break;
-        
-      case 'waterIntake':
-        const water = parseFloat(value);
-        if (value && (water < 0 || water > 200)) {
-          errors.waterIntake = 'Water intake must be between 0-200 oz';
-        } else {
-          delete errors.waterIntake;
-        }
-        break;
-        
-      default:
-        // No validation for unknown fields
-        break;
-    }
-    
-    setFieldErrors(errors);
-  };
 
   // Generate chart data from health logs
   const chartData = useMemo(() => {
@@ -1890,7 +1635,7 @@ const HealthTracker = () => {
                     id="mood"
                     name="mood"
                     label="Mood"
-                    value={formData.mood}
+                    value={formData.mood || ''}
                     onChange={handleHealthLogChange}
                     onBlur={handleHealthLogBlur}
                     error={fieldErrors['mood']}
@@ -1910,7 +1655,7 @@ const HealthTracker = () => {
                     id="energyLevel"
                     name="energyLevel"
                     label="Energy Level"
-                    value={formData.energyLevel}
+                    value={formData.energyLevel || ''}
                     onChange={handleHealthLogChange}
                     onBlur={handleHealthLogBlur}
                     error={fieldErrors['energyLevel']}
@@ -1930,7 +1675,7 @@ const HealthTracker = () => {
                     label="Systolic Pressure (mmHg)"
                     type="number"
                     name="vitalSigns.bloodPressure.systolic"
-                    value={formData.vitalSigns.bloodPressure.systolic}
+                    value={formData.vitalSigns.bloodPressure.systolic || ''}
                     onChange={handleHealthLogChange}
                     onBlur={handleHealthLogBlur}
                     error={fieldErrors['vitalSigns.bloodPressure.systolic']}
@@ -1944,7 +1689,7 @@ const HealthTracker = () => {
                     label="Diastolic Pressure (mmHg)"
                     type="number"
                     name="vitalSigns.bloodPressure.diastolic"
-                    value={formData.vitalSigns.bloodPressure.diastolic}
+                    value={formData.vitalSigns.bloodPressure.diastolic || ''}
                     onChange={handleHealthLogChange}
                     onBlur={handleHealthLogBlur}
                     error={fieldErrors['vitalSigns.bloodPressure.diastolic']}
@@ -1966,7 +1711,7 @@ const HealthTracker = () => {
                     label="Heart Rate (bpm)"
                     type="number"
                     name="vitalSigns.heartRate"
-                    value={formData.vitalSigns.heartRate}
+                    value={formData.vitalSigns.heartRate || ''}
                     onChange={handleHealthLogChange}
                     onBlur={handleHealthLogBlur}
                     error={fieldErrors['vitalSigns.heartRate']}
@@ -1981,7 +1726,7 @@ const HealthTracker = () => {
                     type="number"
                     placeholder="e.g., 37°C or 98.6°F"
                     name="vitalSigns.temperature"
-                    value={formData.vitalSigns.temperature}
+                    value={formData.vitalSigns.temperature || ''}
                     onChange={handleHealthLogChange}
                     onBlur={handleHealthLogBlur}
                     error={fieldErrors['vitalSigns.temperature']}
@@ -1995,7 +1740,7 @@ const HealthTracker = () => {
                     label="Weight (kg)"
                     type="number"
                     name="vitalSigns.weight"
-                    value={formData.vitalSigns.weight}
+                    value={formData.vitalSigns.weight || ''}
                     onChange={handleHealthLogChange}
                     onBlur={handleHealthLogBlur}
                     error={fieldErrors['vitalSigns.weight']}
@@ -2009,7 +1754,7 @@ const HealthTracker = () => {
                     label="Height (cm)"
                     type="number"
                     name="vitalSigns.height"
-                    value={formData.vitalSigns.height}
+                    value={formData.vitalSigns.height || ''}
                     onChange={handleHealthLogChange}
                     onBlur={handleHealthLogBlur}
                     error={fieldErrors['vitalSigns.height']}
@@ -2023,7 +1768,7 @@ const HealthTracker = () => {
                     label="Blood Sugar (mg/dL)"
                     type="number"
                     name="vitalSigns.bloodSugar"
-                    value={formData.vitalSigns.bloodSugar}
+                    value={formData.vitalSigns.bloodSugar || ''}
                     onChange={handleHealthLogChange}
                     onBlur={handleHealthLogBlur}
                     error={fieldErrors['vitalSigns.bloodSugar']}
@@ -2038,7 +1783,7 @@ const HealthTracker = () => {
                     label="Sleep Duration (hours)"
                     type="number"
                     name="sleep.duration"
-                    value={formData.sleep.duration}
+                    value={formData.sleep.duration || ''}
                     onChange={handleHealthLogChange}
                     onBlur={handleHealthLogBlur}
                     error={fieldErrors['sleep.duration']}
@@ -2052,7 +1797,7 @@ const HealthTracker = () => {
                     id="sleep.quality"
                     name="sleep.quality"
                     label="Sleep Quality"
-                    value={formData.sleep.quality}
+                    value={formData.sleep.quality || ''}
                     onChange={handleHealthLogChange}
                     onBlur={handleHealthLogBlur}
                     error={fieldErrors['sleep.quality']}
@@ -2072,7 +1817,7 @@ const HealthTracker = () => {
                     fullWidth
                     label="Exercise Type"
                     name="exercise.type"
-                    value={formData.exercise.type}
+                    value={formData.exercise.type || ''}
                     onChange={handleHealthLogChange}
                     onBlur={handleHealthLogBlur}
                     error={fieldErrors['exercise.type']}
@@ -2087,7 +1832,7 @@ const HealthTracker = () => {
                     label="Duration (minutes)"
                     type="number"
                     name="exercise.duration"
-                    value={formData.exercise.duration}
+                    value={formData.exercise.duration || ''}
                     onChange={handleHealthLogChange}
                     onBlur={handleHealthLogBlur}
                     error={fieldErrors['exercise.duration']}
@@ -2101,7 +1846,7 @@ const HealthTracker = () => {
                     id="exercise.intensity"
                     name="exercise.intensity"
                     label="Intensity"
-                    value={formData.exercise.intensity}
+                    value={formData.exercise.intensity || ''}
                     onChange={handleHealthLogChange}
                     onBlur={handleHealthLogBlur}
                     error={fieldErrors['exercise.intensity']}
@@ -2121,7 +1866,7 @@ const HealthTracker = () => {
                     label="Water Intake (oz)"
                     type="number"
                     name="nutrition.waterIntake"
-                    value={formData.nutrition.waterIntake}
+                    value={formData.nutrition.waterIntake || ''}
                     onChange={handleHealthLogChange}
                     onBlur={handleHealthLogBlur}
                     error={fieldErrors['nutrition.waterIntake']}
@@ -2134,7 +1879,7 @@ const HealthTracker = () => {
                     fullWidth
                     label="Supplements"
                     name="nutrition.supplements"
-                    value={formData.nutrition.supplements}
+                    value={formData.nutrition.supplements || ''}
                     onChange={handleHealthLogChange}
                     onBlur={handleHealthLogBlur}
                     error={fieldErrors['nutrition.supplements']}
@@ -2150,7 +1895,7 @@ const HealthTracker = () => {
                     multiline
                     rows={2}
                     name="nutrition.meals"
-                    value={formData.nutrition.meals}
+                    value={formData.nutrition.meals || ''}
                     onChange={handleHealthLogChange}
                     onBlur={handleHealthLogBlur}
                     error={fieldErrors['nutrition.meals']}
@@ -2165,7 +1910,7 @@ const HealthTracker = () => {
                     fullWidth
                     label="Medications"
                     name="medications"
-                    value={formData.medications}
+                    value={formData.medications || ''}
                     onChange={handleHealthLogChange}
                     onBlur={handleHealthLogBlur}
                     error={fieldErrors['medications']}
@@ -2181,7 +1926,7 @@ const HealthTracker = () => {
                     fullWidth
                     label="Tags"
                     name="tags"
-                    value={formData.tags.join(', ')}
+                    value={formData.tags ? formData.tags.join(', ') : ''}
                     onChange={(e) => {
                       const tags = e.target.value.split(',').map(t => t.trim()).filter(t => t);
                       setFormData({
@@ -2215,7 +1960,7 @@ const HealthTracker = () => {
                     rows={3}
                     label="Notes"
                     name="notes"
-                    value={formData.notes}
+                    value={formData.notes || ''}
                     onChange={handleHealthLogChange}
                     onBlur={handleHealthLogBlur}
                     error={fieldErrors['notes']}
