@@ -164,7 +164,13 @@ exports.validateDoctorRegistration = [
         throw new Error('Year must be between 1950 and current year');
       }
       return true;
-    })
+    }),
+  
+  body('bio')
+    .optional()
+    .trim()
+    .isLength({ min: 10, max: 500 })
+    .withMessage('Bio must be between 10 and 500 characters')
 ];
 
 // Appointment validation rules

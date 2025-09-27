@@ -725,6 +725,10 @@ const DoctorProfile = () => {
               onChange={(e) => handleInputChange('bio', e.target.value)}
               disabled={!editing}
               placeholder="Tell patients about your experience, approach to care, and what makes you unique..."
+              helperText={`${(profileData.bio || '').length}/500 characters`}
+              inputProps={{
+                maxLength: 500
+              }}
             />
           </Grid>
           <Grid item xs={12}>

@@ -98,4 +98,11 @@ const registerData = {
 const registerErrors = validateRegisterForm(registerData);
 console.log('Valid register form:', isFormValid(registerErrors)); // Should be true
 
+// Test bio validation
+console.log('\nTesting bio validation:');
+console.log('Valid bio:', validateBio('This is a valid bio with enough characters to meet the minimum requirement')); // Should be null
+console.log('Short bio:', validateBio('Short')); // Should return error message
+console.log('Long bio:', validateBio('a'.repeat(501))); // Should return error message
+console.log('Empty bio:', validateBio('')); // Should return error message
+
 console.log('\nAll validation tests completed!');

@@ -27,7 +27,8 @@ const SPECIALIZATION_MIN_LENGTH = 2;
 const SPECIALIZATION_MAX_LENGTH = 100;
 
 // Bio validation
-const BIO_MAX_LENGTH = 1000;
+const BIO_MIN_LENGTH = 10;
+const BIO_MAX_LENGTH = 500;
 
 // Age validation
 const MIN_AGE = 13;
@@ -237,7 +238,13 @@ export const validateConsultationFee = (fee) => {
 };
 
 export const validateBio = (bio) => {
-  if (bio && bio.length > BIO_MAX_LENGTH) {
+  if (!bio || bio.trim() === '') {
+    return 'Bio is required';
+  }
+  if (bio.trim().length < BIO_MIN_LENGTH) {
+    return `Bio must be at least ${BIO_MIN_LENGTH} characters long`;
+  }
+  if (bio.length > BIO_MAX_LENGTH) {
     return `Bio must be no more than ${BIO_MAX_LENGTH} characters long`;
   }
   return null;

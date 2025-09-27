@@ -554,13 +554,16 @@ const RegisterDoctor = () => {
                   label="Bio"
                   name="bio"
                   multiline
-                  rows={3}
+                  rows={4}
                   value={formData.bio}
                   onChange={handleChange}
                   onBlur={handleBlur}
                   disabled={loading}
                   error={!!fieldErrors.bio}
-                  helperText={fieldErrors.bio || 'Describe your professional background and expertise'}
+                  helperText={fieldErrors.bio || `Describe your professional background and expertise (${formData.bio?.length || 0}/500 characters)`}
+                  inputProps={{
+                    maxLength: 500
+                  }}
                 />
               </Grid>
             </Grid>
