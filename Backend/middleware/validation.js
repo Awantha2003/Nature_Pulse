@@ -167,7 +167,6 @@ exports.validateDoctorRegistration = [
     }),
   
   body('bio')
-    .optional()
     .trim()
     .isLength({ min: 10, max: 500 })
     .withMessage('Bio must be between 10 and 500 characters')

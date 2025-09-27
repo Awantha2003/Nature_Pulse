@@ -115,13 +115,12 @@ const Register = () => {
       }
     } catch (err) {
       console.error('Registration error:', err);
-      if (err.response?.data?.message) {
-        setError(err.response.data.message);
-      } else if (err.response?.data?.errors) {
+      console.log('Error response:', err.response);
+      
+      if (err.response?.data?.errors) {
         // Handle validation errors from backend
         const errors = err.response.data.errors;
-        const errorMessages = errors.map(error => error.msg).join(', ');
-        setError(`Validation failed: ${errorMessages}`);
+        console.log('Validation errors received:', errors);
         
         // Set field-specific errors
         const fieldErrorMap = {};
@@ -129,8 +128,19 @@ const Register = () => {
           fieldErrorMap[error.path] = error.msg;
         });
         setFieldErrors(fieldErrorMap);
+        
+        // Show first error as main error message
+        if (errors.length > 0) {
+          setError(errors[0].msg);
+        } else {
+          setError('Please check the form for errors');
+        }
+      } else if (err.response?.data?.message) {
+        setError(err.response.data.message);
+      } else if (err.message) {
+        setError(err.message);
       } else {
-        setError('An unexpected error occurred');
+        setError('Registration failed. Please check all fields and try again.');
       }
     } finally {
       setLoading(false);
@@ -160,6 +170,23 @@ const Register = () => {
           {error && (
             <Alert severity="error" sx={{ mb: 2 }}>
               {error}
+            </Alert>
+          )}
+          
+          {Object.keys(fieldErrors).length > 0 && (
+            <Alert severity="warning" sx={{ mb: 2 }}>
+              <Typography variant="body2" sx={{ fontWeight: 'bold', mb: 1 }}>
+                Please fix the following errors:
+              </Typography>
+              <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                {Object.entries(fieldErrors).map(([field, errorMsg]) => (
+                  <li key={field}>
+                    <Typography variant="body2">
+                      <strong>{field}:</strong> {errorMsg}
+                    </Typography>
+                  </li>
+                ))}
+              </ul>
             </Alert>
           )}
 
