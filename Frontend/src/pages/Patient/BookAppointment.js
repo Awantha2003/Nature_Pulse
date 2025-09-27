@@ -58,6 +58,8 @@ import {
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import api from '../../utils/api';
+import { ValidatedTextField, ValidatedSelect } from '../../components/Validation';
+import { validateAppointmentBooking, isFormValid } from '../../utils/validation';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { TimePicker } from '@mui/x-date-pickers/TimePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -71,7 +73,9 @@ const BookAppointment = () => {
   const [availableSlots, setAvailableSlots] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(null);
   const [activeStep, setActiveStep] = useState(0);
+  const [fieldErrors, setFieldErrors] = useState({});
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedSpecialization, setSelectedSpecialization] = useState('');
   const [selectedDate, setSelectedDate] = useState(null);
@@ -107,6 +111,56 @@ const BookAppointment = () => {
   useEffect(() => {
     fetchDoctors();
   }, [searchTerm, selectedSpecialization]);
+
+  // Validation handlers
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setBookingData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+    
+    // Clear field error when user starts typing
+    if (fieldErrors[name]) {
+      setFieldErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[name];
+        return newErrors;
+      });
+    }
+  };
+
+  const handleBlur = (e) => {
+    const { name } = e.target;
+    const formData = {
+      selectedDoctor: selectedDoctor?._id || '',
+      selectedDate,
+      selectedTime,
+      appointmentType,
+      reason: bookingData.reason,
+      symptoms: bookingData.symptoms,
+      notes: bookingData.notes
+    };
+    const errors = validateAppointmentBooking(formData);
+    if (errors[name]) {
+      setFieldErrors(prev => ({ ...prev, [name]: errors[name] }));
+    }
+  };
+
+  // Real-time validation
+  useEffect(() => {
+    const formData = {
+      selectedDoctor: selectedDoctor?._id || '',
+      selectedDate,
+      selectedTime,
+      appointmentType,
+      reason: bookingData.reason,
+      symptoms: bookingData.symptoms,
+      notes: bookingData.notes
+    };
+    const errors = validateAppointmentBooking(formData);
+    setFieldErrors(errors);
+  }, [selectedDoctor, selectedDate, selectedTime, appointmentType, bookingData]);
 
   const fetchDoctors = async () => {
     try {
@@ -232,9 +286,8 @@ const BookAppointment = () => {
       if (response.data.data.appointment.payment.status === 'pending') {
         navigate(`/app/appointments/${response.data.data.appointment._id}/payment`);
       } else {
-        navigate('/app/patient/appointments', { 
-          state: { message: 'Appointment booked successfully!' } 
-        });
+        // Show success message without redirecting
+        setSuccess('Appointment booked successfully!');
       }
     } catch (err) {
       console.error('Booking error:', err);
@@ -244,7 +297,14 @@ const BookAppointment = () => {
         const validationErrors = err.response.data.errors.map(error => error.msg).join(', ');
         setError(`Validation failed: ${validationErrors}`);
       } else if (err.response?.data?.message) {
-        setError(err.response.data.message);
+        const errorMessage = err.response.data.message;
+        const suggestions = err.response.data.suggestions;
+        
+        if (suggestions && suggestions.length > 0) {
+          setError(`${errorMessage}\n\n💡 Suggestions:\n• ${suggestions.join('\n• ')}`);
+        } else {
+          setError(errorMessage);
+        }
       } else {
         setError('Failed to book appointment. Please try again.');
       }
@@ -282,7 +342,9 @@ const BookAppointment = () => {
     return (
       <Container maxWidth="lg">
         <Alert severity="error" sx={{ mt: 2 }}>
-          {error}
+          <Typography component="div" sx={{ whiteSpace: 'pre-line' }}>
+            {error}
+          </Typography>
         </Alert>
       </Container>
     );
@@ -323,6 +385,17 @@ const BookAppointment = () => {
                 onClose={() => setError(null)}
               >
                 {error}
+              </Alert>
+            )}
+
+            {/* Success Display */}
+            {success && (
+              <Alert 
+                severity="success" 
+                sx={{ mb: 3, borderRadius: '15px' }}
+                onClose={() => setSuccess(null)}
+              >
+                {success}
               </Alert>
             )}
           </Box>
@@ -597,32 +670,33 @@ const BookAppointment = () => {
                   </Grid>
 
                   <Grid size={12}>
-                    <TextField
+                    <ValidatedTextField
                       fullWidth
                       label="Reason for Visit"
+                      name="reason"
                       value={bookingData.reason}
-                      onChange={(e) => setBookingData({ ...bookingData, reason: e.target.value })}
+                      onChange={handleChange}
+                      onBlur={handleBlur}
                       required
-                      error={bookingData.reason && bookingData.reason.trim().length < 5}
-                      helperText={
-                        bookingData.reason && bookingData.reason.trim().length < 5 
-                          ? "Please provide at least 5 characters" 
-                          : `Required field - describe why you need this appointment (${bookingData.reason?.length || 0}/500 characters)`
-                      }
+                      error={fieldErrors.reason}
+                      helperText={`Required field - describe why you need this appointment (${bookingData.reason?.length || 0}/500 characters)`}
                       placeholder="e.g., Annual checkup, specific symptoms, follow-up visit..."
                       inputProps={{ maxLength: 500 }}
                     />
                   </Grid>
 
                   <Grid size={12}>
-                    <TextField
+                    <ValidatedTextField
                       fullWidth
                       multiline
                       rows={3}
                       label="Symptoms (Optional)"
+                      name="symptoms"
                       value={bookingData.symptoms}
-                      onChange={(e) => setBookingData({ ...bookingData, symptoms: e.target.value })}
+                      onChange={handleChange}
+                      onBlur={handleBlur}
                       placeholder="Describe any symptoms you're experiencing..."
+                      error={fieldErrors.symptoms}
                       helperText={`Optional - describe your symptoms (${bookingData.symptoms?.length || 0}/1000 characters)`}
                       inputProps={{ maxLength: 1000 }}
                     />
@@ -630,12 +704,15 @@ const BookAppointment = () => {
 
                   {appointmentType === 'in-person' && (
                     <Grid size={12}>
-                      <TextField
+                      <ValidatedTextField
                         fullWidth
                         label="Preferred Location"
+                        name="location"
                         value={bookingData.location}
-                        onChange={(e) => setBookingData({ ...bookingData, location: e.target.value })}
+                        onChange={handleChange}
+                        onBlur={handleBlur}
                         placeholder="Clinic address or location preference"
+                        error={fieldErrors.location}
                         helperText={`Optional - preferred location (${bookingData.location?.length || 0}/200 characters)`}
                         inputProps={{ maxLength: 200 }}
                       />
@@ -644,12 +721,15 @@ const BookAppointment = () => {
 
                   {appointmentType === 'virtual' && (
                     <Grid size={12}>
-                      <TextField
+                      <ValidatedTextField
                         fullWidth
                         label="Meeting Link (Optional)"
+                        name="meetingLink"
                         value={bookingData.meetingLink}
-                        onChange={(e) => setBookingData({ ...bookingData, meetingLink: e.target.value })}
+                        onChange={handleChange}
+                        onBlur={handleBlur}
                         placeholder="Zoom, Google Meet, or other video call link"
+                        error={fieldErrors.meetingLink}
                         helperText={`Optional - video call link (${bookingData.meetingLink?.length || 0}/500 characters)`}
                         inputProps={{ maxLength: 500 }}
                       />

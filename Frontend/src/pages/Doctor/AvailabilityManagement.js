@@ -119,6 +119,7 @@ const AvailabilityManagement = () => {
       }
 
       console.log('Saving availability for doctor:', doctor._id);
+      console.log('Current doctor state before save:', JSON.stringify(doctor, null, 2));
       console.log('Availability data:', JSON.stringify(availability, null, 2));
 
       const requestData = {
@@ -133,10 +134,17 @@ const AvailabilityManagement = () => {
       if (response.data.status === 'success') {
         setSuccess('Availability updated successfully');
         // Update local state with the saved availability
+        console.log('Updating local state with saved availability:', response.data.data.availability);
         setDoctor(prev => ({
           ...prev,
           availability: response.data.data.availability
         }));
+        console.log('Local state updated successfully');
+        
+        // Verify the state was updated
+        setTimeout(() => {
+          console.log('Doctor state after update (delayed check):', JSON.stringify(doctor, null, 2));
+        }, 100);
       }
     } catch (err) {
       console.error('Save availability error:', err);

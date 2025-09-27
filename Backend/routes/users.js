@@ -433,6 +433,7 @@ router.put('/doctors/:id/availability', protect, checkActive, restrictTo('doctor
     }
 
     console.log('Found doctor:', doctor._id);
+    console.log('Current doctor availability before update:', JSON.stringify(doctor.availability, null, 2));
 
     const { availability } = req.body;
 
@@ -464,13 +465,25 @@ router.put('/doctors/:id/availability', protect, checkActive, restrictTo('doctor
     doctor.availability = availability;
     
     console.log('Saving doctor to database...');
-    await doctor.save();
-    console.log('Doctor saved successfully');
+    console.log('Doctor before save:', JSON.stringify(doctor.availability, null, 2));
+    
+    let savedDoctor;
+    try {
+      savedDoctor = await doctor.save();
+      console.log('Doctor saved successfully');
+      console.log('Doctor after save:', JSON.stringify(savedDoctor.availability, null, 2));
+    } catch (saveError) {
+      console.error('Error saving doctor:', saveError);
+      if (saveError.name === 'ValidationError') {
+        console.error('Validation errors:', saveError.errors);
+      }
+      throw saveError;
+    }
 
     res.status(200).json({
       status: 'success',
       message: 'Availability updated successfully',
-      data: { availability: doctor.availability }
+      data: { availability: savedDoctor.availability }
     });
   } catch (error) {
     console.error('Update availability error:', error);

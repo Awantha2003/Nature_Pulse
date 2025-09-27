@@ -507,14 +507,14 @@ const PatientDashboard = () => {
                           <ListItemText
                             primary={`Dr. ${appointment.doctor?.user?.firstName} ${appointment.doctor?.user?.lastName}`}
                             secondary={
-                              <Box>
-                                <Typography variant="body2" color="text.secondary">
+                              <span>
+                                <span style={{ display: 'block', color: 'rgba(0, 0, 0, 0.6)', fontSize: '0.875rem' }}>
                                   {appointment.doctor?.specialization}
-                                </Typography>
-                                <Typography variant="body2" color="text.secondary">
+                                </span>
+                                <span style={{ display: 'block', color: 'rgba(0, 0, 0, 0.6)', fontSize: '0.875rem' }}>
                                   {new Date(appointment.appointmentDate).toLocaleDateString()} at {new Date(appointment.appointmentDate).toLocaleTimeString()}
-                                </Typography>
-                              </Box>
+                                </span>
+                              </span>
                             }
                           />
                           <Chip 

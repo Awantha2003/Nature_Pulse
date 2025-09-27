@@ -21,7 +21,12 @@ router.post('/', protect, checkActive, restrictTo('patient'), validateAppointmen
     if (!doctorDoc || !doctorDoc.isVerified) {
       return res.status(404).json({
         status: 'error',
-        message: 'Doctor not found or not verified'
+        message: '👨‍⚕️ Doctor not found or not yet verified. Please select a different doctor or try again later.',
+        suggestions: [
+          'Choose a different doctor from the list',
+          'Check back later when the doctor is verified',
+          'Contact support if this issue persists'
+        ]
       });
     }
 
@@ -29,7 +34,12 @@ router.post('/', protect, checkActive, restrictTo('patient'), validateAppointmen
     if (!doctorDoc.isAcceptingNewPatients) {
       return res.status(400).json({
         status: 'error',
-        message: 'Doctor is not accepting new patients at this time'
+        message: '🚫 Dr. ' + doctorDoc.user.firstName + ' is currently not accepting new patients. Their schedule might be full.',
+        suggestions: [
+          'Try booking with a different doctor',
+          'Check back later when they start accepting new patients',
+          'Contact the doctor directly for urgent cases'
+        ]
       });
     }
 
@@ -44,7 +54,12 @@ router.post('/', protect, checkActive, restrictTo('patient'), validateAppointmen
     if (conflictingAppointment) {
       return res.status(400).json({
         status: 'error',
-        message: 'This time slot is already booked'
+        message: '📅 This time slot is already booked by another patient. Please choose a different time.',
+        suggestions: [
+          'Select a different time slot',
+          'Try booking for a different day',
+          'Check the doctor\'s availability for more options'
+        ]
       });
     }
 
@@ -59,7 +74,12 @@ router.post('/', protect, checkActive, restrictTo('patient'), validateAppointmen
     if (patientConflict) {
       return res.status(400).json({
         status: 'error',
-        message: 'You already have an appointment at this time'
+        message: '⏰ Oops! You already have an appointment scheduled at this time. Please choose a different time slot or check your existing appointments.',
+        suggestions: [
+          'Try selecting a different time slot',
+          'Check your existing appointments in the dashboard',
+          'Consider booking for a different day'
+        ]
       });
     }
 
@@ -437,7 +457,7 @@ router.get('/doctor/:doctorId/availability', protect, checkActive, validateMongo
         status: 'success',
         data: {
           available: false,
-          message: 'Doctor is not available on this day'
+          message: '📅 Dr. ' + doctor.user.firstName + ' is not available on this day. Please select a different date or check their availability schedule.'
         }
       });
     }

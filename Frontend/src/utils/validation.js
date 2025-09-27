@@ -42,9 +42,17 @@ const MAX_EXPERIENCE = 50;
 const MIN_FEE = 100; // Minimum 100 LKR
 const MAX_FEE = 50000; // Maximum 50,000 LKR
 
+// Helper function to safely trim strings
+const safeTrim = (value) => {
+  if (typeof value === 'string') {
+    return value.trim();
+  }
+  return '';
+};
+
 // Validation functions
 export const validateEmail = (email) => {
-  if (!email || email.trim() === '') {
+  if (!email || safeTrim(email) === '') {
     return 'Email is required';
   }
   if (!EMAIL_REGEX.test(email)) {
@@ -80,23 +88,23 @@ export const validatePasswordMatch = (password, confirmPassword) => {
 };
 
 export const validateName = (name, fieldName = 'Name') => {
-  if (!name || name.trim() === '') {
+  if (!name || safeTrim(name) === '') {
     return `${fieldName} is required`;
   }
-  if (name.trim().length < NAME_MIN_LENGTH) {
+  if (safeTrim(name).length < NAME_MIN_LENGTH) {
     return `${fieldName} must be at least ${NAME_MIN_LENGTH} characters long`;
   }
-  if (name.trim().length > NAME_MAX_LENGTH) {
+  if (safeTrim(name).length > NAME_MAX_LENGTH) {
     return `${fieldName} must be no more than ${NAME_MAX_LENGTH} characters long`;
   }
-  if (!/^[a-zA-Z\s\-'\.]+$/.test(name.trim())) {
+  if (!/^[a-zA-Z\s\-'\.]+$/.test(safeTrim(name))) {
     return `${fieldName} can only contain letters, spaces, hyphens, apostrophes, and periods`;
   }
   return null;
 };
 
 export const validatePhone = (phone) => {
-  if (!phone || phone.trim() === '') {
+  if (!phone || safeTrim(phone) === '') {
     return 'Phone number is required';
   }
   // Remove all non-digit characters
@@ -422,4 +430,246 @@ export const isFormValid = (errors) => {
 export const getFirstError = (errors) => {
   const firstKey = Object.keys(errors)[0];
   return firstKey ? errors[firstKey] : null;
+};
+
+// Appointment booking validation functions
+export const validateAppointmentBooking = (formData) => {
+  const errors = {};
+  
+  if (!formData.selectedDoctor) {
+    errors.selectedDoctor = 'Please select a doctor';
+  }
+  
+  if (!formData.selectedDate) {
+    errors.selectedDate = 'Please select an appointment date';
+  }
+  
+  if (!formData.selectedTime) {
+    errors.selectedTime = 'Please select an appointment time';
+  }
+  
+  if (!formData.appointmentType) {
+    errors.appointmentType = 'Please select appointment type';
+  }
+  
+  if (!formData.reason || safeTrim(formData.reason) === '') {
+    errors.reason = 'Please provide a reason for the appointment';
+  } else if (safeTrim(formData.reason).length < 10) {
+    errors.reason = 'Reason must be at least 10 characters long';
+  }
+  
+  if (formData.symptoms && safeTrim(formData.symptoms).length > 500) {
+    errors.symptoms = 'Symptoms description must be no more than 500 characters';
+  }
+  
+  if (formData.notes && safeTrim(formData.notes).length > 1000) {
+    errors.notes = 'Notes must be no more than 1000 characters';
+  }
+  
+  return errors;
+};
+
+// Profile management validation functions
+export const validateProfileUpdate = (formData) => {
+  const errors = {};
+  
+  const firstNameError = validateName(formData.firstName, 'First name');
+  if (firstNameError) errors.firstName = firstNameError;
+  
+  const lastNameError = validateName(formData.lastName, 'Last name');
+  if (lastNameError) errors.lastName = lastNameError;
+  
+  const emailError = validateEmail(formData.email);
+  if (emailError) errors.email = emailError;
+  
+  const phoneError = validatePhone(formData.phone);
+  if (phoneError) errors.phone = phoneError;
+  
+  if (formData.dateOfBirth) {
+    const dateOfBirthError = validateDateOfBirth(formData.dateOfBirth);
+    if (dateOfBirthError) errors.dateOfBirth = dateOfBirthError;
+  }
+  
+  if (formData.gender) {
+    const genderError = validateGender(formData.gender);
+    if (genderError) errors.gender = genderError;
+  }
+  
+  if (formData.address && safeTrim(formData.address).length > 200) {
+    errors.address = 'Address must be no more than 200 characters';
+  }
+  
+  return errors;
+};
+
+// Health goals validation functions
+export const validateHealthGoal = (formData) => {
+  const errors = {};
+  
+  if (!formData.title || safeTrim(formData.title) === '') {
+    errors.title = 'Goal title is required';
+  } else if (safeTrim(formData.title).length < 5) {
+    errors.title = 'Goal title must be at least 5 characters long';
+  } else if (safeTrim(formData.title).length > 100) {
+    errors.title = 'Goal title must be no more than 100 characters';
+  }
+  
+  if (!formData.description || safeTrim(formData.description) === '') {
+    errors.description = 'Goal description is required';
+  } else if (safeTrim(formData.description).length < 10) {
+    errors.description = 'Goal description must be at least 10 characters long';
+  } else if (safeTrim(formData.description).length > 500) {
+    errors.description = 'Goal description must be no more than 500 characters';
+  }
+  
+  if (!formData.category || safeTrim(formData.category) === '') {
+    errors.category = 'Goal category is required';
+  }
+  
+  if (!formData.type || safeTrim(formData.type) === '') {
+    errors.type = 'Goal type is required';
+  }
+  
+  if (formData.targetMetric) {
+    if (!formData.targetMetric.name || safeTrim(formData.targetMetric.name) === '') {
+      errors['targetMetric.name'] = 'Target metric name is required';
+    }
+    
+    if (!formData.targetMetric.unit || safeTrim(formData.targetMetric.unit) === '') {
+      errors['targetMetric.unit'] = 'Target metric unit is required';
+    }
+    
+    if (!formData.targetMetric.targetValue || formData.targetMetric.targetValue === '') {
+      errors['targetMetric.targetValue'] = 'Target value is required';
+    } else {
+      const targetValue = parseFloat(formData.targetMetric.targetValue);
+      if (isNaN(targetValue) || targetValue <= 0) {
+        errors['targetMetric.targetValue'] = 'Target value must be a positive number';
+      }
+    }
+  }
+  
+  if (formData.timeframe) {
+    if (!formData.timeframe.startDate) {
+      errors['timeframe.startDate'] = 'Start date is required';
+    }
+    
+    if (!formData.timeframe.endDate) {
+      errors['timeframe.endDate'] = 'End date is required';
+    } else if (formData.timeframe.startDate && formData.timeframe.endDate) {
+      const startDate = new Date(formData.timeframe.startDate);
+      const endDate = new Date(formData.timeframe.endDate);
+      if (endDate <= startDate) {
+        errors['timeframe.endDate'] = 'End date must be after start date';
+      }
+    }
+  }
+  
+  return errors;
+};
+
+// Health log validation functions
+export const validateHealthLog = (formData) => {
+  const errors = {};
+  
+  if (!formData.date) {
+    errors.date = 'Date is required';
+  }
+  
+  // Validate vital signs
+  if (formData.vitalSigns) {
+    if (formData.vitalSigns.bloodPressure) {
+      if (formData.vitalSigns.bloodPressure.systolic) {
+        const systolic = parseInt(formData.vitalSigns.bloodPressure.systolic);
+        if (isNaN(systolic) || systolic < 50 || systolic > 250) {
+          errors['vitalSigns.bloodPressure.systolic'] = 'Systolic pressure must be between 50-250 mmHg';
+        }
+      }
+      
+      if (formData.vitalSigns.bloodPressure.diastolic) {
+        const diastolic = parseInt(formData.vitalSigns.bloodPressure.diastolic);
+        if (isNaN(diastolic) || diastolic < 30 || diastolic > 150) {
+          errors['vitalSigns.bloodPressure.diastolic'] = 'Diastolic pressure must be between 30-150 mmHg';
+        }
+      }
+    }
+    
+    if (formData.vitalSigns.heartRate) {
+      const heartRate = parseInt(formData.vitalSigns.heartRate);
+      if (isNaN(heartRate) || heartRate < 30 || heartRate > 220) {
+        errors['vitalSigns.heartRate'] = 'Heart rate must be between 30-220 bpm';
+      }
+    }
+    
+    if (formData.vitalSigns.temperature) {
+      const temperature = parseFloat(formData.vitalSigns.temperature);
+      if (isNaN(temperature) || temperature < 20 || temperature > 45) {
+        errors['vitalSigns.temperature'] = 'Temperature must be between 20-45°C (68-113°F)';
+      }
+    }
+    
+    if (formData.vitalSigns.weight) {
+      const weight = parseFloat(formData.vitalSigns.weight);
+      if (isNaN(weight) || weight < 20 || weight > 500) {
+        errors['vitalSigns.weight'] = 'Weight must be between 20-500 kg';
+      }
+    }
+    
+    if (formData.vitalSigns.height) {
+      const height = parseFloat(formData.vitalSigns.height);
+      if (isNaN(height) || height < 50 || height > 250) {
+        errors['vitalSigns.height'] = 'Height must be between 50-250 cm';
+      }
+    }
+    
+    if (formData.vitalSigns.bloodSugar) {
+      const bloodSugar = parseFloat(formData.vitalSigns.bloodSugar);
+      if (isNaN(bloodSugar) || bloodSugar < 0 || bloodSugar > 600) {
+        errors['vitalSigns.bloodSugar'] = 'Blood sugar must be between 0-600 mg/dL';
+      }
+    }
+  }
+  
+  // Validate sleep duration
+  if (formData.sleep && formData.sleep.duration) {
+    const duration = parseFloat(formData.sleep.duration);
+    if (isNaN(duration) || duration < 0 || duration > 24) {
+      errors['sleep.duration'] = 'Sleep duration must be between 0-24 hours';
+    }
+  }
+  
+  // Validate exercise duration
+  if (formData.exercise && formData.exercise.duration) {
+    const duration = parseFloat(formData.exercise.duration);
+    if (isNaN(duration) || duration < 0 || duration > 12) {
+      errors['exercise.duration'] = 'Exercise duration must be between 0-12 hours';
+    }
+  }
+  
+  // Validate water intake
+  if (formData.nutrition && formData.nutrition.waterIntake) {
+    const waterIntake = parseFloat(formData.nutrition.waterIntake);
+    if (isNaN(waterIntake) || waterIntake < 0 || waterIntake > 20) {
+      errors['nutrition.waterIntake'] = 'Water intake must be between 0-20 liters';
+    }
+  }
+  
+  return errors;
+};
+
+// Password change validation
+export const validatePasswordChange = (formData) => {
+  const errors = {};
+  
+  if (!formData.currentPassword || formData.currentPassword.trim() === '') {
+    errors.currentPassword = 'Current password is required';
+  }
+  
+  const newPasswordError = validatePassword(formData.newPassword);
+  if (newPasswordError) errors.newPassword = newPasswordError;
+  
+  const confirmPasswordError = validatePasswordMatch(formData.newPassword, formData.confirmPassword);
+  if (confirmPasswordError) errors.confirmPassword = confirmPasswordError;
+  
+  return errors;
 };

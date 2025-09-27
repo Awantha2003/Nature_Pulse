@@ -38,7 +38,7 @@ const createAdmin = async () => {
       lastName: 'Administrator',
       email: 'admin@naturepulse.com',
       password: hashedPassword,
-      phone: '+1234567890',
+      phone: '0704949394',
       dateOfBirth: new Date('1990-01-01'),
       gender: 'other',
       address: {

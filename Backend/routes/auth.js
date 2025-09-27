@@ -140,6 +140,8 @@ router.post('/register-doctor', validateUserRegistration, validateDoctorRegistra
       consultationFee,
       bio,
       languages,
+      isVerified: true, // Auto-verify doctors for development/testing
+      verificationNotes: 'Auto-verified for development purposes',
       availability: {
         monday: { isAvailable: true, startTime: '09:00', endTime: '17:00', slotDuration: 30 },
         tuesday: { isAvailable: true, startTime: '09:00', endTime: '17:00', slotDuration: 30 },

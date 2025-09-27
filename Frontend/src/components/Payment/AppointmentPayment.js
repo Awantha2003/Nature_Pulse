@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import {
   Container,
   Typography,
@@ -230,6 +230,7 @@ const PaymentForm = ({ appointment, onPaymentSuccess, onPaymentError }) => {
 const AppointmentPayment = () => {
   const { id: appointmentId } = useParams();
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [appointment, setAppointment] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -294,10 +295,7 @@ const AppointmentPayment = () => {
 
   const handlePaymentSuccess = (paymentData) => {
     setPaymentSuccess(true);
-    // Redirect to appointments page after 3 seconds
-    setTimeout(() => {
-      window.location.href = '/appointments';
-    }, 3000);
+    // Show success message without redirecting
   };
 
   const handlePaymentError = (error) => {
@@ -391,9 +389,25 @@ const AppointmentPayment = () => {
           <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
             Your appointment has been confirmed. You will receive a confirmation email shortly.
           </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Redirecting to appointments page...
-          </Typography>
+          <Box sx={{ mt: 3, display: 'flex', gap: 2, justifyContent: 'center' }}>
+            <Button
+              variant="contained"
+              onClick={() => {
+                const dashboardPath = user?.role === 'patient' ? '/app/patient/dashboard' : 
+                                     user?.role === 'doctor' ? '/app/doctor/dashboard' : 
+                                     user?.role === 'admin' ? '/app/admin/overview' : '/dashboard';
+                navigate(dashboardPath);
+              }}
+            >
+              Go to Dashboard
+            </Button>
+            <Button
+              variant="outlined"
+              onClick={() => navigate('/app/patient/appointments')}
+            >
+              View Appointments
+            </Button>
+          </Box>
         </Box>
       </Container>
     );

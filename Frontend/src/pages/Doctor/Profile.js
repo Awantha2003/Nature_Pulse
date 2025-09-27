@@ -478,7 +478,7 @@ const DoctorProfile = () => {
         </Box>
 
         <Grid container spacing={3}>
-          <Grid item xs={12} md={4} sx={{ textAlign: 'center' }}>
+          <Grid size={{ xs: 12, md: 4 }} sx={{ textAlign: 'center' }}>
             <Box sx={{ position: 'relative', display: 'inline-block' }}>
               <Avatar
                 src={profileData.profileImage ? `${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/${profileData.profileImage}` : ''}
@@ -512,9 +512,9 @@ const DoctorProfile = () => {
             <Chip label="Doctor" color="info" sx={{ mt: 1 }} />
           </Grid>
 
-          <Grid item xs={12} md={8}>
+          <Grid size={{ xs: 12, md: 8 }}>
             <Grid container spacing={3}>
-              <Grid item xs={12} sm={6}>
+              <Grid size={{ xs: 12, sm: 6 }}>
                 <TextField
                   fullWidth
                   label="First Name"
@@ -526,7 +526,7 @@ const DoctorProfile = () => {
                   }}
                 />
               </Grid>
-              <Grid item xs={12} sm={6}>
+              <Grid size={{ xs: 12, sm: 6 }}>
                 <TextField
                   fullWidth
                   label="Last Name"
@@ -538,7 +538,7 @@ const DoctorProfile = () => {
                   }}
                 />
               </Grid>
-              <Grid item xs={12} sm={6}>
+              <Grid size={{ xs: 12, sm: 6 }}>
                 <TextField
                   fullWidth
                   label="Email"
@@ -551,7 +551,7 @@ const DoctorProfile = () => {
                   }}
                 />
               </Grid>
-              <Grid item xs={12} sm={6}>
+              <Grid size={{ xs: 12, sm: 6 }}>
                 <TextField
                   fullWidth
                   label="Phone"
@@ -563,7 +563,7 @@ const DoctorProfile = () => {
                   }}
                 />
               </Grid>
-              <Grid item xs={12} sm={6}>
+              <Grid size={{ xs: 12, sm: 6 }}>
                 <TextField
                   fullWidth
                   label="Date of Birth"
@@ -577,7 +577,7 @@ const DoctorProfile = () => {
                   }}
                 />
               </Grid>
-              <Grid item xs={12} sm={6}>
+              <Grid size={{ xs: 12, sm: 6 }}>
                 <FormControl fullWidth disabled={!editing}>
                   <InputLabel>Gender</InputLabel>
                   <Select
@@ -591,7 +591,7 @@ const DoctorProfile = () => {
                   </Select>
                 </FormControl>
               </Grid>
-              <Grid item xs={12} md={6}>
+              <Grid size={{ xs: 12, md: 6 }}>
                 <TextField
                   fullWidth
                   label="Street Address"
@@ -603,7 +603,7 @@ const DoctorProfile = () => {
                   }}
                 />
               </Grid>
-              <Grid item xs={12} md={6}>
+              <Grid size={{ xs: 12, md: 6 }}>
                 <TextField
                   fullWidth
                   label="City"
@@ -612,7 +612,7 @@ const DoctorProfile = () => {
                   disabled={!editing}
                 />
               </Grid>
-              <Grid item xs={12} md={4}>
+              <Grid size={{ xs: 12, md: 4 }}>
                 <TextField
                   fullWidth
                   label="State"
@@ -621,7 +621,7 @@ const DoctorProfile = () => {
                   disabled={!editing}
                 />
               </Grid>
-              <Grid item xs={12} md={4}>
+              <Grid size={{ xs: 12, md: 4 }}>
                 <TextField
                   fullWidth
                   label="Zip Code"
@@ -630,7 +630,7 @@ const DoctorProfile = () => {
                   disabled={!editing}
                 />
               </Grid>
-              <Grid item xs={12} md={4}>
+              <Grid size={{ xs: 12, md: 4 }}>
                 <TextField
                   fullWidth
                   label="Country"
@@ -654,7 +654,7 @@ const DoctorProfile = () => {
         </Typography>
 
         <Grid container spacing={3}>
-          <Grid item xs={12} sm={6}>
+          <Grid size={{ xs: 12, sm: 6 }}>
             <FormControl fullWidth disabled={!editing}>
               <InputLabel>Specialization</InputLabel>
               <Select
@@ -670,7 +670,7 @@ const DoctorProfile = () => {
               </Select>
             </FormControl>
           </Grid>
-          <Grid item xs={12} sm={6}>
+          <Grid size={{ xs: 12, sm: 6 }}>
             <TextField
               fullWidth
               label="Consultation Fee (LKR)"
@@ -683,7 +683,7 @@ const DoctorProfile = () => {
               }}
             />
           </Grid>
-          <Grid item xs={12} sm={6}>
+          <Grid size={{ xs: 12, sm: 6 }}>
             <TextField
               fullWidth
               label="Years of Experience"
@@ -696,7 +696,7 @@ const DoctorProfile = () => {
               }}
             />
           </Grid>
-          <Grid item xs={12} sm={6}>
+          <Grid size={{ xs: 12, sm: 6 }}>
             <Autocomplete
               multiple
               options={languages}
@@ -715,7 +715,7 @@ const DoctorProfile = () => {
               )}
             />
           </Grid>
-          <Grid item xs={12}>
+          <Grid size={{ xs: 12 }}>
             <TextField
               fullWidth
               label="Bio"
@@ -731,7 +731,7 @@ const DoctorProfile = () => {
               }}
             />
           </Grid>
-          <Grid item xs={12}>
+          <Grid size={{ xs: 12 }}>
             <FormControlLabel
               control={
                 <Switch
@@ -769,7 +769,7 @@ const DoctorProfile = () => {
             />
             {schedule.isAvailable && (
               <Grid container spacing={2} sx={{ mt: 1 }}>
-                <Grid item xs={6}>
+                <Grid size={{ xs: 6 }}>
                   <TextField
                     fullWidth
                     label="Start Time"
@@ -780,7 +780,7 @@ const DoctorProfile = () => {
                     InputLabelProps={{ shrink: true }}
                   />
                 </Grid>
-                <Grid item xs={6}>
+                <Grid size={{ xs: 6 }}>
                   <TextField
                     fullWidth
                     label="End Time"
@@ -973,7 +973,7 @@ const DoctorProfile = () => {
           <Divider sx={{ mb: 3 }} />
 
           <Grid container spacing={3}>
-            <Grid item xs={12} md={4}>
+            <Grid size={{ xs: 12, md: 4 }}>
               <TextField
                 fullWidth
                 label="Current Password"
@@ -992,7 +992,7 @@ const DoctorProfile = () => {
                 }}
               />
             </Grid>
-            <Grid item xs={12} md={4}>
+            <Grid size={{ xs: 12, md: 4 }}>
               <TextField
                 fullWidth
                 label="New Password"
@@ -1001,7 +1001,7 @@ const DoctorProfile = () => {
                 onChange={(e) => setPasswordData(prev => ({ ...prev, newPassword: e.target.value }))}
               />
             </Grid>
-            <Grid item xs={12} md={4}>
+            <Grid size={{ xs: 12, md: 4 }}>
               <TextField
                 fullWidth
                 label="Confirm New Password"
@@ -1092,7 +1092,7 @@ const DoctorProfile = () => {
         <DialogTitle>Add Education</DialogTitle>
         <DialogContent>
           <Grid container spacing={2} sx={{ mt: 1 }}>
-            <Grid item xs={12}>
+            <Grid size={{ xs: 12 }}>
               <TextField
                 fullWidth
                 label="Degree"
@@ -1100,7 +1100,7 @@ const DoctorProfile = () => {
                 onChange={(e) => setNewEducation(prev => ({ ...prev, degree: e.target.value }))}
               />
             </Grid>
-            <Grid item xs={12}>
+            <Grid size={{ xs: 12 }}>
               <TextField
                 fullWidth
                 label="Institution"
@@ -1108,7 +1108,7 @@ const DoctorProfile = () => {
                 onChange={(e) => setNewEducation(prev => ({ ...prev, institution: e.target.value }))}
               />
             </Grid>
-            <Grid item xs={12}>
+            <Grid size={{ xs: 12 }}>
               <TextField
                 fullWidth
                 label="Year"
@@ -1130,7 +1130,7 @@ const DoctorProfile = () => {
         <DialogTitle>Add Certification</DialogTitle>
         <DialogContent>
           <Grid container spacing={2} sx={{ mt: 1 }}>
-            <Grid item xs={12}>
+            <Grid size={{ xs: 12 }}>
               <TextField
                 fullWidth
                 label="Certification Name"
@@ -1138,7 +1138,7 @@ const DoctorProfile = () => {
                 onChange={(e) => setNewCertification(prev => ({ ...prev, name: e.target.value }))}
               />
             </Grid>
-            <Grid item xs={12}>
+            <Grid size={{ xs: 12 }}>
               <TextField
                 fullWidth
                 label="Issuing Organization"
@@ -1146,7 +1146,7 @@ const DoctorProfile = () => {
                 onChange={(e) => setNewCertification(prev => ({ ...prev, issuer: e.target.value }))}
               />
             </Grid>
-            <Grid item xs={12}>
+            <Grid size={{ xs: 12 }}>
               <TextField
                 fullWidth
                 label="Year"

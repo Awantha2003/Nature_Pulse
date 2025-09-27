@@ -63,6 +63,8 @@ import {
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import api from '../../utils/api';
+import { ValidatedTextField, ValidatedSelect } from '../../components/Validation';
+import { validateProfileUpdate, validatePasswordChange, isFormValid } from '../../utils/validation';
 
 const PatientProfile = () => {
   const { user, updateUser } = useAuth();
@@ -75,6 +77,8 @@ const PatientProfile = () => {
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
   const [deleteDialog, setDeleteDialog] = useState(false);
   const [medicalHistoryDialog, setMedicalHistoryDialog] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState({});
+  const [passwordErrors, setPasswordErrors] = useState({});
   const [newMedicalRecord, setNewMedicalRecord] = useState({
     condition: '',
     date: '',
@@ -108,16 +112,81 @@ const PatientProfile = () => {
     confirmPassword: '',
   });
 
+  // Validation handlers
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setProfileData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+    
+    // Clear field error when user starts typing
+    if (fieldErrors[name]) {
+      setFieldErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[name];
+        return newErrors;
+      });
+    }
+  };
+
+  const handleBlur = (e) => {
+    const { name } = e.target;
+    const errors = validateProfileUpdate(profileData);
+    if (errors[name]) {
+      setFieldErrors(prev => ({ ...prev, [name]: errors[name] }));
+    }
+  };
+
+  const handlePasswordInputChange = (e) => {
+    const { name, value } = e.target;
+    setPasswordData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+    
+    // Clear password error when user starts typing
+    if (passwordErrors[name]) {
+      setPasswordErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[name];
+        return newErrors;
+      });
+    }
+  };
+
+  const handlePasswordBlur = (e) => {
+    const { name } = e.target;
+    const errors = validatePasswordChange(passwordData);
+    if (errors[name]) {
+      setPasswordErrors(prev => ({ ...prev, [name]: errors[name] }));
+    }
+  };
+
+  // Real-time validation
+  useEffect(() => {
+    const errors = validateProfileUpdate(profileData);
+    setFieldErrors(errors);
+  }, [profileData]);
+
+  useEffect(() => {
+    const errors = validatePasswordChange(passwordData);
+    setPasswordErrors(errors);
+  }, [passwordData]);
+
   useEffect(() => {
     if (user) {
       console.log('Loading user data:', user);
+      // Debug: Check address type
+      console.log('User address type:', typeof user.address, 'Value:', user.address);
+      
       setProfileData({
         firstName: user.firstName || '',
         lastName: user.lastName || '',
         email: user.email || '',
         phone: user.phone || '',
-        address: user.address || '',
-        dateOfBirth: user.dateOfBirth || '',
+        address: typeof user.address === 'string' ? user.address : (user.address ? JSON.stringify(user.address) : ''),
+        dateOfBirth: user.dateOfBirth ? user.dateOfBirth.split('T')[0] : '',
         gender: user.gender || '',
         profileImage: user.profileImage || '',
         medicalHistory: user.medicalHistory || [
@@ -402,7 +471,7 @@ const PatientProfile = () => {
         </Box>
 
         <Grid container spacing={3}>
-          <Grid xs={12} md={4} sx={{ textAlign: 'center' }}>
+          <Grid size={{ xs: 12, md: 4 }} sx={{ textAlign: 'center' }}>
             <Box sx={{ position: 'relative', display: 'inline-block' }}>
               <Avatar
                 src={profileData.profileImage ? `${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/${profileData.profileImage}` : ''}
@@ -436,94 +505,122 @@ const PatientProfile = () => {
             <Chip label="Patient" color="primary" sx={{ mt: 1 }} />
           </Grid>
 
-          <Grid xs={12} md={8}>
+          <Grid size={{ xs: 12, md: 8 }}>
             <Grid container spacing={3}>
-              <Grid xs={12} sm={6}>
-                <TextField
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <ValidatedTextField
                   fullWidth
                   label="First Name"
+                  name="firstName"
                   value={profileData.firstName}
-                  onChange={(e) => handleInputChange('firstName', e.target.value)}
+                  onChange={handleChange}
+                  onBlur={handleBlur}
                   disabled={!editing}
+                  error={!!fieldErrors.firstName}
+                  helperText="Enter your first name"
                   InputProps={{
                     startAdornment: <Person sx={{ mr: 1, color: 'text.secondary' }} />,
                   }}
                 />
               </Grid>
-              <Grid xs={12} sm={6}>
-                <TextField
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <ValidatedTextField
                   fullWidth
                   label="Last Name"
+                  name="lastName"
                   value={profileData.lastName}
-                  onChange={(e) => handleInputChange('lastName', e.target.value)}
+                  onChange={handleChange}
+                  onBlur={handleBlur}
                   disabled={!editing}
+                  error={!!fieldErrors.lastName}
+                  helperText="Enter your last name"
                   InputProps={{
                     startAdornment: <Person sx={{ mr: 1, color: 'text.secondary' }} />,
                   }}
                 />
               </Grid>
-              <Grid xs={12} sm={6}>
-                <TextField
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <ValidatedTextField
                   fullWidth
                   label="Email"
+                  name="email"
                   type="email"
                   value={profileData.email}
-                  onChange={(e) => handleInputChange('email', e.target.value)}
+                  onChange={handleChange}
+                  onBlur={handleBlur}
                   disabled={!editing}
+                  error={!!fieldErrors.email}
+                  helperText="Enter your email address"
                   InputProps={{
                     startAdornment: <Email sx={{ mr: 1, color: 'text.secondary' }} />,
                   }}
                 />
               </Grid>
-              <Grid xs={12} sm={6}>
-                <TextField
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <ValidatedTextField
                   fullWidth
                   label="Phone"
+                  name="phone"
                   value={profileData.phone}
-                  onChange={(e) => handleInputChange('phone', e.target.value)}
+                  onChange={handleChange}
+                  onBlur={handleBlur}
                   disabled={!editing}
+                  error={!!fieldErrors.phone}
+                  helperText="Enter your phone number"
                   InputProps={{
                     startAdornment: <Phone sx={{ mr: 1, color: 'text.secondary' }} />,
                   }}
                 />
               </Grid>
-              <Grid xs={12} sm={6}>
-                <TextField
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <ValidatedTextField
                   fullWidth
                   label="Date of Birth"
+                  name="dateOfBirth"
                   type="date"
                   value={profileData.dateOfBirth}
-                  onChange={(e) => handleInputChange('dateOfBirth', e.target.value)}
+                  onChange={handleChange}
+                  onBlur={handleBlur}
                   disabled={!editing}
+                  error={!!fieldErrors.dateOfBirth}
+                  helperText="Enter your date of birth"
                   InputLabelProps={{ shrink: true }}
                   InputProps={{
                     startAdornment: <CalendarToday sx={{ mr: 1, color: 'text.secondary' }} />,
                   }}
                 />
               </Grid>
-              <Grid xs={12} sm={6}>
-                <FormControl fullWidth disabled={!editing}>
-                  <InputLabel>Gender</InputLabel>
-                  <Select
-                    value={profileData.gender}
-                    label="Gender"
-                    onChange={(e) => handleInputChange('gender', e.target.value)}
-                  >
-                    <MenuItem value="male">Male</MenuItem>
-                    <MenuItem value="female">Female</MenuItem>
-                    <MenuItem value="other">Other</MenuItem>
-                  </Select>
-                </FormControl>
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <ValidatedSelect
+                  fullWidth
+                  id="gender"
+                  name="gender"
+                  label="Gender"
+                  value={profileData.gender}
+                  onChange={handleChange}
+                  onBlur={handleBlur}
+                  disabled={!editing}
+                  error={!!fieldErrors.gender}
+                  helperText="Select your gender"
+                >
+                  <MenuItem value="male">Male</MenuItem>
+                  <MenuItem value="female">Female</MenuItem>
+                  <MenuItem value="other">Other</MenuItem>
+                </ValidatedSelect>
               </Grid>
-              <Grid xs={12}>
-                <TextField
+              <Grid size={{ xs: 12 }}>
+                <ValidatedTextField
                   fullWidth
                   label="Address"
+                  name="address"
                   multiline
                   rows={3}
                   value={profileData.address}
-                  onChange={(e) => handleInputChange('address', e.target.value)}
+                  onChange={handleChange}
+                  onBlur={handleBlur}
                   disabled={!editing}
+                  error={!!fieldErrors.address}
+                  helperText="Enter your address"
                   InputProps={{
                     startAdornment: <LocationOn sx={{ mr: 1, color: 'text.secondary', mt: 1 }} />,
                   }}
@@ -667,7 +764,7 @@ const PatientProfile = () => {
             </Box>
           ) : (
             <Grid container spacing={3}>
-              <Grid xs={12} sm={6}>
+              <Grid size={{ xs: 12, sm: 6 }}>
                 <TextField
                   fullWidth
                   label="Contact Name"
@@ -676,7 +773,7 @@ const PatientProfile = () => {
                   disabled={!editing}
                 />
               </Grid>
-              <Grid xs={12} sm={6}>
+              <Grid size={{ xs: 12, sm: 6 }}>
                 <TextField
                   fullWidth
                   label="Phone Number"
@@ -685,7 +782,7 @@ const PatientProfile = () => {
                   disabled={!editing}
                 />
               </Grid>
-              <Grid xs={12}>
+              <Grid size={{ xs: 12 }}>
                 <TextField
                   fullWidth
                   label="Relationship"
@@ -759,13 +856,17 @@ const PatientProfile = () => {
           <Divider sx={{ mb: 3 }} />
 
           <Grid container spacing={3}>
-            <Grid item xs={12} md={4}>
-              <TextField
+            <Grid item size={{ xs: 12, md: 4 }}>
+              <ValidatedTextField
                 fullWidth
                 label="Current Password"
+                name="currentPassword"
                 type={showPassword ? 'text' : 'password'}
                 value={passwordData.currentPassword}
-                onChange={(e) => setPasswordData(prev => ({ ...prev, currentPassword: e.target.value }))}
+                onChange={handlePasswordInputChange}
+                onBlur={handlePasswordBlur}
+                error={!!passwordErrors.currentPassword}
+                helperText="Enter your current password"
                 InputProps={{
                   endAdornment: (
                     <IconButton
@@ -778,22 +879,30 @@ const PatientProfile = () => {
                 }}
               />
             </Grid>
-            <Grid item xs={12} md={4}>
-              <TextField
+            <Grid item size={{ xs: 12, md: 4 }}>
+              <ValidatedTextField
                 fullWidth
                 label="New Password"
+                name="newPassword"
                 type={showPassword ? 'text' : 'password'}
                 value={passwordData.newPassword}
-                onChange={(e) => setPasswordData(prev => ({ ...prev, newPassword: e.target.value }))}
+                onChange={handlePasswordInputChange}
+                onBlur={handlePasswordBlur}
+                error={!!passwordErrors.newPassword}
+                helperText="Enter your new password"
               />
             </Grid>
-            <Grid item xs={12} md={4}>
-              <TextField
+            <Grid item size={{ xs: 12, md: 4 }}>
+              <ValidatedTextField
                 fullWidth
                 label="Confirm New Password"
+                name="confirmPassword"
                 type={showPassword ? 'text' : 'password'}
                 value={passwordData.confirmPassword}
-                onChange={(e) => setPasswordData(prev => ({ ...prev, confirmPassword: e.target.value }))}
+                onChange={handlePasswordInputChange}
+                onBlur={handlePasswordBlur}
+                error={!!passwordErrors.confirmPassword}
+                helperText="Confirm your new password"
               />
             </Grid>
           </Grid>

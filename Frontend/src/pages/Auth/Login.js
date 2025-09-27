@@ -13,6 +13,7 @@ import {
 import { useNavigate, Link as RouterLink } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { validateLoginForm, isFormValid } from '../../utils/validation';
+import { ValidatedTextField } from '../../components/Validation';
 
 const Login = () => {
   const [formData, setFormData] = useState({
@@ -131,7 +132,7 @@ const Login = () => {
           )}
 
           <Box component="form" onSubmit={handleSubmit} sx={{ mt: 1 }}>
-            <TextField
+            <ValidatedTextField
               margin="normal"
               required
               fullWidth
@@ -144,10 +145,10 @@ const Login = () => {
               onChange={handleChange}
               onBlur={handleBlur}
               disabled={loading}
-              error={!!fieldErrors.email}
-              helperText={fieldErrors.email || 'Enter your email address'}
+              error={fieldErrors.email}
+              helperText="Enter your email address"
             />
-            <TextField
+            <ValidatedTextField
               margin="normal"
               required
               fullWidth
@@ -160,8 +161,8 @@ const Login = () => {
               onChange={handleChange}
               onBlur={handleBlur}
               disabled={loading}
-              error={!!fieldErrors.password}
-              helperText={fieldErrors.password || 'Enter your password'}
+              error={fieldErrors.password}
+              helperText="Enter your password"
             />
             <Button
               type="submit"

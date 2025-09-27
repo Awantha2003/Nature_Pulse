@@ -50,22 +50,31 @@ import { DatePicker, TimePicker } from '@mui/x-date-pickers';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { useAuth } from '../../contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import api from '../../utils/api';
+import { ValidatedTextField, ValidatedSelect } from '../../components/Validation';
+import { validateAppointmentBooking, isFormValid } from '../../utils/validation';
 
 const BookAppointment = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [activeStep, setActiveStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
+  const [fieldErrors, setFieldErrors] = useState({});
 
   // Form data
-  const [selectedDoctor, setSelectedDoctor] = useState('');
-  const [selectedDate, setSelectedDate] = useState(null);
-  const [selectedTime, setSelectedTime] = useState(null);
-  const [appointmentType, setAppointmentType] = useState('consultation');
-  const [isVirtual, setIsVirtual] = useState(false);
-  const [reason, setReason] = useState('');
+  const [formData, setFormData] = useState({
+    selectedDoctor: '',
+    selectedDate: null,
+    selectedTime: null,
+    appointmentType: 'consultation',
+    isVirtual: false,
+    reason: '',
+    symptoms: '',
+    notes: ''
+  });
   const [symptoms, setSymptoms] = useState([]);
   const [currentSymptom, setCurrentSymptom] = useState('');
 
@@ -89,10 +98,42 @@ const BookAppointment = () => {
   }, []);
 
   useEffect(() => {
-    if (selectedDoctor && selectedDate) {
+    if (formData.selectedDoctor && formData.selectedDate) {
       fetchAvailableSlots();
     }
-  }, [selectedDoctor, selectedDate]);
+  }, [formData.selectedDoctor, formData.selectedDate]);
+
+  // Validation handlers
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+    
+    // Clear field error when user starts typing
+    if (fieldErrors[name]) {
+      setFieldErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[name];
+        return newErrors;
+      });
+    }
+  };
+
+  const handleBlur = (e) => {
+    const { name } = e.target;
+    const errors = validateAppointmentBooking(formData);
+    if (errors[name]) {
+      setFieldErrors(prev => ({ ...prev, [name]: errors[name] }));
+    }
+  };
+
+  // Real-time validation
+  useEffect(() => {
+    const errors = validateAppointmentBooking(formData);
+    setFieldErrors(errors);
+  }, [formData]);
 
   const fetchDoctors = async () => {
     try {
@@ -125,10 +166,10 @@ const BookAppointment = () => {
     try {
       setLoading(true);
       // Format date properly for the API
-      const dateStr = selectedDate instanceof Date ? 
-        selectedDate.toISOString().split('T')[0] : 
-        new Date(selectedDate).toISOString().split('T')[0];
-      const response = await api.get(`/appointments/doctor/${selectedDoctor}/availability?date=${dateStr}`);
+      const dateStr = formData.selectedDate instanceof Date ? 
+        formData.selectedDate.toISOString().split('T')[0] : 
+        new Date(formData.selectedDate).toISOString().split('T')[0];
+      const response = await api.get(`/appointments/doctor/${formData.selectedDoctor}/availability?date=${dateStr}`);
       
       if (response.data.status === 'success') {
         setAvailableSlots(response.data.data.availableSlots || []);
@@ -147,28 +188,29 @@ const BookAppointment = () => {
   };
 
   const handleNext = () => {
-    if (activeStep === 0 && !selectedDoctor) {
-      setError('Please select a doctor');
-      return;
+    // Validate current step before proceeding
+    const errors = validateAppointmentBooking(formData);
+    const stepErrors = {};
+    
+    if (activeStep === 0) {
+      if (errors.selectedDoctor) stepErrors.selectedDoctor = errors.selectedDoctor;
+    } else if (activeStep === 1) {
+      if (errors.selectedDate) stepErrors.selectedDate = errors.selectedDate;
+      if (errors.selectedTime) stepErrors.selectedTime = errors.selectedTime;
+    } else if (activeStep === 2) {
+      if (errors.reason) stepErrors.reason = errors.reason;
+      if (errors.symptoms) stepErrors.symptoms = errors.symptoms;
+      if (errors.notes) stepErrors.notes = errors.notes;
     }
-    if (activeStep === 1 && (!selectedDate || !selectedTime)) {
-      setError('Please select date and time');
-      return;
-    }
-    if (activeStep === 2 && !reason.trim()) {
-      setError('Please provide a reason for the appointment');
-      return;
-    }
-    if (activeStep === 2 && reason.trim().length < 10) {
-      setError('Reason must be at least 10 characters long');
-      return;
-    }
-    if (activeStep === 2 && reason.trim().length > 500) {
-      setError('Reason cannot exceed 500 characters');
+    
+    if (Object.keys(stepErrors).length > 0) {
+      setFieldErrors(stepErrors);
+      setError('Please fix the validation errors before proceeding');
       return;
     }
     
     setError(null);
+    setFieldErrors({});
     setActiveStep((prevStep) => prevStep + 1);
   };
 
@@ -193,16 +235,17 @@ const BookAppointment = () => {
       setError(null);
 
       const appointmentData = {
-        doctor: selectedDoctor,
-        appointmentDate: selectedDate instanceof Date ? 
-          selectedDate.toISOString().split('T')[0] : 
-          new Date(selectedDate).toISOString().split('T')[0],
-        appointmentTime: selectedTime,
-        type: appointmentType,
-        isVirtual,
-        reason: reason.trim(),
-        symptoms,
-        location: isVirtual ? { type: 'virtual' } : { type: 'clinic' }
+        doctor: formData.selectedDoctor,
+        appointmentDate: formData.selectedDate instanceof Date ? 
+          formData.selectedDate.toISOString().split('T')[0] : 
+          new Date(formData.selectedDate).toISOString().split('T')[0],
+        appointmentTime: formData.selectedTime,
+        type: formData.appointmentType,
+        isVirtual: formData.isVirtual,
+        reason: formData.reason.trim(),
+        symptoms: formData.symptoms,
+        notes: formData.notes,
+        location: formData.isVirtual ? { type: 'virtual' } : { type: 'clinic' }
       };
 
       const response = await api.post('/appointments', appointmentData);
@@ -222,7 +265,14 @@ const BookAppointment = () => {
       } else if (err.response?.status === 404) {
         setError('Doctor not found or not verified. Please select a different doctor.');
       } else if (err.response?.status === 400) {
-        setError(err.response.data.message || 'Invalid appointment data. Please check your selections.');
+        const errorMessage = err.response.data.message || 'Invalid appointment data. Please check your selections.';
+        const suggestions = err.response.data.suggestions;
+        
+        if (suggestions && suggestions.length > 0) {
+          setError(`${errorMessage}\n\n💡 Suggestions:\n• ${suggestions.join('\n• ')}`);
+        } else {
+          setError(errorMessage);
+        }
       } else if (err.response?.status === 500) {
         setError('Server error. Please try again later or contact support.');
       } else if (err.response?.data?.message) {
@@ -283,15 +333,15 @@ const BookAppointment = () => {
         return (
           <Grid container spacing={3}>
             {doctors.map((doctor) => (
-              <Grid item xs={12} md={6} key={doctor._id}>
+              <Grid size={{ xs: 12, md: 6 }} key={doctor._id}>
                 <Card 
-                  variant={selectedDoctor === doctor._id ? "elevation" : "outlined"}
+                  variant={formData.selectedDoctor === doctor._id ? "elevation" : "outlined"}
                   sx={{ 
                     cursor: 'pointer',
-                    border: selectedDoctor === doctor._id ? 2 : 1,
-                    borderColor: selectedDoctor === doctor._id ? 'primary.main' : 'divider'
+                    border: formData.selectedDoctor === doctor._id ? 2 : 1,
+                    borderColor: formData.selectedDoctor === doctor._id ? 'primary.main' : 'divider'
                   }}
-                  onClick={() => setSelectedDoctor(doctor._id)}
+                  onClick={() => setFormData(prev => ({ ...prev, selectedDoctor: doctor._id }))}
                 >
                   <CardContent>
                     <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
@@ -336,27 +386,39 @@ const BookAppointment = () => {
       case 1:
         return (
           <Grid container spacing={3}>
-            <Grid item xs={12} md={6}>
+            <Grid size={{ xs: 12, md: 6 }}>
               <LocalizationProvider dateAdapter={AdapterDateFns}>
                 <DatePicker
                   label="Select Date"
-                  value={selectedDate}
-                  onChange={setSelectedDate}
+                  value={formData.selectedDate}
+                  onChange={(date) => setFormData(prev => ({ ...prev, selectedDate: date }))}
                   minDate={new Date()}
                   maxDate={new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)} // 30 days from now
-                  renderInput={(params) => <TextField {...params} fullWidth />}
+                  renderInput={(params) => (
+                    <ValidatedTextField 
+                      {...params} 
+                      fullWidth 
+                      error={!!fieldErrors.selectedDate}
+                      helperText={fieldErrors.selectedDate || "Select your preferred date"}
+                    />
+                  )}
                 />
               </LocalizationProvider>
             </Grid>
-            <Grid item xs={12} md={6}>
-              <FormControl fullWidth>
-                <InputLabel>Available Time Slots</InputLabel>
-                <Select
-                  value={selectedTime || ''}
-                  onChange={(e) => setSelectedTime(e.target.value)}
-                  disabled={!selectedDate || availableSlots.length === 0}
+            <Grid size={{ xs: 12, md: 6 }}>
+              <ValidatedSelect
+                fullWidth
+                id="selectedTime"
+                name="selectedTime"
+                label="Available Time Slots"
+                value={formData.selectedTime || ''}
+                onChange={handleChange}
+                onBlur={handleBlur}
+                disabled={!formData.selectedDate || availableSlots.length === 0}
+                error={!!fieldErrors.selectedTime}
+                helperText={fieldErrors.selectedTime || "Select your preferred time slot"}
                 >
-                  {availableSlots.length === 0 && selectedDate ? (
+                  {availableSlots.length === 0 && formData.selectedDate ? (
                     <MenuItem disabled>
                       {loading ? 'Loading...' : 'No available slots'}
                     </MenuItem>
@@ -367,11 +429,10 @@ const BookAppointment = () => {
                       </MenuItem>
                     ))
                   )}
-                </Select>
-              </FormControl>
+              </ValidatedSelect>
             </Grid>
             {selectedDoctorData && (
-              <Grid item xs={12}>
+              <Grid size={{ xs: 12 }}>
                 <Paper sx={{ p: 2, bgcolor: 'grey.50' }}>
                   <Typography variant="h6" gutterBottom>
                     Doctor Information
@@ -390,73 +451,81 @@ const BookAppointment = () => {
       case 2:
         return (
           <Grid container spacing={3}>
-            <Grid item xs={12} md={6}>
-              <FormControl fullWidth>
-                <InputLabel>Appointment Type</InputLabel>
-                <Select
-                  value={appointmentType}
-                  onChange={(e) => setAppointmentType(e.target.value)}
+            <Grid size={{ xs: 12, md: 6 }}>
+              <ValidatedSelect
+                fullWidth
+                id="appointmentType"
+                name="appointmentType"
+                label="Appointment Type"
+                value={formData.appointmentType}
+                onChange={handleChange}
+                onBlur={handleBlur}
+                error={!!fieldErrors.appointmentType}
+                helperText="Select the type of appointment"
                 >
                   {appointmentTypes.map((type) => (
                     <MenuItem key={type.value} value={type.value}>
                       {type.label}
                     </MenuItem>
                   ))}
-                </Select>
-              </FormControl>
+              </ValidatedSelect>
             </Grid>
-            <Grid item xs={12} md={6}>
+            <Grid size={{ xs: 12, md: 6 }}>
               <FormControlLabel
                 control={
                   <Switch
-                    checked={isVirtual}
-                    onChange={(e) => setIsVirtual(e.target.checked)}
+                    checked={formData.isVirtual}
+                    onChange={(e) => setFormData(prev => ({ ...prev, isVirtual: e.target.checked }))}
                   />
                 }
                 label="Virtual Consultation"
               />
             </Grid>
-            <Grid item xs={12}>
-              <TextField
+            <Grid size={{ xs: 12 }}>
+              <ValidatedTextField
                 fullWidth
                 label="Reason for Appointment"
+                name="reason"
                 multiline
                 rows={3}
-                value={reason}
-                onChange={(e) => setReason(e.target.value)}
+                value={formData.reason}
+                onChange={handleChange}
+                onBlur={handleBlur}
                 placeholder="Please describe the reason for your appointment (minimum 10 characters)..."
                 required
-                helperText={`${reason.length}/500 characters (minimum 10 required)`}
-                error={reason.length > 0 && reason.length < 10}
+                error={!!fieldErrors.reason}
+                helperText={`${formData.reason.length}/500 characters (minimum 10 required)`}
               />
             </Grid>
-            <Grid item xs={12}>
-              <Typography variant="h6" gutterBottom>
-                Symptoms (Optional)
-              </Typography>
-              <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
-                <TextField
+            <Grid size={{ xs: 12 }}>
+              <ValidatedTextField
                   fullWidth
-                  label="Add Symptom"
-                  value={currentSymptom}
-                  onChange={(e) => setCurrentSymptom(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && handleAddSymptom()}
-                />
-                <Button variant="outlined" onClick={handleAddSymptom}>
-                  Add
-                </Button>
-              </Box>
-              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                {symptoms.map((symptom) => (
-                  <Chip
-                    key={symptom}
-                    label={symptom}
-                    onDelete={() => handleRemoveSymptom(symptom)}
-                    color="primary"
-                    variant="outlined"
-                  />
-                ))}
-              </Box>
+                label="Symptoms (Optional)"
+                name="symptoms"
+                multiline
+                rows={2}
+                value={formData.symptoms}
+                onChange={handleChange}
+                onBlur={handleBlur}
+                placeholder="Describe any symptoms you're experiencing..."
+                error={!!fieldErrors.symptoms}
+                helperText={`${formData.symptoms.length}/500 characters`}
+              />
+            </Grid>
+            <Grid size={{ xs: 12 }}>
+              <ValidatedTextField
+                fullWidth
+                label="Additional Notes (Optional)"
+                name="notes"
+                multiline
+                rows={2}
+                value={formData.notes}
+                onChange={handleChange}
+                onBlur={handleBlur}
+                placeholder="Any additional information you'd like to share with the doctor..."
+                error={!!fieldErrors.notes}
+                helperText={`${formData.notes.length}/1000 characters`}
+              />
             </Grid>
           </Grid>
         );
@@ -485,16 +554,21 @@ const BookAppointment = () => {
                   <Button
                     variant="contained"
                     color="primary"
-                    href={`/app/appointments/${bookingSummary._id}/payment`}
+                    onClick={() => navigate(`/app/appointments/${bookingSummary._id}/payment`)}
                     sx={{ mr: 2 }}
                   >
                     Pay Now
                   </Button>
                   <Button
                     variant="outlined"
-                    href="/appointments"
+                    onClick={() => {
+                      const dashboardPath = user?.role === 'patient' ? '/app/patient/dashboard' : 
+                                           user?.role === 'doctor' ? '/app/doctor/dashboard' : 
+                                           user?.role === 'admin' ? '/app/admin/overview' : '/dashboard';
+                      navigate(dashboardPath);
+                    }}
                   >
-                    View Appointments
+                    Go to Dashboard
                   </Button>
                 </Box>
               </Paper>
@@ -519,7 +593,9 @@ const BookAppointment = () => {
 
         {error && (
           <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError(null)}>
-            {error}
+            <Typography component="div" sx={{ whiteSpace: 'pre-line' }}>
+              {error}
+            </Typography>
           </Alert>
         )}
 
@@ -555,9 +631,9 @@ const BookAppointment = () => {
               {activeStep === steps.length - 1 ? (
                 <Button
                   variant="contained"
-                  onClick={() => window.location.href = '/appointments'}
+                  onClick={() => setActiveStep(0)}
                 >
-                  View Appointments
+                  Book Another Appointment
                 </Button>
               ) : (
                 <Button

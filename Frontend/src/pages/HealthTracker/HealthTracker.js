@@ -52,6 +52,8 @@ import {
 } from '@mui/icons-material';
 import { useAuth } from '../../contexts/AuthContext';
 import api from '../../utils/api';
+import { ValidatedTextField, ValidatedSelect } from '../../components/Validation';
+import { validateHealthLog, validateHealthGoal, isFormValid } from '../../utils/validation';
 import { XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, AreaChart, Area, Legend } from 'recharts';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -70,6 +72,7 @@ const HealthTracker = () => {
   const [isDeleting, setIsDeleting] = useState(null);
   const [validationErrors, setValidationErrors] = useState([]);
   const [fieldErrors, setFieldErrors] = useState({});
+  const [goalFieldErrors, setGoalFieldErrors] = useState({});
   const [openGoalDialog, setOpenGoalDialog] = useState(false);
   const [editingLog, setEditingLog] = useState(null);
   const [editingGoal, setEditingGoal] = useState(null);
@@ -130,6 +133,93 @@ const HealthTracker = () => {
       time: '09:00'
     }
   });
+
+  // Validation handlers for health logs
+  const handleHealthLogChange = (e) => {
+    const { name, value } = e.target;
+    
+    if (name.includes('.')) {
+      const [parentKey, childKey] = name.split('.');
+      setFormData(prev => ({
+        ...prev,
+        [parentKey]: {
+          ...prev[parentKey],
+          [childKey]: value,
+        },
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [name]: value,
+      }));
+    }
+    
+    // Clear field error when user starts typing
+    if (fieldErrors[name]) {
+      setFieldErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[name];
+        return newErrors;
+      });
+    }
+  };
+
+  const handleHealthLogBlur = (e) => {
+    const { name } = e.target;
+    const errors = validateHealthLog(formData);
+    if (errors[name]) {
+      setFieldErrors(prev => ({ ...prev, [name]: errors[name] }));
+    }
+  };
+
+  // Validation handlers for health goals
+  const handleGoalChange = (e) => {
+    const { name, value } = e.target;
+    
+    if (name.includes('.')) {
+      const [parentKey, childKey] = name.split('.');
+      setGoalFormData(prev => ({
+        ...prev,
+        [parentKey]: {
+          ...prev[parentKey],
+          [childKey]: value,
+        },
+      }));
+    } else {
+      setGoalFormData(prev => ({
+        ...prev,
+        [name]: value,
+      }));
+    }
+    
+    // Clear field error when user starts typing
+    if (goalFieldErrors[name]) {
+      setGoalFieldErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[name];
+        return newErrors;
+      });
+    }
+  };
+
+  const handleGoalBlur = (e) => {
+    const { name } = e.target;
+    const errors = validateHealthGoal(goalFormData);
+    if (errors[name]) {
+      setGoalFieldErrors(prev => ({ ...prev, [name]: errors[name] }));
+    }
+  };
+
+  // Real-time validation
+  useEffect(() => {
+    const errors = validateHealthLog(formData);
+    setFieldErrors(errors);
+  }, [formData]);
+
+  useEffect(() => {
+    const errors = validateHealthGoal(goalFormData);
+    setGoalFieldErrors(errors);
+  }, [goalFormData]);
 
   useEffect(() => {
     console.log('HealthTracker mounted, user:', user);

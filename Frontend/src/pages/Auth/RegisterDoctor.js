@@ -24,6 +24,7 @@ import { Add as AddIcon, Delete as DeleteIcon } from '@mui/icons-material';
 import { useNavigate, Link as RouterLink } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { validateDoctorRegisterForm, isFormValid, validateQualification, validateLanguage } from '../../utils/validation';
+import { ValidatedTextField, ValidatedSelect } from '../../components/Validation';
 
 const RegisterDoctor = () => {
   const [formData, setFormData] = useState({
@@ -272,22 +273,6 @@ const RegisterDoctor = () => {
             </Alert>
           )}
           
-          {Object.keys(fieldErrors).length > 0 && (
-            <Alert severity="warning" sx={{ mb: 2 }}>
-              <Typography variant="body2" sx={{ fontWeight: 'bold', mb: 1 }}>
-                Please fix the following errors:
-              </Typography>
-              <ul style={{ margin: 0, paddingLeft: '20px' }}>
-                {Object.entries(fieldErrors).map(([field, errorMsg]) => (
-                  <li key={field}>
-                    <Typography variant="body2">
-                      <strong>{field}:</strong> {errorMsg}
-                    </Typography>
-                  </li>
-                ))}
-              </ul>
-            </Alert>
-          )}
 
           <Box component="form" onSubmit={handleSubmit} sx={{ mt: 1 }}>
             <Typography variant="h6" gutterBottom sx={{ mt: 3, mb: 2 }}>
@@ -296,7 +281,7 @@ const RegisterDoctor = () => {
             
             <Grid container spacing={2}>
               <Grid size={{ xs: 12, sm: 6 }}>
-                <TextField
+                <ValidatedTextField
                   required
                   fullWidth
                   id="firstName"
@@ -307,12 +292,12 @@ const RegisterDoctor = () => {
                   onChange={handleChange}
                   onBlur={handleBlur}
                   disabled={loading}
-                  error={!!fieldErrors.firstName}
-                  helperText={fieldErrors.firstName || 'Enter your first name (2-50 characters)'}
+                  error={fieldErrors.firstName}
+                  helperText="Enter your first name (2-50 characters)"
                 />
               </Grid>
               <Grid size={{ xs: 12, sm: 6 }}>
-                <TextField
+                <ValidatedTextField
                   required
                   fullWidth
                   id="lastName"
@@ -323,12 +308,12 @@ const RegisterDoctor = () => {
                   onChange={handleChange}
                   onBlur={handleBlur}
                   disabled={loading}
-                  error={!!fieldErrors.lastName}
-                  helperText={fieldErrors.lastName || 'Enter your last name (2-50 characters)'}
+                  error={fieldErrors.lastName}
+                  helperText="Enter your last name (2-50 characters)"
                 />
               </Grid>
               <Grid size={12}>
-                <TextField
+                <ValidatedTextField
                   required
                   fullWidth
                   id="email"
@@ -339,12 +324,12 @@ const RegisterDoctor = () => {
                   onChange={handleChange}
                   onBlur={handleBlur}
                   disabled={loading}
-                  error={!!fieldErrors.email}
-                  helperText={fieldErrors.email || 'Enter a valid email address'}
+                  error={fieldErrors.email}
+                  helperText="Enter a valid email address"
                 />
               </Grid>
               <Grid size={{ xs: 12, sm: 6 }}>
-                <TextField
+                <ValidatedTextField
                   required
                   fullWidth
                   name="password"
@@ -356,12 +341,12 @@ const RegisterDoctor = () => {
                   onChange={handleChange}
                   onBlur={handleBlur}
                   disabled={loading}
-                  error={!!fieldErrors.password}
-                  helperText={fieldErrors.password || 'Password must be at least 6 characters long'}
+                  error={fieldErrors.password}
+                  helperText="Password must be at least 6 characters long"
                 />
               </Grid>
               <Grid size={{ xs: 12, sm: 6 }}>
-                <TextField
+                <ValidatedTextField
                   required
                   fullWidth
                   name="confirmPassword"
@@ -372,12 +357,12 @@ const RegisterDoctor = () => {
                   onChange={handleChange}
                   onBlur={handleBlur}
                   disabled={loading}
-                  error={!!fieldErrors.confirmPassword}
-                  helperText={fieldErrors.confirmPassword || 'Re-enter your password to confirm'}
+                  error={fieldErrors.confirmPassword}
+                  helperText="Re-enter your password to confirm"
                 />
               </Grid>
               <Grid size={{ xs: 12, sm: 6 }}>
-                <TextField
+                <ValidatedTextField
                   required
                   fullWidth
                   id="phone"
@@ -388,12 +373,12 @@ const RegisterDoctor = () => {
                   onChange={handleChange}
                   onBlur={handleBlur}
                   disabled={loading}
-                  error={!!fieldErrors.phone}
-                  helperText={fieldErrors.phone || 'Enter a valid Sri Lankan mobile number (e.g., 0704949394)'}
+                  error={fieldErrors.phone}
+                  helperText="Enter a valid Sri Lankan mobile number (e.g., 0704949394)"
                 />
               </Grid>
               <Grid size={{ xs: 12, sm: 6 }}>
-                <TextField
+                <ValidatedTextField
                   required
                   fullWidth
                   id="dateOfBirth"
@@ -405,32 +390,26 @@ const RegisterDoctor = () => {
                   onChange={handleChange}
                   onBlur={handleBlur}
                   disabled={loading}
-                  error={!!fieldErrors.dateOfBirth}
-                  helperText={fieldErrors.dateOfBirth || 'Enter your date of birth (age must be 13-120 years)'}
+                  error={fieldErrors.dateOfBirth}
+                  helperText="Enter your date of birth (age must be 13-120 years)"
                 />
               </Grid>
               <Grid size={{ xs: 12, sm: 6 }}>
-                <FormControl fullWidth required error={!!fieldErrors.gender}>
-                  <InputLabel id="gender-label">Gender</InputLabel>
-                  <Select
-                    labelId="gender-label"
-                    id="gender"
-                    name="gender"
-                    value={formData.gender}
-                    label="Gender"
-                    onChange={handleChange}
-                    disabled={loading}
-                  >
-                    <MenuItem value="male">Male</MenuItem>
-                    <MenuItem value="female">Female</MenuItem>
-                    <MenuItem value="other">Other</MenuItem>
-                  </Select>
-                  {fieldErrors.gender && (
-                    <Typography variant="caption" color="error" sx={{ mt: 1, ml: 2 }}>
-                      {fieldErrors.gender}
-                    </Typography>
-                  )}
-                </FormControl>
+                <ValidatedSelect
+                  required
+                  id="gender"
+                  name="gender"
+                  label="Gender"
+                  value={formData.gender}
+                  onChange={handleChange}
+                  disabled={loading}
+                  error={fieldErrors.gender}
+                  helperText="Select your gender"
+                >
+                  <MenuItem value="male">Male</MenuItem>
+                  <MenuItem value="female">Female</MenuItem>
+                  <MenuItem value="other">Other</MenuItem>
+                </ValidatedSelect>
               </Grid>
             </Grid>
 
@@ -440,7 +419,7 @@ const RegisterDoctor = () => {
 
             <Grid container spacing={2}>
               <Grid size={12}>
-                <TextField
+                <ValidatedTextField
                   fullWidth
                   id="address.street"
                   label="Street Address"
@@ -448,12 +427,12 @@ const RegisterDoctor = () => {
                   value={formData.address.street}
                   onChange={handleChange}
                   disabled={loading}
-                  error={!!fieldErrors['address.street']}
-                  helperText={fieldErrors['address.street'] || 'Enter your street address'}
+                  error={fieldErrors['address.street']}
+                  helperText="Enter your street address"
                 />
               </Grid>
               <Grid size={{ xs: 12, sm: 6 }}>
-                <TextField
+                <ValidatedTextField
                   fullWidth
                   id="address.city"
                   label="City"
@@ -461,12 +440,12 @@ const RegisterDoctor = () => {
                   value={formData.address.city}
                   onChange={handleChange}
                   disabled={loading}
-                  error={!!fieldErrors['address.city']}
-                  helperText={fieldErrors['address.city'] || 'Enter your city'}
+                  error={fieldErrors['address.city']}
+                  helperText="Enter your city"
                 />
               </Grid>
               <Grid size={{ xs: 12, sm: 6 }}>
-                <TextField
+                <ValidatedTextField
                   fullWidth
                   id="address.state"
                   label="State"
@@ -474,12 +453,12 @@ const RegisterDoctor = () => {
                   value={formData.address.state}
                   onChange={handleChange}
                   disabled={loading}
-                  error={!!fieldErrors['address.state']}
-                  helperText={fieldErrors['address.state'] || 'Enter your state'}
+                  error={fieldErrors['address.state']}
+                  helperText="Enter your state"
                 />
               </Grid>
               <Grid size={{ xs: 12, sm: 6 }}>
-                <TextField
+                <ValidatedTextField
                   fullWidth
                   id="address.zipCode"
                   label="ZIP Code"
@@ -487,12 +466,12 @@ const RegisterDoctor = () => {
                   value={formData.address.zipCode}
                   onChange={handleChange}
                   disabled={loading}
-                  error={!!fieldErrors['address.zipCode']}
-                  helperText={fieldErrors['address.zipCode'] || 'Enter your ZIP code'}
+                  error={fieldErrors['address.zipCode']}
+                  helperText="Enter your ZIP code"
                 />
               </Grid>
               <Grid size={{ xs: 12, sm: 6 }}>
-                <TextField
+                <ValidatedTextField
                   fullWidth
                   id="address.country"
                   label="Country"
@@ -500,8 +479,8 @@ const RegisterDoctor = () => {
                   value={formData.address.country}
                   onChange={handleChange}
                   disabled={loading}
-                  error={!!fieldErrors['address.country']}
-                  helperText={fieldErrors['address.country'] || 'Enter your country'}
+                  error={fieldErrors['address.country']}
+                  helperText="Enter your country"
                 />
               </Grid>
             </Grid>
@@ -512,7 +491,7 @@ const RegisterDoctor = () => {
 
             <Grid container spacing={2}>
               <Grid size={{ xs: 12, sm: 6 }}>
-                <TextField
+                <ValidatedTextField
                   required
                   fullWidth
                   id="licenseNumber"
@@ -522,12 +501,12 @@ const RegisterDoctor = () => {
                   onChange={handleChange}
                   onBlur={handleBlur}
                   disabled={loading}
-                  error={!!fieldErrors.licenseNumber}
-                  helperText={fieldErrors.licenseNumber || 'Enter your medical license number (5-50 characters)'}
+                  error={fieldErrors.licenseNumber}
+                  helperText="Enter your medical license number (5-50 characters)"
                 />
               </Grid>
               <Grid size={{ xs: 12, sm: 6 }}>
-                <TextField
+                <ValidatedTextField
                   required
                   fullWidth
                   id="specialization"
@@ -537,12 +516,12 @@ const RegisterDoctor = () => {
                   onChange={handleChange}
                   onBlur={handleBlur}
                   disabled={loading}
-                  error={!!fieldErrors.specialization}
-                  helperText={fieldErrors.specialization || 'Enter your medical specialization (2-100 characters)'}
+                  error={fieldErrors.specialization}
+                  helperText="Enter your medical specialization (2-100 characters)"
                 />
               </Grid>
               <Grid size={{ xs: 12, sm: 6 }}>
-                <TextField
+                <ValidatedTextField
                   required
                   fullWidth
                   id="experience"
@@ -553,12 +532,12 @@ const RegisterDoctor = () => {
                   onChange={handleChange}
                   onBlur={handleBlur}
                   disabled={loading}
-                  error={!!fieldErrors.experience}
-                  helperText={fieldErrors.experience || 'Enter years of experience (0-50 years)'}
+                  error={fieldErrors.experience}
+                  helperText="Enter years of experience (0-50 years)"
                 />
               </Grid>
               <Grid size={{ xs: 12, sm: 6 }}>
-                <TextField
+                <ValidatedTextField
                   required
                   fullWidth
                   id="consultationFee"
@@ -569,12 +548,12 @@ const RegisterDoctor = () => {
                   onChange={handleChange}
                   onBlur={handleBlur}
                   disabled={loading}
-                  error={!!fieldErrors.consultationFee}
-                  helperText={fieldErrors.consultationFee || 'Enter your consultation fee in Sri Lankan Rupees (must be positive)'}
+                  error={fieldErrors.consultationFee}
+                  helperText="Enter your consultation fee in Sri Lankan Rupees (must be positive)"
                 />
               </Grid>
               <Grid size={12}>
-                <TextField
+                <ValidatedTextField
                   fullWidth
                   id="bio"
                   label="Bio"
@@ -585,8 +564,8 @@ const RegisterDoctor = () => {
                   onChange={handleChange}
                   onBlur={handleBlur}
                   disabled={loading}
-                  error={!!fieldErrors.bio}
-                  helperText={fieldErrors.bio || `Describe your professional background and expertise (${formData.bio?.length || 0}/500 characters)`}
+                  error={fieldErrors.bio}
+                  helperText={`Describe your professional background and expertise (${formData.bio?.length || 0}/500 characters)`}
                   inputProps={{
                     maxLength: 500
                   }}
@@ -601,31 +580,31 @@ const RegisterDoctor = () => {
             {qualifications.map((qual, index) => (
               <Grid container spacing={2} key={index} sx={{ mb: 2 }}>
                 <Grid size={{ xs: 12, sm: 4 }}>
-                  <TextField
+                  <ValidatedTextField
                     required
                     fullWidth
                     label="Degree"
                     value={qual.degree}
                     onChange={(e) => handleQualificationChange(index, 'degree', e.target.value)}
                     disabled={loading}
-                    error={!!qualificationErrors[`${index}_degree`]}
-                    helperText={qualificationErrors[`${index}_degree`] || 'Enter degree or certification'}
+                    error={qualificationErrors[`${index}_degree`]}
+                    helperText="Enter degree or certification"
                   />
                 </Grid>
                 <Grid size={{ xs: 12, sm: 4 }}>
-                  <TextField
+                  <ValidatedTextField
                     required
                     fullWidth
                     label="Institution"
                     value={qual.institution}
                     onChange={(e) => handleQualificationChange(index, 'institution', e.target.value)}
                     disabled={loading}
-                    error={!!qualificationErrors[`${index}_institution`]}
-                    helperText={qualificationErrors[`${index}_institution`] || 'Enter institution name'}
+                    error={qualificationErrors[`${index}_institution`]}
+                    helperText="Enter institution name"
                   />
                 </Grid>
                 <Grid size={{ xs: 12, sm: 3 }}>
-                  <TextField
+                  <ValidatedTextField
                     required
                     fullWidth
                     label="Year"
@@ -633,8 +612,8 @@ const RegisterDoctor = () => {
                     value={qual.year}
                     onChange={(e) => handleQualificationChange(index, 'year', e.target.value)}
                     disabled={loading}
-                    error={!!qualificationErrors[`${index}_year`]}
-                    helperText={qualificationErrors[`${index}_year`] || 'Enter graduation year'}
+                    error={qualificationErrors[`${index}_year`]}
+                    helperText="Enter graduation year"
                   />
                 </Grid>
                 <Grid size={{ xs: 12, sm: 1 }}>
