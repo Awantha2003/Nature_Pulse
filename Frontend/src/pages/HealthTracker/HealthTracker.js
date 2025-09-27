@@ -244,6 +244,13 @@ const HealthTracker = () => {
     setFieldErrors(errors);
   }, [formData]);
 
+  // Reset form when dialog opens for new entry
+  useEffect(() => {
+    if (openDialog && !editingLog) {
+      resetForm();
+    }
+  }, [openDialog, editingLog]);
+
   useEffect(() => {
     const errors = validateHealthGoal(goalFormData);
     setGoalFieldErrors(errors);
@@ -1113,6 +1120,7 @@ const HealthTracker = () => {
                          console.log('Opening Add Health Log dialog - Enhanced version with 15+ fields');
                          setError(null);
                          setSuccessMessage(null);
+                         resetForm();
                          setOpenDialog(true);
                        }}
                        sx={{ borderRadius: '15px' }}
@@ -1245,6 +1253,7 @@ const HealthTracker = () => {
                         onClick={() => {
              setError(null);
              setSuccessMessage(null);
+             resetForm();
              setOpenDialog(true);
            }}
                         sx={{ borderRadius: '15px' }}
@@ -1586,7 +1595,14 @@ const HealthTracker = () => {
         )}
 
         {/* Add/Edit Health Log Dialog */}
-        <Dialog open={openDialog} onClose={() => setOpenDialog(false)} maxWidth="md" fullWidth>
+        <Dialog open={openDialog} onClose={() => {
+          setOpenDialog(false);
+          setEditingLog(null);
+          resetForm();
+          setFieldErrors({});
+          setValidationErrors([]);
+          setError(null);
+        }} maxWidth="md" fullWidth>
           <DialogTitle>
             {editingLog ? `Edit Health Log - ${new Date(editingLog.date).toLocaleDateString()}` : 'Add New Health Log'}
             <Typography variant="caption" display="block" color="text.secondary">
@@ -1971,7 +1987,14 @@ const HealthTracker = () => {
               </Grid>
             </DialogContent>
             <DialogActions sx={{ p: 3 }}>
-              <Button onClick={() => setOpenDialog(false)}>
+              <Button onClick={() => {
+                setOpenDialog(false);
+                setEditingLog(null);
+                resetForm();
+                setFieldErrors({});
+                setValidationErrors([]);
+                setError(null);
+              }}>
                 Cancel
               </Button>
               <Button 
@@ -2171,6 +2194,7 @@ const HealthTracker = () => {
             console.log('Opening Add Health Log dialog from FAB - Enhanced version');
             setError(null);
             setSuccessMessage(null);
+            resetForm();
             setOpenDialog(true);
           }}
         >
