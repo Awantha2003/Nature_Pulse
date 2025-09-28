@@ -58,7 +58,6 @@ import AdminInventory from './pages/Admin/Inventory';
 import AdminOrders from './pages/Admin/Orders';
 import AdminOrderDetail from './pages/Admin/OrderDetail';
 import AdminAnalytics from './pages/Admin/Analytics';
-import AdminSettings from './pages/Admin/Settings';
 import AdminProfile from './pages/Admin/Profile';
 
 const theme = createTheme({
@@ -347,11 +346,6 @@ function App() {
               <Route path="admin/analytics" element={
                 <ProtectedRoute requiredRole="admin">
                   <AdminAnalytics />
-                </ProtectedRoute>
-              } />
-              <Route path="admin/settings" element={
-                <ProtectedRoute requiredRole="admin">
-                  <AdminSettings />
                 </ProtectedRoute>
               } />
               <Route path="admin/profile" element={

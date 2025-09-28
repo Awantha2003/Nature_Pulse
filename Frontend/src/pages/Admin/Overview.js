@@ -60,7 +60,6 @@ import {
   Storage,
   CloudDone,
   BugReport,
-  Settings,
   AdminPanelSettings,
   Dashboard,
   BarChart as BarChartIcon,
@@ -730,26 +729,6 @@ const AdminOverview = () => {
                       }}
                     >
                       Orders & Sales
-                    </Button>
-                  </Grid>
-                  <Grid size={{ xs: 12, sm: 6 }}>
-                    <Button
-                      variant="outlined"
-                      fullWidth
-                      startIcon={<Settings />}
-                      onClick={() => navigate('/app/admin/settings')}
-                      sx={{ 
-                        borderRadius: '15px', 
-                        py: 2,
-                        borderColor: '#9C27B0',
-                        color: '#9C27B0',
-                        '&:hover': {
-                          borderColor: '#9C27B0',
-                          backgroundColor: 'rgba(156, 39, 176, 0.1)',
-                        }
-                      }}
-                    >
-                      System Settings
                     </Button>
                   </Grid>
                 </Grid>

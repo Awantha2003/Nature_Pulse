@@ -37,7 +37,6 @@ import {
   LocalHospital,
   TrendingUp,
   Security,
-  Settings,
   Inventory,
   Assessment,
   Assignment,
@@ -279,12 +278,6 @@ const AuthenticatedShell = () => {
           text: 'Analytics',
           icon: <Assessment />,
           path: '/app/admin/analytics',
-          badge: null,
-        },
-        {
-          text: 'Settings',
-          icon: <Settings />,
-          path: '/app/admin/settings',
           badge: null,
         },
         {

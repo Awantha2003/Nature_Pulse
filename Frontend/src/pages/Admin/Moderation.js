@@ -33,10 +33,6 @@ import {
   CircularProgress,
   Fade,
   Zoom,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
-  LinearProgress
 } from '@mui/material';
 import {
   Security,
@@ -51,12 +47,7 @@ import {
   Star,
   LocalHospital,
   Psychology,
-  Favorite,
-  Healing,
-  ExpandMore,
   Warning,
-  Report,
-  Analytics,
   ThumbUp,
   Comment
 } from '@mui/icons-material';
@@ -314,7 +305,7 @@ const AdminModeration = () => {
           {/* Search and Filter */}
           <Paper sx={{ p: 2, mb: 3 }}>
             <Grid container spacing={2} alignItems="center">
-              <Grid size={{ xs: 12, md: 3 }}>
+              <Grid item xs={12} md={3}>
                 <TextField
                   fullWidth
                   placeholder="Search reports..."
@@ -329,7 +320,7 @@ const AdminModeration = () => {
                   }}
                 />
               </Grid>
-              <Grid size={{ xs: 12, md: 2 }}>
+              <Grid item xs={12} md={2}>
                 <FormControl fullWidth>
                   <InputLabel>Status</InputLabel>
                   <Select
@@ -346,7 +337,7 @@ const AdminModeration = () => {
                   </Select>
                 </FormControl>
               </Grid>
-              <Grid size={{ xs: 12, md: 2 }}>
+              <Grid item xs={12} md={2}>
                 <FormControl fullWidth>
                   <InputLabel>Category</InputLabel>
                   <Select
@@ -363,7 +354,7 @@ const AdminModeration = () => {
                   </Select>
                 </FormControl>
               </Grid>
-              <Grid size={{ xs: 12, md: 2 }}>
+              <Grid item xs={12} md={2}>
                 <FormControl fullWidth>
                   <InputLabel>Sort By</InputLabel>
                   <Select
@@ -378,7 +369,7 @@ const AdminModeration = () => {
                   </Select>
                 </FormControl>
               </Grid>
-              <Grid size={{ xs: 12, md: 3 }}>
+              <Grid item xs={12} md={3}>
                 <Button
                   fullWidth
                   variant="contained"
@@ -423,7 +414,7 @@ const AdminModeration = () => {
                 <>
                   <Grid container spacing={3}>
                     {reports.map((report) => (
-                      <Grid size={{ xs: 12, md: 6, lg: 4 }} key={report._id}>
+                      <Grid item xs={12} md={6} lg={4} key={report._id}>
                         <Zoom in timeout={300}>
                           <Card 
                             sx={{ 
@@ -636,7 +627,7 @@ const AdminModeration = () => {
                   ) : (
                     <Grid container spacing={3}>
                       {flaggedReports.map((report) => (
-                        <Grid size={{ xs: 12, md: 6, lg: 4 }} key={report._id}>
+                        <Grid item xs={12} md={6} lg={4} key={report._id}>
                           <Zoom in timeout={300}>
                             <Card 
                               sx={{ 
@@ -767,7 +758,7 @@ const AdminModeration = () => {
                     <>
                       {/* Overall Stats */}
                       <Grid container spacing={3} sx={{ mb: 4 }}>
-                        <Grid size={{ xs: 12, md: 3 }}>
+                        <Grid item xs={12} md={3}>
                           <Card>
                             <CardContent>
                               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -786,7 +777,7 @@ const AdminModeration = () => {
                             </CardContent>
                           </Card>
                         </Grid>
-                        <Grid size={{ xs: 12, md: 3 }}>
+                        <Grid item xs={12} md={3}>
                           <Card>
                             <CardContent>
                               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -805,7 +796,7 @@ const AdminModeration = () => {
                             </CardContent>
                           </Card>
                         </Grid>
-                        <Grid size={{ xs: 12, md: 3 }}>
+                        <Grid item xs={12} md={3}>
                           <Card>
                             <CardContent>
                               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -824,7 +815,7 @@ const AdminModeration = () => {
                             </CardContent>
                           </Card>
                         </Grid>
-                        <Grid size={{ xs: 12, md: 3 }}>
+                        <Grid item xs={12} md={3}>
                           <Card>
                             <CardContent>
                               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -853,7 +844,7 @@ const AdminModeration = () => {
                           </Typography>
                           <Grid container spacing={2}>
                             {stats.categories.map((category) => (
-                              <Grid size={{ xs: 12, sm: 6, md: 4 }} key={category._id}>
+                              <Grid item xs={12} sm={6} md={4} key={category._id}>
                                 <Box sx={{ p: 2, border: '1px solid #e0e0e0', borderRadius: 1 }}>
                                   <Typography variant="subtitle2" gutterBottom>
                                     {getCategoryLabel(category._id)}
