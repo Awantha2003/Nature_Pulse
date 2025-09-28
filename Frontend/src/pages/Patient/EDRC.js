@@ -132,8 +132,7 @@ const PatientEDRC = () => {
       setReports(response.data.data.reports);
       setTotalPages(response.data.data.totalPages);
     } catch (err) {
-      setError('Failed to load community reports');
-      console.error('Reports error:', err);
+      setError('Failed to load community reports: ' + (err.response?.data?.message || err.message));
     } finally {
       setLoading(false);
     }
@@ -256,7 +255,13 @@ const PatientEDRC = () => {
       await api.post(`/community/reports/${reportId}/flag`);
       fetchReports();
     } catch (err) {
-      setError('Failed to flag report');
+      const errorMessage = err.response?.data?.message || 'Failed to flag report';
+      if (errorMessage.includes('already flagged')) {
+        // Don't show error for already flagged reports, just refresh
+        fetchReports();
+      } else {
+        setError(errorMessage);
+      }
       console.error('Flag error:', err);
     }
   };
@@ -431,7 +436,7 @@ const PatientEDRC = () => {
       {/* Reports Grid */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
         {reports.map((report, index) => (
-          <Grid size={{ xs: 12, md: 6 }} lg={4} key={report._id}>
+          <Grid size={{ xs: 12, md: 6, lg: 4 }} key={report._id}>
             <Zoom in timeout={1000 + index * 100}>
               <Card 
                 sx={{ 

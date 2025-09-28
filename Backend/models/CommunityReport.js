@@ -279,17 +279,17 @@ const communityReportSchema = new mongoose.Schema({
 
 // Virtual for like count
 communityReportSchema.virtual('likeCount').get(function() {
-  return this.engagement.likes.length;
+  return this.engagement?.likes?.length || 0;
 });
 
 // Virtual for comment count
 communityReportSchema.virtual('commentCount').get(function() {
-  return this.engagement.comments.length;
+  return this.engagement?.comments?.length || 0;
 });
 
 // Virtual for share count
 communityReportSchema.virtual('shareCount').get(function() {
-  return this.engagement.shares.length;
+  return this.engagement?.shares?.length || 0;
 });
 
 // Virtual for average rating

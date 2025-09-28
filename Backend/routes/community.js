@@ -43,13 +43,19 @@ router.get('/reports', protect, checkActive, validatePagination, handleValidatio
     const limit = parseInt(req.query.limit) || 10;
     const skip = (page - 1) * limit;
     
-    const { category, condition, status = 'approved', sortBy = 'createdAt', sortOrder = 'desc' } = req.query;
+    const { category, condition, status, sortBy = 'createdAt', sortOrder = 'desc' } = req.query;
 
     // Build filter
     const filter = {};
     
     if (status) {
       filter.status = status;
+    } else {
+      // Default to show approved reports and user's own pending reports
+      filter.$or = [
+        { status: 'approved' },
+        { author: req.user._id, status: 'pending' }
+      ];
     }
     
     if (category) {
@@ -377,14 +383,7 @@ router.post('/reports/:id/comments/:commentId/replies', protect, checkActive, va
 // @access  Private
 router.post('/reports/:id/flag', protect, checkActive, validateMongoId('id'), handleValidationErrors, async (req, res) => {
   try {
-    const { type, reason } = req.body;
-
-    if (!type || !reason) {
-      return res.status(400).json({
-        status: 'error',
-        message: 'Flag type and reason are required'
-      });
-    }
+    const { type = 'other', reason = 'Report flagged by user' } = req.body;
 
     const report = await CommunityReport.findById(req.params.id);
 
