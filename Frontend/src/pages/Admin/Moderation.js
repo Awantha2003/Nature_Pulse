@@ -98,6 +98,7 @@ const AdminModeration = () => {
     endDate: ''
   });
   const [generatingReport, setGeneratingReport] = useState(false);
+  const [flaggedReportsLoaded, setFlaggedReportsLoaded] = useState(false);
 
   const categories = [
     { value: 'treatment_experience', label: 'Treatment Experience', icon: <LocalHospital /> },
@@ -135,16 +136,17 @@ const AdminModeration = () => {
       setReports([]);
       setStats(null);
     }
-  }, [currentPage, selectedStatus, selectedCategory, sortBy, sortOrder, hasRole]);
+  }, [currentPage, selectedStatus, selectedCategory, sortBy, sortOrder]);
 
   useEffect(() => {
-    if (hasRole('admin')) {
+    if (hasRole('admin') && !flaggedReportsLoaded) {
       fetchFlaggedReports();
-    } else {
+      setFlaggedReportsLoaded(true);
+    } else if (!hasRole('admin')) {
       console.log('User does not have admin role, skipping flagged reports fetch');
       setFlaggedReports([]);
     }
-  }, [hasRole]);
+  }, [hasRole, flaggedReportsLoaded]);
 
   const fetchReports = async () => {
     try {
@@ -346,22 +348,28 @@ const AdminModeration = () => {
     try {
       setGeneratingReport(true);
       
-      // Fetch all reports for the selected date range
+      // Fetch all reports (backend doesn't support date filtering)
       const params = new URLSearchParams({
         limit: 1000, // Get all reports
         sortBy: 'createdAt',
         sortOrder: 'desc'
       });
 
-      if (reportDateRange.startDate) {
-        params.append('startDate', reportDateRange.startDate);
-      }
-      if (reportDateRange.endDate) {
-        params.append('endDate', reportDateRange.endDate);
-      }
-
       const response = await api.get(`/community/admin/reports?${params}`);
-      const allReports = response.data.data.reports || [];
+      let allReports = response.data.data.reports || [];
+      
+      // Filter by date range on frontend if specified
+      if (reportDateRange.startDate || reportDateRange.endDate) {
+        const startDate = reportDateRange.startDate ? new Date(reportDateRange.startDate) : null;
+        const endDate = reportDateRange.endDate ? new Date(reportDateRange.endDate) : null;
+        
+        allReports = allReports.filter(report => {
+          const reportDate = new Date(report.createdAt);
+          if (startDate && reportDate < startDate) return false;
+          if (endDate && reportDate > endDate) return false;
+          return true;
+        });
+      }
       
       // Calculate statistics
       const totalReports = allReports.length;
