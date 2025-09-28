@@ -145,8 +145,9 @@ const AdminModeration = () => {
     } else if (!hasRole('admin')) {
       console.log('User does not have admin role, skipping flagged reports fetch');
       setFlaggedReports([]);
+      setFlaggedReportsLoaded(false);
     }
-  }, [hasRole, flaggedReportsLoaded]);
+  }, [hasRole]);
 
   const fetchReports = async () => {
     try {
@@ -348,15 +349,34 @@ const AdminModeration = () => {
     try {
       setGeneratingReport(true);
       
-      // Fetch all reports (backend doesn't support date filtering)
-      const params = new URLSearchParams({
-        limit: 1000, // Get all reports
-        sortBy: 'createdAt',
-        sortOrder: 'desc'
-      });
+      // Fetch all reports in batches (backend limit is 100)
+      let allReports = [];
+      let page = 1;
+      let hasMore = true;
+      
+      while (hasMore) {
+        const params = new URLSearchParams({
+          page: page.toString(),
+          limit: '100', // Use max allowed limit
+          sortBy: 'createdAt',
+          sortOrder: 'desc'
+        });
 
-      const response = await api.get(`/community/admin/reports?${params}`);
-      let allReports = response.data.data.reports || [];
+        const response = await api.get(`/community/admin/reports?${params}`);
+        const reports = response.data.data.reports || [];
+        
+        if (reports.length === 0) {
+          hasMore = false;
+        } else {
+          allReports = [...allReports, ...reports];
+          page++;
+          
+          // Stop if we got less than the limit (last page)
+          if (reports.length < 100) {
+            hasMore = false;
+          }
+        }
+      }
       
       // Filter by date range on frontend if specified
       if (reportDateRange.startDate || reportDateRange.endDate) {
