@@ -895,6 +895,228 @@ const AdminModeration = () => {
               {success}
             </Alert>
           </Snackbar>
+
+          {/* View Report Dialog */}
+          <Dialog 
+            open={viewDialogOpen} 
+            onClose={() => setViewDialogOpen(false)}
+            maxWidth="md"
+            fullWidth
+          >
+            <DialogTitle>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Visibility />
+                Report Details
+              </Box>
+            </DialogTitle>
+            <DialogContent>
+              {selectedReport && (
+                <Box>
+                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                    <Avatar 
+                      src={selectedReport.author?.profileImage ? `${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/${selectedReport.author.profileImage}` : ''} 
+                      sx={{ mr: 2, width: 40, height: 40 }}
+                    >
+                      {selectedReport.author?.firstName?.[0]}
+                    </Avatar>
+                    <Box>
+                      <Typography variant="h6">
+                        {selectedReport.isAnonymous ? 'Anonymous' : `${selectedReport.author?.firstName} ${selectedReport.author?.lastName}`}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        {formatDate(selectedReport.createdAt)}
+                      </Typography>
+                    </Box>
+                  </Box>
+
+                  <Typography variant="h5" gutterBottom>
+                    {selectedReport.title}
+                  </Typography>
+
+                  <Typography variant="body1" paragraph>
+                    {selectedReport.content}
+                  </Typography>
+
+                  <Box sx={{ display: 'flex', gap: 1, mb: 2, flexWrap: 'wrap' }}>
+                    <Chip
+                      icon={getCategoryIcon(selectedReport.category)}
+                      label={getCategoryLabel(selectedReport.category)}
+                      color="primary"
+                      variant="outlined"
+                    />
+                    <Chip
+                      label={selectedReport.condition}
+                      color="secondary"
+                    />
+                    {selectedReport.isVerified && (
+                      <Chip
+                        icon={<Verified />}
+                        label="Verified"
+                        color="success"
+                      />
+                    )}
+                    {getStatusChip(selectedReport.status)}
+                  </Box>
+
+                  {selectedReport.moderation?.flags?.length > 0 && (
+                    <Box sx={{ mb: 2 }}>
+                      <Typography variant="subtitle2" color="error" gutterBottom>
+                        Flags ({selectedReport.moderation.flags.length})
+                      </Typography>
+                      {selectedReport.moderation.flags.map((flag, index) => (
+                        <Chip
+                          key={index}
+                          label={`${flag.type}: ${flag.reason}`}
+                          color="error"
+                          variant="outlined"
+                          sx={{ mr: 1, mb: 1 }}
+                        />
+                      ))}
+                    </Box>
+                  )}
+
+                  <Box sx={{ display: 'flex', gap: 2, mt: 2 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                      <ThumbUp fontSize="small" color="action" />
+                      <Typography variant="body2" sx={{ ml: 0.5 }}>
+                        {selectedReport.likeCount || 0} likes
+                      </Typography>
+                    </Box>
+                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                      <Comment fontSize="small" color="action" />
+                      <Typography variant="body2" sx={{ ml: 0.5 }}>
+                        {selectedReport.commentCount || 0} comments
+                      </Typography>
+                    </Box>
+                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                      <Visibility fontSize="small" color="action" />
+                      <Typography variant="body2" sx={{ ml: 0.5 }}>
+                        {selectedReport.engagement?.views || 0} views
+                      </Typography>
+                    </Box>
+                  </Box>
+                </Box>
+              )}
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={() => setViewDialogOpen(false)}>
+                Close
+              </Button>
+            </DialogActions>
+          </Dialog>
+
+          {/* Moderation Dialog */}
+          <Dialog 
+            open={moderateDialogOpen} 
+            onClose={() => setModerateDialogOpen(false)}
+            maxWidth="sm"
+            fullWidth
+          >
+            <DialogTitle>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                {moderationAction === 'approve' ? <CheckCircle color="success" /> : <Cancel color="error" />}
+                {moderationAction === 'approve' ? 'Approve Report' : 'Reject Report'}
+              </Box>
+            </DialogTitle>
+            <DialogContent>
+              <Typography variant="body1" paragraph>
+                Are you sure you want to {moderationAction} this report?
+              </Typography>
+              
+              {selectedReport && (
+                <Box sx={{ mb: 2 }}>
+                  <Typography variant="subtitle2" gutterBottom>
+                    Report: {selectedReport.title}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    by {selectedReport.isAnonymous ? 'Anonymous' : `${selectedReport.author?.firstName} ${selectedReport.author?.lastName}`}
+                  </Typography>
+                </Box>
+              )}
+
+              <TextField
+                fullWidth
+                multiline
+                rows={3}
+                label="Moderation Notes (Optional)"
+                value={moderationNotes}
+                onChange={(e) => setModerationNotes(e.target.value)}
+                placeholder="Add any notes about your decision..."
+                sx={{ mt: 2 }}
+              />
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={() => setModerateDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button 
+                onClick={handleModerateReport}
+                variant="contained"
+                color={moderationAction === 'approve' ? 'success' : 'error'}
+                startIcon={moderationAction === 'approve' ? <CheckCircle /> : <Cancel />}
+              >
+                {moderationAction === 'approve' ? 'Approve' : 'Reject'}
+              </Button>
+            </DialogActions>
+          </Dialog>
+
+          {/* Verification Dialog */}
+          <Dialog 
+            open={verifyDialogOpen} 
+            onClose={() => setVerifyDialogOpen(false)}
+            maxWidth="sm"
+            fullWidth
+          >
+            <DialogTitle>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Verified />
+                Verify Report
+              </Box>
+            </DialogTitle>
+            <DialogContent>
+              <Typography variant="body1" paragraph>
+                How would you like to verify this report?
+              </Typography>
+
+              <FormControl fullWidth sx={{ mb: 2 }}>
+                <InputLabel>Verification Method</InputLabel>
+                <Select
+                  value={verificationMethod}
+                  onChange={(e) => setVerificationMethod(e.target.value)}
+                  label="Verification Method"
+                >
+                  {verificationMethods.map((method) => (
+                    <MenuItem key={method.value} value={method.value}>
+                      {method.label}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+
+              <TextField
+                fullWidth
+                multiline
+                rows={3}
+                label="Verification Notes"
+                value={verificationNotes}
+                onChange={(e) => setVerificationNotes(e.target.value)}
+                placeholder="Add verification details..."
+              />
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={() => setVerifyDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button 
+                onClick={handleVerifyReport}
+                variant="contained"
+                color="success"
+                startIcon={<Verified />}
+              >
+                Verify Report
+              </Button>
+            </DialogActions>
+          </Dialog>
         </Box>
       </Fade>
     </Container>
