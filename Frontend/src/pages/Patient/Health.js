@@ -50,7 +50,11 @@ import {
   CheckCircle,
   Error,
   Warning,
-  Close
+  Close,
+  Assessment,
+  Download,
+  PictureAsPdf,
+  TableChart
 } from '@mui/icons-material';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -73,6 +77,10 @@ const PatientHealth = () => {
   const [openDialog, setOpenDialog] = useState(false);
   const [editingLog, setEditingLog] = useState(null);
   const [activeTab, setActiveTab] = useState(0);
+  const [reportStartDate, setReportStartDate] = useState(new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)); // 30 days ago
+  const [reportEndDate, setReportEndDate] = useState(new Date());
+  const [reportData, setReportData] = useState(null);
+  const [generatingReport, setGeneratingReport] = useState(false);
 
   // Initial form data
   const initialFormData = {
@@ -232,6 +240,138 @@ const PatientHealth = () => {
       setError('Failed to delete health log');
       console.error('Delete error:', err);
     }
+  };
+
+  // Report generation functions
+  const generateReportData = () => {
+    if (!Array.isArray(healthLogs) || !healthLogs.length) return null;
+
+    const filteredLogs = healthLogs.filter(log => {
+      const logDate = new Date(log.date);
+      return logDate >= reportStartDate && logDate <= reportEndDate;
+    });
+
+    if (filteredLogs.length === 0) return null;
+
+    // Calculate statistics
+    const weights = filteredLogs.map(log => log.vitalSigns?.weight).filter(w => w && !isNaN(w));
+    const heartRates = filteredLogs.map(log => log.vitalSigns?.heartRate).filter(h => h && !isNaN(h));
+    const temperatures = filteredLogs.map(log => log.vitalSigns?.temperature).filter(t => t && !isNaN(t));
+    const moods = filteredLogs.map(log => log.mood).filter(m => m);
+    const energyLevels = filteredLogs.map(log => log.energyLevel).filter(e => e);
+    const sleepDurations = filteredLogs.map(log => log.sleep?.duration).filter(s => s && !isNaN(s));
+
+    const moodValues = { excellent: 5, good: 4, fair: 3, poor: 2, terrible: 1 };
+    const energyValues = { high: 4, medium: 3, low: 2, 'very-low': 1 };
+
+    const avgMood = moods.length > 0 ? 
+      (moods.reduce((sum, mood) => sum + (moodValues[mood] || 0), 0) / moods.length).toFixed(1) : 0;
+    
+    const avgEnergy = energyLevels.length > 0 ? 
+      (energyLevels.reduce((sum, energy) => sum + (energyValues[energy] || 0), 0) / energyLevels.length).toFixed(1) : 0;
+
+    return {
+      period: {
+        start: reportStartDate.toLocaleDateString(),
+        end: reportEndDate.toLocaleDateString(),
+        days: Math.ceil((reportEndDate - reportStartDate) / (1000 * 60 * 60 * 24)) + 1
+      },
+      summary: {
+        totalLogs: filteredLogs.length,
+        avgWeight: weights.length > 0 ? (weights.reduce((a, b) => a + b, 0) / weights.length).toFixed(1) : 'N/A',
+        minWeight: weights.length > 0 ? Math.min(...weights).toFixed(1) : 'N/A',
+        maxWeight: weights.length > 0 ? Math.max(...weights).toFixed(1) : 'N/A',
+        avgHeartRate: heartRates.length > 0 ? Math.round(heartRates.reduce((a, b) => a + b, 0) / heartRates.length) : 'N/A',
+        avgTemperature: temperatures.length > 0 ? (temperatures.reduce((a, b) => a + b, 0) / temperatures.length).toFixed(1) : 'N/A',
+        avgMood: avgMood,
+        avgEnergy: avgEnergy,
+        avgSleepDuration: sleepDurations.length > 0 ? (sleepDurations.reduce((a, b) => a + b, 0) / sleepDurations.length).toFixed(1) : 'N/A'
+      },
+      logs: filteredLogs.sort((a, b) => new Date(b.date) - new Date(a.date))
+    };
+  };
+
+  const handleGenerateReport = () => {
+    const data = generateReportData();
+    setReportData(data);
+  };
+
+  const downloadPDF = () => {
+    if (!reportData) return;
+
+    // Create a simple text-based report for now
+    const reportText = `
+HEALTH REPORT
+=============
+
+Period: ${reportData.period.start} to ${reportData.period.end}
+Total Days: ${reportData.period.days}
+Total Logs: ${reportData.summary.totalLogs}
+
+SUMMARY STATISTICS
+==================
+Average Weight: ${reportData.summary.avgWeight} kg
+Weight Range: ${reportData.summary.minWeight} - ${reportData.summary.maxWeight} kg
+Average Heart Rate: ${reportData.summary.avgHeartRate} bpm
+Average Temperature: ${reportData.summary.avgTemperature}°C
+Average Mood: ${reportData.summary.avgMood}/5
+Average Energy: ${reportData.summary.avgEnergy}/4
+Average Sleep: ${reportData.summary.avgSleepDuration} hours
+
+RECENT LOGS
+===========
+${reportData.logs.slice(0, 10).map(log => `
+Date: ${new Date(log.date).toLocaleDateString()}
+Weight: ${log.vitalSigns?.weight || 'N/A'} kg
+Heart Rate: ${log.vitalSigns?.heartRate || 'N/A'} bpm
+Temperature: ${log.vitalSigns?.temperature || 'N/A'}°C
+Mood: ${log.mood || 'N/A'}
+Energy: ${log.energyLevel || 'N/A'}
+Sleep: ${log.sleep?.duration || 'N/A'} hours
+Notes: ${log.notes || 'None'}
+---`).join('')}
+
+Generated on: ${new Date().toLocaleString()}
+    `;
+
+    const blob = new Blob([reportText], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `health-report-${reportData.period.start}-to-${reportData.period.end}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  const downloadCSV = () => {
+    if (!reportData) return;
+
+    const headers = ['Date', 'Weight (kg)', 'Heart Rate (bpm)', 'Temperature (°C)', 'Mood', 'Energy Level', 'Sleep Duration (hrs)', 'Notes'];
+    const csvContent = [
+      headers.join(','),
+      ...reportData.logs.map(log => [
+        new Date(log.date).toLocaleDateString(),
+        log.vitalSigns?.weight || '',
+        log.vitalSigns?.heartRate || '',
+        log.vitalSigns?.temperature || '',
+        log.mood || '',
+        log.energyLevel || '',
+        log.sleep?.duration || '',
+        (log.notes || '').replace(/,/g, ';')
+      ].join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `health-data-${reportData.period.start}-to-${reportData.period.end}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   };
 
   // Simplified form - no steps needed
@@ -444,6 +584,201 @@ const PatientHealth = () => {
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
                   Start logging your health metrics to see trends
+                </Typography>
+              </Box>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Health Report Generation */}
+        <Card sx={{ borderRadius: '20px', overflow: 'hidden', mb: 4 }}>
+          <CardContent sx={{ p: 3 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+              <Assessment sx={{ fontSize: 32, color: 'primary.main', mr: 2 }} />
+              <Typography variant="h5" sx={{ fontWeight: 600 }}>
+                Generate Health Report
+              </Typography>
+            </Box>
+            
+            <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
+              Create a comprehensive health report for any date range to track your progress and share with healthcare providers.
+            </Typography>
+
+            <Grid container spacing={3} sx={{ mb: 3 }}>
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <DatePicker
+                  label="Start Date"
+                  value={reportStartDate}
+                  onChange={(newValue) => setReportStartDate(newValue)}
+                  slotProps={{
+                    textField: {
+                      fullWidth: true,
+                      helperText: 'Select the start date for your report'
+                    }
+                  }}
+                />
+              </Grid>
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <DatePicker
+                  label="End Date"
+                  value={reportEndDate}
+                  onChange={(newValue) => setReportEndDate(newValue)}
+                  slotProps={{
+                    textField: {
+                      fullWidth: true,
+                      helperText: 'Select the end date for your report'
+                    }
+                  }}
+                />
+              </Grid>
+            </Grid>
+
+            <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', mb: 3 }}>
+              <Button
+                variant="contained"
+                startIcon={<Assessment />}
+                onClick={handleGenerateReport}
+                disabled={generatingReport}
+                sx={{ borderRadius: '15px' }}
+              >
+                {generatingReport ? 'Generating...' : 'Generate Report'}
+              </Button>
+              
+              {reportData && (
+                <>
+                  <Button
+                    variant="outlined"
+                    startIcon={<PictureAsPdf />}
+                    onClick={downloadPDF}
+                    sx={{ borderRadius: '15px' }}
+                  >
+                    Download PDF
+                  </Button>
+                  <Button
+                    variant="outlined"
+                    startIcon={<TableChart />}
+                    onClick={downloadCSV}
+                    sx={{ borderRadius: '15px' }}
+                  >
+                    Download CSV
+                  </Button>
+                </>
+              )}
+            </Box>
+
+            {/* Report Preview */}
+            {reportData && (
+              <Box sx={{ mt: 3, p: 3, bgcolor: 'grey.50', borderRadius: '15px' }}>
+                <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
+                  📊 Report Preview
+                </Typography>
+                
+                <Grid container spacing={3}>
+                  <Grid size={{ xs: 12, md: 6 }}>
+                    <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
+                      Period Summary
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      <strong>Period:</strong> {reportData.period.start} to {reportData.period.end}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      <strong>Total Days:</strong> {reportData.period.days}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      <strong>Total Logs:</strong> {reportData.summary.totalLogs}
+                    </Typography>
+                  </Grid>
+                  
+                  <Grid size={{ xs: 12, md: 6 }}>
+                    <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
+                      Health Metrics
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      <strong>Avg Weight:</strong> {reportData.summary.avgWeight} kg
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      <strong>Weight Range:</strong> {reportData.summary.minWeight} - {reportData.summary.maxWeight} kg
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      <strong>Avg Heart Rate:</strong> {reportData.summary.avgHeartRate} bpm
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      <strong>Avg Temperature:</strong> {reportData.summary.avgTemperature}°C
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      <strong>Avg Mood:</strong> {reportData.summary.avgMood}/5
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      <strong>Avg Energy:</strong> {reportData.summary.avgEnergy}/4
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      <strong>Avg Sleep:</strong> {reportData.summary.avgSleepDuration} hours
+                    </Typography>
+                  </Grid>
+                </Grid>
+
+                {reportData.logs.length > 0 && (
+                  <Box sx={{ mt: 3 }}>
+                    <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2 }}>
+                      Recent Entries ({Math.min(5, reportData.logs.length)} of {reportData.logs.length})
+                    </Typography>
+                    <List dense>
+                      {reportData.logs.slice(0, 5).map((log, index) => (
+                        <ListItem key={log._id} sx={{ px: 0 }}>
+                          <ListItemIcon>
+                            <HealthAndSafety sx={{ color: getMoodColor(log.mood) }} />
+                          </ListItemIcon>
+                          <ListItemText
+                            primary={new Date(log.date).toLocaleDateString()}
+                            secondary={
+                              <Box>
+                                <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                                  {log.vitalSigns?.weight && (
+                                    <Chip 
+                                      icon={<Scale />} 
+                                      label={`${log.vitalSigns.weight}kg`} 
+                                      size="small" 
+                                      variant="outlined"
+                                    />
+                                  )}
+                                  {log.vitalSigns?.heartRate && (
+                                    <Chip 
+                                      icon={<MonitorHeart />} 
+                                      label={`${log.vitalSigns.heartRate}bpm`} 
+                                      size="small" 
+                                      variant="outlined"
+                                    />
+                                  )}
+                                  {log.mood && (
+                                    <Chip 
+                                      label={log.mood} 
+                                      size="small" 
+                                      sx={{ 
+                                        backgroundColor: getMoodColor(log.mood),
+                                        color: 'white'
+                                      }}
+                                    />
+                                  )}
+                                </Box>
+                              </Box>
+                            }
+                          />
+                        </ListItem>
+                      ))}
+                    </List>
+                  </Box>
+                )}
+              </Box>
+            )}
+
+            {reportData === null && (
+              <Box sx={{ textAlign: 'center', py: 4 }}>
+                <Assessment sx={{ fontSize: 60, color: 'text.secondary', mb: 2 }} />
+                <Typography variant="h6" color="text.secondary" gutterBottom>
+                  No data available for selected period
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Try selecting a different date range or add some health logs first.
                 </Typography>
               </Box>
             )}
