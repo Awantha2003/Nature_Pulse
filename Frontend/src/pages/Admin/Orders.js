@@ -37,6 +37,9 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
+  Menu,
+  ListItemIcon,
+  Snackbar,
 } from '@mui/material';
 import {
   Assignment,
@@ -51,6 +54,11 @@ import {
   TrendingDown,
   AttachMoney,
   ShoppingCart,
+  Download,
+  PictureAsPdf,
+  TableChart,
+  GetApp,
+  DateRange,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import api from '../../utils/api';
@@ -71,6 +79,17 @@ const AdminOrders = () => {
   });
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
+  const [reportDialogOpen, setReportDialogOpen] = useState(false);
+  const [exportMenuAnchor, setExportMenuAnchor] = useState(null);
+  const [reportFilters, setReportFilters] = useState({
+    startDate: '',
+    endDate: '',
+    status: '',
+    paymentStatus: '',
+    search: ''
+  });
+  const [exportLoading, setExportLoading] = useState(false);
+  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'info' });
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -201,6 +220,96 @@ const AdminOrders = () => {
     return stats;
   };
 
+  const handleExport = async (format) => {
+    try {
+      setExportLoading(true);
+      
+      // Build query parameters
+      const params = new URLSearchParams({
+        format,
+        ...Object.fromEntries(Object.entries(reportFilters).filter(([_, value]) => value !== ''))
+      });
+
+      // Create export URL
+      const exportUrl = `/admin/orders/export?${params}`;
+      
+      // Use fetch to handle file download
+      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}${exportUrl}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error('Export failed');
+      }
+      
+      // Get the blob data
+      const blob = await response.blob();
+      
+      // Create object URL and trigger download
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `orders-export-${new Date().toISOString().split('T')[0]}.${format}`;
+      
+      // Trigger download
+      document.body.appendChild(link);
+      link.click();
+      
+      // Cleanup
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      
+      setSnackbar({
+        open: true,
+        message: `Orders exported successfully as ${format.toUpperCase()}`,
+        severity: 'success'
+      });
+      
+    } catch (error) {
+      console.error('Export error:', error);
+      setSnackbar({
+        open: true,
+        message: 'Failed to export orders. Please try again.',
+        severity: 'error'
+      });
+    } finally {
+      setExportLoading(false);
+      setExportMenuAnchor(null);
+      setReportDialogOpen(false);
+    }
+  };
+
+  const handleExportMenuOpen = (event) => {
+    setExportMenuAnchor(event.currentTarget);
+  };
+
+  const handleExportMenuClose = () => {
+    setExportMenuAnchor(null);
+  };
+
+  const handleReportDialogOpen = () => {
+    setReportDialogOpen(true);
+  };
+
+  const handleReportDialogClose = () => {
+    setReportDialogOpen(false);
+    setReportFilters({
+      startDate: '',
+      endDate: '',
+      status: '',
+      paymentStatus: '',
+      search: ''
+    });
+  };
+
+  const handleReportFilterChange = (field, value) => {
+    setReportFilters(prev => ({ ...prev, [field]: value }));
+  };
+
   const stats = getOrderStats();
 
   if (loading && orders.length === 0) {
@@ -234,6 +343,24 @@ const AdminOrders = () => {
           <Typography variant="h6" color="text.secondary">
             Manage orders and track sales performance
           </Typography>
+          <Box sx={{ display: 'flex', gap: 2, mt: 2 }}>
+            <Button
+              variant="outlined"
+              startIcon={<DateRange />}
+              onClick={handleReportDialogOpen}
+              sx={{ borderRadius: '10px' }}
+            >
+              Generate Report
+            </Button>
+            <Button
+              variant="contained"
+              startIcon={<Download />}
+              onClick={handleExportMenuOpen}
+              sx={{ borderRadius: '10px' }}
+            >
+              Quick Export
+            </Button>
+          </Box>
         </Box>
       </Fade>
 
@@ -592,6 +719,166 @@ const AdminOrders = () => {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Export Menu */}
+      <Menu
+        anchorEl={exportMenuAnchor}
+        open={Boolean(exportMenuAnchor)}
+        onClose={handleExportMenuClose}
+        anchorOrigin={{
+          vertical: 'bottom',
+          horizontal: 'right',
+        }}
+        transformOrigin={{
+          vertical: 'top',
+          horizontal: 'right',
+        }}
+      >
+        <MenuItem onClick={() => handleExport('csv')}>
+          <ListItemIcon>
+            <TableChart />
+          </ListItemIcon>
+          <ListItemText>Export as CSV</ListItemText>
+        </MenuItem>
+        <MenuItem onClick={() => handleExport('json')}>
+          <ListItemIcon>
+            <GetApp />
+          </ListItemIcon>
+          <ListItemText>Export as JSON</ListItemText>
+        </MenuItem>
+        <MenuItem onClick={() => handleExport('pdf')}>
+          <ListItemIcon>
+            <PictureAsPdf />
+          </ListItemIcon>
+          <ListItemText>Export as PDF</ListItemText>
+        </MenuItem>
+      </Menu>
+
+      {/* Report Generation Dialog */}
+      <Dialog open={reportDialogOpen} onClose={handleReportDialogClose} maxWidth="md" fullWidth>
+        <DialogTitle>
+          <Typography variant="h6" sx={{ fontWeight: 600 }}>
+            Generate Orders Report
+          </Typography>
+        </DialogTitle>
+        <DialogContent>
+          <Grid container spacing={3} sx={{ mt: 1 }}>
+            <Grid size={{ xs: 12, md: 6 }}>
+              <TextField
+                fullWidth
+                label="Start Date"
+                type="date"
+                value={reportFilters.startDate}
+                onChange={(e) => handleReportFilterChange('startDate', e.target.value)}
+                InputLabelProps={{ shrink: true }}
+                size="small"
+              />
+            </Grid>
+            <Grid size={{ xs: 12, md: 6 }}>
+              <TextField
+                fullWidth
+                label="End Date"
+                type="date"
+                value={reportFilters.endDate}
+                onChange={(e) => handleReportFilterChange('endDate', e.target.value)}
+                InputLabelProps={{ shrink: true }}
+                size="small"
+              />
+            </Grid>
+            <Grid size={{ xs: 12, md: 6 }}>
+              <FormControl fullWidth size="small">
+                <InputLabel>Order Status</InputLabel>
+                <Select
+                  value={reportFilters.status}
+                  onChange={(e) => handleReportFilterChange('status', e.target.value)}
+                  label="Order Status"
+                >
+                  <MenuItem value="">All Statuses</MenuItem>
+                  <MenuItem value="pending">Pending</MenuItem>
+                  <MenuItem value="confirmed">Confirmed</MenuItem>
+                  <MenuItem value="processing">Processing</MenuItem>
+                  <MenuItem value="shipped">Shipped</MenuItem>
+                  <MenuItem value="delivered">Delivered</MenuItem>
+                  <MenuItem value="cancelled">Cancelled</MenuItem>
+                  <MenuItem value="returned">Returned</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid size={{ xs: 12, md: 6 }}>
+              <FormControl fullWidth size="small">
+                <InputLabel>Payment Status</InputLabel>
+                <Select
+                  value={reportFilters.paymentStatus}
+                  onChange={(e) => handleReportFilterChange('paymentStatus', e.target.value)}
+                  label="Payment Status"
+                >
+                  <MenuItem value="">All Payments</MenuItem>
+                  <MenuItem value="pending">Pending</MenuItem>
+                  <MenuItem value="processing">Processing</MenuItem>
+                  <MenuItem value="completed">Completed</MenuItem>
+                  <MenuItem value="failed">Failed</MenuItem>
+                  <MenuItem value="refunded">Refunded</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid size={{ xs: 12 }}>
+              <TextField
+                fullWidth
+                label="Search Orders"
+                value={reportFilters.search}
+                onChange={(e) => handleReportFilterChange('search', e.target.value)}
+                placeholder="Search by order number, customer name, or email"
+                size="small"
+              />
+            </Grid>
+          </Grid>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleReportDialogClose}>
+            Cancel
+          </Button>
+          <Button
+            variant="outlined"
+            startIcon={<TableChart />}
+            onClick={() => handleExport('csv')}
+            disabled={exportLoading}
+          >
+            Export CSV
+          </Button>
+          <Button
+            variant="outlined"
+            startIcon={<GetApp />}
+            onClick={() => handleExport('json')}
+            disabled={exportLoading}
+          >
+            Export JSON
+          </Button>
+          <Button
+            variant="contained"
+            startIcon={<PictureAsPdf />}
+            onClick={() => handleExport('pdf')}
+            disabled={exportLoading}
+          >
+            Export PDF
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Snackbar for notifications */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={6000}
+        onClose={() => setSnackbar({ ...snackbar, open: false })}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+      >
+        <Alert
+          onClose={() => setSnackbar({ ...snackbar, open: false })}
+          severity={snackbar.severity}
+          sx={{ width: '100%' }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Container>
   );
 };

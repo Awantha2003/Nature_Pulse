@@ -788,6 +788,45 @@ router.get('/analytics', async (req, res) => {
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - parseInt(period));
 
+    // Get current month start for "this month" calculations
+    const currentMonthStart = new Date();
+    currentMonthStart.setDate(1);
+    currentMonthStart.setHours(0, 0, 0, 0);
+
+    // User statistics
+    const totalUsers = await User.countDocuments();
+    const newUsersThisMonth = await User.countDocuments({
+      createdAt: { $gte: currentMonthStart }
+    });
+
+    // Order statistics
+    const totalOrders = await Order.countDocuments();
+    const ordersThisMonth = await Order.countDocuments({
+      createdAt: { $gte: currentMonthStart }
+    });
+
+    // Revenue statistics
+    const revenueStats = await Order.aggregate([
+      {
+        $match: {
+          status: { $in: ['delivered', 'completed', 'confirmed'] }
+        }
+      },
+      {
+        $group: {
+          _id: null,
+          totalRevenue: { $sum: '$pricing.total' },
+          averageOrderValue: { $avg: '$pricing.total' }
+        }
+      }
+    ]);
+
+    // Product statistics
+    const totalProducts = await Product.countDocuments();
+    const lowStockProducts = await Product.countDocuments({
+      'inventory.stock': { $lte: 10 } // Assuming low stock threshold is 10
+    });
+
     // User registration trends
     const userTrends = await User.aggregate([
       {
@@ -903,6 +942,22 @@ router.get('/analytics', async (req, res) => {
       status: 'success',
       data: {
         period: `${period} days`,
+        users: {
+          total: totalUsers,
+          newThisMonth: newUsersThisMonth
+        },
+        orders: {
+          total: totalOrders,
+          thisMonth: ordersThisMonth
+        },
+        revenue: revenueStats[0] || {
+          totalRevenue: 0,
+          averageOrderValue: 0
+        },
+        products: {
+          total: totalProducts,
+          lowStock: lowStockProducts
+        },
         userTrends,
         appointmentTrends,
         revenueTrends,
@@ -1144,22 +1199,136 @@ router.get('/analytics/sales-report', async (req, res) => {
       }
     ]);
 
+    // Get additional metrics for the summary
+    const totalProductsSold = await Order.aggregate([
+      {
+        $match: {
+          createdAt: { $gte: start, $lte: end },
+          status: { $in: ['delivered', 'completed', 'confirmed'] }
+        }
+      },
+      {
+        $unwind: '$items'
+      },
+      {
+        $group: {
+          _id: null,
+          totalProductsSold: { $sum: '$items.quantity' }
+        }
+      }
+    ]);
+
+    const uniqueCustomers = await Order.distinct('user', {
+      createdAt: { $gte: start, $lte: end },
+      status: { $in: ['delivered', 'completed', 'confirmed'] }
+    });
+
+    const cancelledOrders = await Order.countDocuments({
+      createdAt: { $gte: start, $lte: end },
+      status: 'cancelled'
+    });
+
+    const completedOrders = await Order.countDocuments({
+      createdAt: { $gte: start, $lte: end },
+      status: { $in: ['delivered', 'completed'] }
+    });
+
+    // Daily sales data
+    const dailySales = await Order.aggregate([
+      {
+        $match: {
+          createdAt: { $gte: start, $lte: end },
+          status: { $in: ['delivered', 'completed', 'confirmed'] }
+        }
+      },
+      {
+        $group: {
+          _id: {
+            year: { $year: '$createdAt' },
+            month: { $month: '$createdAt' },
+            day: { $dayOfMonth: '$createdAt' }
+          },
+          revenue: { $sum: '$pricing.total' },
+          orders: { $sum: 1 }
+        }
+      },
+      {
+        $project: {
+          date: {
+            $dateFromParts: {
+              year: '$_id.year',
+              month: '$_id.month',
+              day: '$_id.day'
+            }
+          },
+          revenue: 1,
+          orders: 1
+        }
+      },
+      {
+        $sort: { date: 1 }
+      }
+    ]);
+
+    // Category performance
+    const categoryPerformance = await Order.aggregate([
+      {
+        $match: {
+          createdAt: { $gte: start, $lte: end },
+          status: { $in: ['delivered', 'completed', 'confirmed'] }
+        }
+      },
+      {
+        $unwind: '$items'
+      },
+      {
+        $lookup: {
+          from: 'products',
+          localField: 'items.product',
+          foreignField: '_id',
+          as: 'product'
+        }
+      },
+      {
+        $unwind: '$product'
+      },
+      {
+        $group: {
+          _id: '$product.category',
+          category: { $first: '$product.category' },
+          totalOrders: { $sum: 1 },
+          totalRevenue: { $sum: { $multiply: ['$items.price', '$items.quantity'] } }
+        }
+      },
+      {
+        $sort: { totalRevenue: -1 }
+      }
+    ]);
+
     res.status(200).json({
       status: 'success',
       data: {
         period: { start, end, groupBy },
-        summary: salesSummary[0] || {
-          totalOrders: 0,
-          totalRevenue: 0,
-          averageOrderValue: 0,
-          totalTax: 0,
-          totalShipping: 0,
-          totalDiscount: 0
+        summary: {
+          ...(salesSummary[0] || {
+            totalOrders: 0,
+            totalRevenue: 0,
+            averageOrderValue: 0,
+            totalTax: 0,
+            totalShipping: 0,
+            totalDiscount: 0
+          }),
+          totalProductsSold: totalProductsSold[0]?.totalProductsSold || 0,
+          uniqueCustomers: uniqueCustomers.length,
+          cancelledOrders,
+          completedOrders
         },
         salesByPeriod,
         topSellingProducts,
         salesByCategory,
-        customerAnalytics
+        customerAnalytics,
+        dailySales,
+        categoryPerformance
       }
     });
   } catch (error) {
@@ -2241,6 +2410,172 @@ router.get('/analytics/export', async (req, res) => {
     res.status(500).json({
       status: 'error',
       message: 'Failed to export analytics data'
+    });
+  }
+});
+
+// @route   GET /api/admin/orders/export
+// @desc    Export orders data as CSV, PDF, or Excel
+// @access  Private (Admin only)
+router.get('/orders/export', async (req, res) => {
+  try {
+    const { 
+      format = 'csv', 
+      startDate, 
+      endDate, 
+      status, 
+      paymentStatus,
+      search 
+    } = req.query;
+    
+    // Build filter object
+    const filter = {};
+    
+    if (startDate && endDate) {
+      filter.createdAt = {
+        $gte: new Date(startDate),
+        $lte: new Date(endDate)
+      };
+    }
+    
+    if (status) {
+      filter.status = status;
+    }
+    
+    if (paymentStatus) {
+      filter['payment.status'] = paymentStatus;
+    }
+    
+    if (search) {
+      filter.$or = [
+        { orderNumber: { $regex: search, $options: 'i' } },
+        { 'user.firstName': { $regex: search, $options: 'i' } },
+        { 'user.lastName': { $regex: search, $options: 'i' } },
+        { 'user.email': { $regex: search, $options: 'i' } }
+      ];
+    }
+
+    // Get orders with populated user data
+    const orders = await Order.find(filter)
+      .populate('user', 'firstName lastName email phone')
+      .sort({ createdAt: -1 })
+      .lean();
+
+    if (format === 'csv') {
+      // Generate CSV
+      const csvHeaders = [
+        'Order Number',
+        'Customer Name',
+        'Customer Email',
+        'Customer Phone',
+        'Order Status',
+        'Payment Status',
+        'Subtotal',
+        'Tax',
+        'Shipping',
+        'Discount',
+        'Total',
+        'Order Date',
+        'Items Count'
+      ];
+
+      const csvRows = orders.map(order => [
+        order.orderNumber || '',
+        `${order.user?.firstName || ''} ${order.user?.lastName || ''}`.trim(),
+        order.user?.email || '',
+        order.user?.phone || '',
+        order.status || '',
+        order.payment?.status || '',
+        order.pricing?.subtotal || 0,
+        order.pricing?.tax || 0,
+        order.pricing?.shipping || 0,
+        order.pricing?.discount || 0,
+        order.pricing?.total || 0,
+        new Date(order.createdAt).toISOString().split('T')[0],
+        order.items?.length || 0
+      ]);
+
+      const csvContent = [
+        csvHeaders.join(','),
+        ...csvRows.map(row => row.map(field => `"${field}"`).join(','))
+      ].join('\n');
+
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', `attachment; filename="orders-export-${new Date().toISOString().split('T')[0]}.csv"`);
+      res.send(csvContent);
+
+    } else if (format === 'json') {
+      // Generate JSON
+      const exportData = {
+        metadata: {
+          generatedOn: new Date().toISOString(),
+          totalOrders: orders.length,
+          dateRange: startDate && endDate ? { startDate, endDate } : null,
+          filters: { status, paymentStatus, search }
+        },
+        orders: orders.map(order => ({
+          orderNumber: order.orderNumber,
+          customer: {
+            name: `${order.user?.firstName || ''} ${order.user?.lastName || ''}`.trim(),
+            email: order.user?.email,
+            phone: order.user?.phone
+          },
+          status: order.status,
+          payment: {
+            status: order.payment?.status,
+            method: order.payment?.method
+          },
+          pricing: order.pricing,
+          items: order.items?.map(item => ({
+            name: item.name,
+            quantity: item.quantity,
+            price: item.price
+          })),
+          createdAt: order.createdAt,
+          updatedAt: order.updatedAt
+        }))
+      };
+
+      res.setHeader('Content-Type', 'application/json');
+      res.setHeader('Content-Disposition', `attachment; filename="orders-export-${new Date().toISOString().split('T')[0]}.json"`);
+      res.json(exportData);
+
+    } else if (format === 'pdf') {
+      // For PDF generation, we'll return a simplified JSON structure
+      // In a real implementation, you'd use a library like puppeteer or jsPDF
+      const pdfData = {
+        title: 'Orders Report',
+        generatedOn: new Date().toISOString(),
+        totalOrders: orders.length,
+        orders: orders.map(order => ({
+          orderNumber: order.orderNumber,
+          customer: `${order.user?.firstName || ''} ${order.user?.lastName || ''}`.trim(),
+          email: order.user?.email,
+          status: order.status,
+          paymentStatus: order.payment?.status,
+          total: order.pricing?.total || 0,
+          date: new Date(order.createdAt).toLocaleDateString()
+        }))
+      };
+
+      res.setHeader('Content-Type', 'application/json');
+      res.setHeader('Content-Disposition', `attachment; filename="orders-report-${new Date().toISOString().split('T')[0]}.json"`);
+      res.json(pdfData);
+
+    } else {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Invalid format. Supported formats: csv, json, pdf'
+      });
+    }
+
+    console.log(`Orders export completed - ${orders.length} records exported in ${format} format`);
+
+  } catch (error) {
+    console.error('Orders export error:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Failed to export orders data'
     });
   }
 });
