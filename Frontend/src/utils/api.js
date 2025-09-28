@@ -16,6 +16,13 @@ api.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+    
+    // Debug logging for flag requests
+    if (config.url && config.url.includes('/flag')) {
+      console.log('API Request URL:', config.url);
+      console.log('Full URL:', `${config.baseURL}${config.url}`);
+    }
+    
     return config;
   },
   (error) => {

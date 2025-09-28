@@ -383,6 +383,11 @@ router.post('/reports/:id/comments/:commentId/replies', protect, checkActive, va
 // @access  Private
 router.post('/reports/:id/flag', protect, checkActive, validateMongoId('id'), handleValidationErrors, async (req, res) => {
   try {
+    console.log('Flag report request - ID:', req.params.id);
+    console.log('Request body:', req.body);
+    console.log('Request params:', req.params);
+    console.log('Request URL:', req.url);
+    
     const { type = 'other', reason = 'Report flagged by user' } = req.body;
 
     const report = await CommunityReport.findById(req.params.id);

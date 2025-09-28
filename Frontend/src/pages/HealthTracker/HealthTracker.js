@@ -1800,13 +1800,13 @@ Generated on: ${new Date().toLocaleString()}
                                    </Box>
                                    {log.medications && (
                                      <Box sx={{ mb: 1 }}>
-                                       <Typography variant="body2" color="text.secondary" component="span">
+                                       <Typography variant="body2" color="text.secondary" component="div">
                                          <strong>Medications:</strong> {log.medications}
                                        </Typography>
                                      </Box>
                                    )}
                                   {log.notes && (
-                                    <Typography variant="body2" color="text.secondary" component="span">
+                                    <Typography variant="body2" color="text.secondary" component="div">
                                       {log.notes}
                                     </Typography>
                                   )}
@@ -2331,9 +2331,10 @@ Generated on: ${new Date().toLocaleString()}
                                   <HealthAndSafety sx={{ color: getMoodColor(log.mood) }} />
                                 </ListItemIcon>
                                 <ListItemText
+                                  component="div"
                                   primary={new Date(log.date).toLocaleDateString()}
                                   secondary={
-                                    <Box>
+                                    <Box component="div">
                                       <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
                                         {log.vitalSigns?.weight && (
                                           <Chip 

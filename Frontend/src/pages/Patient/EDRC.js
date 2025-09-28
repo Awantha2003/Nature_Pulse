@@ -60,6 +60,10 @@ const PatientEDRC = () => {
   const [reportDialogOpen, setReportDialogOpen] = useState(false);
   const [editingReport, setEditingReport] = useState(null);
   const [activeTab, setActiveTab] = useState(0);
+  const [flagDialogOpen, setFlagDialogOpen] = useState(false);
+  const [selectedReport, setSelectedReport] = useState(null);
+  const [flagType, setFlagType] = useState('');
+  const [flagReason, setFlagReason] = useState('');
 
   // Form state for new/edit report
   const [formData, setFormData] = useState({
@@ -250,14 +254,34 @@ const PatientEDRC = () => {
     }
   };
 
-  const handleFlag = async (reportId) => {
+  const handleFlag = (report) => {
+    setSelectedReport(report);
+    setFlagType('');
+    setFlagReason('');
+    setFlagDialogOpen(true);
+  };
+
+  const handleFlagReport = async () => {
+    if (!selectedReport || !flagType) return;
+    
+    console.log('Flagging report with ID:', selectedReport._id);
+    console.log('Full URL will be:', `/community/reports/${selectedReport._id}/flag`);
+    
     try {
-      await api.post(`/community/reports/${reportId}/flag`);
+      await api.post(`/community/reports/${selectedReport._id}/flag`, {
+        type: flagType,
+        reason: flagReason || 'No specific reason provided'
+      });
+      setFlagDialogOpen(false);
+      setSelectedReport(null);
+      setFlagType('');
+      setFlagReason('');
       fetchReports();
     } catch (err) {
       const errorMessage = err.response?.data?.message || 'Failed to flag report';
       if (errorMessage.includes('already flagged')) {
         // Don't show error for already flagged reports, just refresh
+        setFlagDialogOpen(false);
         fetchReports();
       } else {
         setError(errorMessage);
@@ -552,7 +576,7 @@ const PatientEDRC = () => {
                           </IconButton>
                         </>
                       )}
-                      <IconButton size="small" onClick={() => handleFlag(report._id)}>
+                      <IconButton size="small" onClick={() => handleFlag(report)}>
                         <Flag />
                       </IconButton>
                     </Box>
@@ -763,6 +787,55 @@ const PatientEDRC = () => {
       >
         <Add />
       </Fab>
+
+      {/* Flag Report Dialog */}
+      <Dialog open={flagDialogOpen} onClose={() => setFlagDialogOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Flag Report</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            Please help us understand why you're flagging this report:
+          </Typography>
+          
+          <FormControl fullWidth sx={{ mb: 2 }}>
+            <InputLabel>Flag Type</InputLabel>
+            <Select
+              value={flagType}
+              onChange={(e) => setFlagType(e.target.value)}
+              label="Flag Type"
+            >
+              <MenuItem value="inappropriate">Inappropriate Content</MenuItem>
+              <MenuItem value="misleading">Misleading Information</MenuItem>
+              <MenuItem value="spam">Spam</MenuItem>
+              <MenuItem value="fake">Fake Information</MenuItem>
+              <MenuItem value="other">Other</MenuItem>
+            </Select>
+          </FormControl>
+
+          <TextField
+            fullWidth
+            multiline
+            rows={3}
+            label="Reason (Optional)"
+            value={flagReason}
+            onChange={(e) => setFlagReason(e.target.value)}
+            placeholder="Please provide additional details..."
+            sx={{ mb: 2 }}
+          />
+        </DialogContent>
+        <DialogActions sx={{ p: 3 }}>
+          <Button onClick={() => setFlagDialogOpen(false)}>
+            Cancel
+          </Button>
+          <Button 
+            onClick={handleFlagReport} 
+            variant="contained" 
+            color="error"
+            disabled={!flagType}
+          >
+            Flag Report
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Container>
   );
 };

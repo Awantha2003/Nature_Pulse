@@ -54,6 +54,8 @@ const AuthenticatedShell = () => {
   const [anchorEl, setAnchorEl] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [appointmentCount, setAppointmentCount] = useState(0);
+  const [userCount, setUserCount] = useState(0);
+  const [moderationCount, setModerationCount] = useState(0);
   
   const navigate = useNavigate();
   const location = useLocation();
@@ -95,14 +97,58 @@ const AuthenticatedShell = () => {
     }
   };
 
+  // Fetch user count for admins
+  const fetchUserCount = async () => {
+    if (hasRole('admin')) {
+      try {
+        const response = await api.get('/admin/users');
+        if (response.data.status === 'success') {
+          const users = response.data.data.users || [];
+          setUserCount(users.length);
+        }
+      } catch (err) {
+        console.error('Fetch user count error:', err);
+        setUserCount(0);
+      }
+    }
+  };
+
+  // Fetch moderation count for admins
+  const fetchModerationCount = async () => {
+    if (hasRole('admin')) {
+      try {
+        // This would be replaced with actual moderation API endpoint
+        // For now, we'll set a placeholder or fetch from a real endpoint
+        const response = await api.get('/admin/moderation/count');
+        if (response.data.status === 'success') {
+          setModerationCount(response.data.data.count || 0);
+        }
+      } catch (err) {
+        console.error('Fetch moderation count error:', err);
+        // Set a default value if the endpoint doesn't exist yet
+        setModerationCount(0);
+      }
+    }
+  };
+
   useEffect(() => {
     fetchAppointmentCount();
+    fetchUserCount();
+    fetchModerationCount();
   }, [user]);
 
   // Refresh appointment count when navigating to appointments
   useEffect(() => {
     if (location.pathname === '/app/doctor/appointments') {
       fetchAppointmentCount();
+    }
+  }, [location.pathname]);
+
+  // Refresh admin counts when navigating to admin pages
+  useEffect(() => {
+    if (location.pathname.startsWith('/app/admin/')) {
+      fetchUserCount();
+      fetchModerationCount();
     }
   }, [location.pathname]);
 
@@ -203,13 +249,13 @@ const AuthenticatedShell = () => {
           text: 'Users',
           icon: <People />,
           path: '/app/admin/users',
-          badge: '5', // New registrations
+          badge: userCount > 0 ? userCount.toString() : null,
         },
         {
           text: 'Moderation',
           icon: <Security />,
           path: '/app/admin/moderation',
-          badge: '2', // Flagged content
+          badge: moderationCount > 0 ? moderationCount.toString() : null,
         },
         {
           text: 'Appointments',

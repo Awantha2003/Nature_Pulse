@@ -11,6 +11,13 @@ exports.protect = async (req, res, next) => {
       token = req.headers.authorization.split(' ')[1];
     }
 
+    // Debug logging for flag requests
+    if (req.path && req.path.includes('/flag')) {
+      console.log('Protect middleware - Path:', req.path);
+      console.log('Authorization header:', req.headers.authorization);
+      console.log('Token extracted:', token ? 'Present' : 'Missing');
+    }
+
     // Check if token exists
     if (!token) {
       console.log('No token provided for request:', req.path);

@@ -186,6 +186,7 @@ const DoctorEDRC = () => {
     try {
       setLoading(true);
       setError(null); // Clear previous errors
+      setReports([]); // Clear previous reports
       
       const params = new URLSearchParams({
         page: currentPage,
@@ -196,6 +197,7 @@ const DoctorEDRC = () => {
       });
 
       // Add status filter based on tab
+      console.log('Current tab:', currentTab);
       if (currentTab === 0) {
         params.append('status', 'approved');
       } else if (currentTab === 1) {
@@ -205,6 +207,9 @@ const DoctorEDRC = () => {
       }
 
       const response = await api.get(`/community/reports?${params}`);
+      
+      console.log('Fetched reports for tab', currentTab, ':', response.data.data.reports);
+      console.log('Total reports:', response.data.data.reports?.length || 0);
       
       if (response.data.status === 'success') {
         setReports(response.data.data.reports || []);
@@ -333,11 +338,17 @@ const DoctorEDRC = () => {
   const handleFlagReport = async () => {
     if (!selectedReport || !flagData.type) return;
     
+    console.log('Flagging report with ID:', selectedReport._id);
+    console.log('Full URL will be:', `/community/reports/${selectedReport._id}/flag`);
+    
     // Ensure reason is provided (backend requires it)
     const flagPayload = {
       type: flagData.type,
       reason: flagData.reason || 'No specific reason provided'
     };
+    
+    console.log('Flag payload:', flagPayload);
+    console.log('Flag data state:', flagData);
     
     try {
       await api.post(`/community/reports/${selectedReport._id}/flag`, flagPayload);
@@ -346,8 +357,10 @@ const DoctorEDRC = () => {
       setFlagData({ type: '', reason: '' });
       fetchReports();
     } catch (err) {
-      setError('Failed to flag report');
+      const errorMessage = err.response?.data?.message || 'Failed to flag report';
       console.error('Flag error:', err);
+      console.error('Error response:', err.response?.data);
+      setError(errorMessage);
     }
   };
 
@@ -741,8 +754,14 @@ const DoctorEDRC = () => {
       )}
 
       {/* Reports Grid */}
+      {(() => {
+        console.log('Rendering condition - loading:', loading, 'reports.length:', reports.length, 'error:', error, 'currentTab:', currentTab);
+        console.log('Reports array:', reports);
+        console.log('Should show empty state:', !loading && reports.length === 0 && !error);
+        return null;
+      })()}
       {!loading && reports.length === 0 && !error ? (
-        <Box sx={{ textAlign: 'center', py: 8 }}>
+        <Box sx={{ textAlign: 'center', py: 8, border: '2px solid red' }}>
           <Box sx={{ 
             background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
             borderRadius: '50%',

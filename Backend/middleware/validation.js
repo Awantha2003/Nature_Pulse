@@ -6,6 +6,8 @@ exports.handleValidationErrors = (req, res, next) => {
   if (!errors.isEmpty()) {
     console.log('Validation errors:', errors.array());
     console.log('Request body:', req.body);
+    console.log('Request params:', req.params);
+    console.log('Request URL:', req.url);
     return res.status(400).json({
       status: 'error',
       message: 'Validation failed',
@@ -681,6 +683,12 @@ exports.validateMongoId = (paramName) => [
   param(paramName)
     .isMongoId()
     .withMessage(`Invalid ${paramName} ID`)
+    .custom((value) => {
+      console.log(`Validating ${paramName} ID:`, value);
+      console.log(`ID length:`, value?.length);
+      console.log(`ID type:`, typeof value);
+      return true;
+    })
 ];
 
 // Query validation

@@ -74,6 +74,8 @@ import {
   Delete as DeleteIcon,
   Block as BlockIcon,
   LockOpen as UnblockIcon,
+  Assessment,
+  GetApp,
 } from '@mui/icons-material';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -96,6 +98,8 @@ const AdminUsers = () => {
   const [editDialog, setEditDialog] = useState({ open: false, user: null });
   const [anchorEl, setAnchorEl] = useState(null);
   const [selectedUser, setSelectedUser] = useState(null);
+  const [reportDialog, setReportDialog] = useState({ open: false });
+  const [reportLoading, setReportLoading] = useState(false);
 
   useEffect(() => {
     fetchUsers();
@@ -306,6 +310,148 @@ const AdminUsers = () => {
     return isActive ? 'Active' : 'Inactive';
   };
 
+  // Report Generation Functions
+  const generateCSVReport = () => {
+    try {
+      setReportLoading(true);
+      
+      // Prepare CSV headers
+      const headers = ['Name', 'Email', 'Role', 'Status', 'Phone', 'Joined Date', 'Last Login'];
+      
+      // Prepare CSV data
+      const csvData = filteredUsers.map(user => [
+        `${user.firstName} ${user.lastName}`,
+        user.email,
+        user.role,
+        user.isActive ? 'Active' : 'Inactive',
+        user.phone || 'N/A',
+        new Date(user.createdAt).toLocaleDateString(),
+        user.lastLogin ? new Date(user.lastLogin).toLocaleDateString() : 'Never'
+      ]);
+      
+      // Combine headers and data
+      const csvContent = [headers, ...csvData]
+        .map(row => row.map(field => `"${field}"`).join(','))
+        .join('\n');
+      
+      // Create and download file
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', `users_report_${new Date().toISOString().split('T')[0]}.csv`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      setSnackbar({
+        open: true,
+        message: 'CSV report generated successfully',
+        severity: 'success',
+      });
+    } catch (error) {
+      setSnackbar({
+        open: true,
+        message: 'Failed to generate CSV report',
+        severity: 'error',
+      });
+    } finally {
+      setReportLoading(false);
+    }
+  };
+
+  const generatePDFReport = () => {
+    try {
+      setReportLoading(true);
+      
+      // Create a simple HTML table for PDF
+      const tableRows = filteredUsers.map(user => `
+        <tr>
+          <td>${user.firstName} ${user.lastName}</td>
+          <td>${user.email}</td>
+          <td>${user.role}</td>
+          <td>${user.isActive ? 'Active' : 'Inactive'}</td>
+          <td>${user.phone || 'N/A'}</td>
+          <td>${new Date(user.createdAt).toLocaleDateString()}</td>
+          <td>${user.lastLogin ? new Date(user.lastLogin).toLocaleDateString() : 'Never'}</td>
+        </tr>
+      `).join('');
+      
+      const htmlContent = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Users Report</title>
+          <style>
+            body { font-family: Arial, sans-serif; margin: 20px; }
+            h1 { color: #2E7D32; text-align: center; }
+            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+            th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+            th { background-color: #f2f2f2; font-weight: bold; }
+            .summary { margin: 20px 0; padding: 15px; background-color: #f9f9f9; border-radius: 5px; }
+          </style>
+        </head>
+        <body>
+          <h1>Users Report</h1>
+          <div class="summary">
+            <p><strong>Generated on:</strong> ${new Date().toLocaleString()}</p>
+            <p><strong>Total Users:</strong> ${filteredUsers.length}</p>
+            <p><strong>Active Users:</strong> ${filteredUsers.filter(u => u.isActive).length}</p>
+            <p><strong>Inactive Users:</strong> ${filteredUsers.filter(u => !u.isActive).length}</p>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Role</th>
+                <th>Status</th>
+                <th>Phone</th>
+                <th>Joined Date</th>
+                <th>Last Login</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${tableRows}
+            </tbody>
+          </table>
+        </body>
+        </html>
+      `;
+      
+      // Open in new window for printing
+      const printWindow = window.open('', '_blank');
+      printWindow.document.write(htmlContent);
+      printWindow.document.close();
+      printWindow.focus();
+      
+      // Wait for content to load then print
+      printWindow.onload = () => {
+        printWindow.print();
+        printWindow.close();
+      };
+      
+      setSnackbar({
+        open: true,
+        message: 'PDF report opened for printing',
+        severity: 'success',
+      });
+    } catch (error) {
+      setSnackbar({
+        open: true,
+        message: 'Failed to generate PDF report',
+        severity: 'error',
+      });
+    } finally {
+      setReportLoading(false);
+    }
+  };
+
+  const openReportDialog = () => {
+    setReportDialog({ open: true });
+  };
+
   return (
     <Container maxWidth="xl">
       <Fade in timeout={800}>
@@ -375,7 +521,18 @@ const AdminUsers = () => {
                 </Select>
               </FormControl>
             </Grid>
-            <Grid size={{ xs: 12, md: 2 }}>
+            <Grid size={{ xs: 12, md: 1 }}>
+              <Button
+                fullWidth
+                variant="outlined"
+                startIcon={<Assessment />}
+                onClick={openReportDialog}
+                sx={{ borderRadius: '15px', py: 1.5 }}
+              >
+                Reports
+              </Button>
+            </Grid>
+            <Grid size={{ xs: 12, md: 1 }}>
               <Button
                 fullWidth
                 variant="contained"
@@ -624,6 +781,78 @@ const AdminUsers = () => {
           </Button>
           <Button onClick={handleDeleteConfirm} color="error" disabled={saving}>
             {saving ? <CircularProgress size={20} /> : 'Delete'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Report Generation Dialog */}
+      <Dialog 
+        open={reportDialog.open} 
+        onClose={() => setReportDialog({ open: false })}
+        maxWidth="sm" 
+        fullWidth
+      >
+        <DialogTitle>
+          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            <Assessment sx={{ mr: 1, color: 'primary.main' }} />
+            Generate Report
+          </Box>
+        </DialogTitle>
+        <DialogContent>
+          <Typography variant="body1" sx={{ mb: 3 }}>
+            Choose the format for your users report. The report will include all currently filtered users.
+          </Typography>
+          
+          <Box sx={{ mb: 2 }}>
+            <Typography variant="h6" gutterBottom>
+              Report Summary
+            </Typography>
+            <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+              <Chip 
+                label={`Total: ${filteredUsers.length}`} 
+                color="primary" 
+                variant="outlined" 
+              />
+              <Chip 
+                label={`Active: ${filteredUsers.filter(u => u.isActive).length}`} 
+                color="success" 
+                variant="outlined" 
+              />
+              <Chip 
+                label={`Inactive: ${filteredUsers.filter(u => !u.isActive).length}`} 
+                color="error" 
+                variant="outlined" 
+              />
+            </Box>
+          </Box>
+
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+            The report will include: Name, Email, Role, Status, Phone, Joined Date, and Last Login.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button 
+            onClick={() => setReportDialog({ open: false })}
+            disabled={reportLoading}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={generateCSVReport}
+            variant="outlined"
+            startIcon={<GetApp />}
+            disabled={reportLoading}
+            sx={{ mr: 1 }}
+          >
+            {reportLoading ? <CircularProgress size={20} /> : 'Download CSV'}
+          </Button>
+          <Button
+            onClick={generatePDFReport}
+            variant="contained"
+            startIcon={<Assessment />}
+            disabled={reportLoading}
+          >
+            {reportLoading ? <CircularProgress size={20} /> : 'Generate PDF'}
           </Button>
         </DialogActions>
       </Dialog>
