@@ -55,18 +55,15 @@ export const validateEmail = (email) => {
   if (!email || safeTrim(email) === '') {
     return 'Email is required';
   }
-  if (!EMAIL_REGEX.test(email)) {
+  if (!EMAIL_REGEX.test(safeTrim(email))) {
     return 'Please enter a valid email address';
-  }
-  if (email.length > 254) {
-    return 'Email address is too long';
   }
   return null;
 };
 
 // Password validation
 export const validatePassword = (password) => {
-  if (!password || password.trim() === '') {
+  if (!password || password === '') {
     return 'Password is required';
   }
   if (password.length < PASSWORD_MIN_LENGTH) {
@@ -80,7 +77,7 @@ export const validatePassword = (password) => {
 
 // Password match validation
 export const validatePasswordMatch = (password, confirmPassword) => {
-  if (!confirmPassword || confirmPassword.trim() === '') {
+  if (!confirmPassword || confirmPassword === '') {
     return 'Please confirm your password';
   }
   if (password !== confirmPassword) {
@@ -111,18 +108,23 @@ export const validatePhone = (phone) => {
   if (!phone || safeTrim(phone) === '') {
     return 'Phone number is required';
   }
-  // Remove all non-digit characters
-  const cleanPhone = phone.replace(/[^\d]/g, '');
-  
-  if (cleanPhone.length !== 10) {
-    return 'Phone number must be exactly 10 digits (e.g., 0704949394)';
+  if (!PHONE_REGEX.test(safeTrim(phone))) {
+    return 'Please enter a valid Sri Lankan mobile number (0XXXXXXXXX)';
   }
-  
-  // Check if it starts with 0 and follows Sri Lankan mobile format
-  if (!PHONE_REGEX.test(cleanPhone)) {
-    return 'Please enter a valid Sri Lankan mobile number (e.g., 0704949394)';
+  return null;
+};
+
+// Address validation
+export const validateAddress = (address, fieldName = 'Address') => {
+  if (!address || safeTrim(address) === '') {
+    return `${fieldName} is required`;
   }
-  
+  if (safeTrim(address).length < ADDRESS_MIN_LENGTH) {
+    return `${fieldName} must be at least ${ADDRESS_MIN_LENGTH} characters long`;
+  }
+  if (safeTrim(address).length > ADDRESS_MAX_LENGTH) {
+    return `${fieldName} must be no more than ${ADDRESS_MAX_LENGTH} characters long`;
+  }
   return null;
 };
 
@@ -134,192 +136,36 @@ export const validateDateOfBirth = (dateOfBirth) => {
   
   const birthDate = new Date(dateOfBirth);
   const today = new Date();
-  const actualAge = today.getFullYear() - birthDate.getFullYear();
-  const monthDiff = today.getMonth() - birthDate.getMonth();
+  const age = today.getFullYear() - birthDate.getFullYear();
   
-  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-    actualAge--;
+  if (isNaN(birthDate.getTime())) {
+    return 'Please enter a valid date';
   }
   
-  if (actualAge < MIN_AGE) {
-    return `You must be at least ${MIN_AGE} years old to register`;
+  if (age < MIN_AGE) {
+    return `You must be at least ${MIN_AGE} years old`;
   }
-  if (actualAge > MAX_AGE) {
-    return `Age must be no more than ${MAX_AGE} years`;
+  
+  if (age > MAX_AGE) {
+    return `Age must be less than ${MAX_AGE} years`;
   }
-  if (birthDate > today) {
-    return 'Date of birth cannot be in the future';
-  }
+  
   return null;
 };
 
 // Gender validation
 export const validateGender = (gender) => {
-  if (!gender || gender.trim() === '') {
+  if (!gender || safeTrim(gender) === '') {
     return 'Gender is required';
   }
   const validGenders = ['male', 'female', 'other'];
-  if (!validGenders.includes(gender)) {
+  if (!validGenders.includes(safeTrim(gender).toLowerCase())) {
     return 'Please select a valid gender';
   }
   return null;
 };
 
-// Address validation
-export const validateAddress = (address, fieldName) => {
-  if (!address || address.trim() === '') {
-    return `${fieldName} is required`;
-  }
-  if (address.trim().length < ADDRESS_MIN_LENGTH) {
-    return `${fieldName} must be at least ${ADDRESS_MIN_LENGTH} characters long`;
-  }
-  if (address.trim().length > ADDRESS_MAX_LENGTH) {
-    return `${fieldName} must be no more than ${ADDRESS_MAX_LENGTH} characters long`;
-  }
-  return null;
-};
-
-// ZIP code validation
-export const validateZipCode = (zipCode) => {
-  if (!zipCode || zipCode.trim() === '') {
-    return 'ZIP code is required';
-  }
-  const cleanZip = zipCode.replace(/\s/g, '');
-  if (!/^\d{5}(-\d{4})?$/.test(cleanZip)) {
-    return 'Please enter a valid ZIP code (12345 or 12345-6789)';
-  }
-  return null;
-};
-
-// License number validation
-export const validateLicenseNumber = (licenseNumber) => {
-  if (!licenseNumber || licenseNumber.trim() === '') {
-    return 'Medical license number is required';
-  }
-  if (licenseNumber.trim().length < LICENSE_MIN_LENGTH) {
-    return `License number must be at least ${LICENSE_MIN_LENGTH} characters long`;
-  }
-  if (licenseNumber.trim().length > LICENSE_MAX_LENGTH) {
-    return `License number must be no more than ${LICENSE_MAX_LENGTH} characters long`;
-  }
-  return null;
-};
-
-// Specialization validation
-export const validateSpecialization = (specialization) => {
-  if (!specialization || specialization.trim() === '') {
-    return 'Specialization is required';
-  }
-  if (specialization.trim().length < SPECIALIZATION_MIN_LENGTH) {
-    return `Specialization must be at least ${SPECIALIZATION_MIN_LENGTH} characters long`;
-  }
-  if (specialization.trim().length > SPECIALIZATION_MAX_LENGTH) {
-    return `Specialization must be no more than ${SPECIALIZATION_MAX_LENGTH} characters long`;
-  }
-  return null;
-};
-
-// Experience validation
-export const validateExperience = (experience) => {
-  if (experience === '' || experience === null || experience === undefined) {
-    return 'Years of experience is required';
-  }
-  const exp = parseInt(experience);
-  if (isNaN(exp)) {
-    return 'Please enter a valid number for years of experience';
-  }
-  if (exp < MIN_EXPERIENCE) {
-    return `Experience must be at least ${MIN_EXPERIENCE} years`;
-  }
-  if (exp > MAX_EXPERIENCE) {
-    return `Experience must be no more than ${MAX_EXPERIENCE} years`;
-  }
-  return null;
-};
-
-// Consultation fee validation
-export const validateConsultationFee = (fee) => {
-  if (fee === '' || fee === null || fee === undefined) {
-    return 'Consultation fee is required';
-  }
-  const feeNum = parseFloat(fee);
-  if (isNaN(feeNum)) {
-    return 'Please enter a valid consultation fee';
-  }
-  if (feeNum < MIN_FEE) {
-    return `Consultation fee must be at least LKR ${MIN_FEE}`;
-  }
-  if (feeNum > MAX_FEE) {
-    return `Consultation fee must be no more than LKR ${MAX_FEE}`;
-  }
-  return null;
-};
-
-// Bio validation
-export const validateBio = (bio) => {
-  if (!bio || bio.trim() === '') {
-    return 'Bio is required';
-  }
-  if (bio.trim().length < BIO_MIN_LENGTH) {
-    return `Bio must be at least ${BIO_MIN_LENGTH} characters long`;
-  }
-  if (bio.length > BIO_MAX_LENGTH) {
-    return `Bio must be no more than ${BIO_MAX_LENGTH} characters long`;
-  }
-  return null;
-};
-
-// Qualification validation
-export const validateQualification = (qualification) => {
-  const errors = {};
-  
-  if (!qualification.degree || qualification.degree.trim() === '') {
-    errors.degree = 'Degree is required';
-  } else if (qualification.degree.trim().length > 100) {
-    errors.degree = 'Degree must be no more than 100 characters long';
-  }
-  
-  if (!qualification.institution || qualification.institution.trim() === '') {
-    errors.institution = 'Institution is required';
-  } else if (qualification.institution.trim().length > 200) {
-    errors.institution = 'Institution must be no more than 200 characters long';
-  }
-  
-  if (!qualification.year || qualification.year.trim() === '') {
-    errors.year = 'Year is required';
-  } else {
-    const year = parseInt(qualification.year);
-    const currentYear = new Date().getFullYear();
-    if (isNaN(year)) {
-      errors.year = 'Please enter a valid year';
-    } else if (year < 1950) {
-      errors.year = 'Year cannot be before 1950';
-    } else if (year > currentYear) {
-      errors.year = 'Year cannot be in the future';
-    }
-  }
-  
-  return Object.keys(errors).length > 0 ? errors : null;
-};
-
-// Language validation
-export const validateLanguage = (language) => {
-  if (!language || language.trim() === '') {
-    return 'Language cannot be empty';
-  }
-  if (language.trim().length < 2) {
-    return 'Language must be at least 2 characters long';
-  }
-  if (language.trim().length > 50) {
-    return 'Language must be no more than 50 characters long';
-  }
-  if (!/^[a-zA-Z\s\-']+$/.test(language.trim())) {
-    return 'Language can only contain letters, spaces, hyphens, and apostrophes';
-  }
-  return null;
-};
-
-// Comprehensive validation functions for forms
+// Login form validation
 export const validateLoginForm = (formData) => {
   const errors = {};
   
@@ -332,6 +178,17 @@ export const validateLoginForm = (formData) => {
   return errors;
 };
 
+// Helper functions
+export const isFormValid = (errors) => {
+  return Object.keys(errors).length === 0;
+};
+
+export const getFirstError = (errors) => {
+  const firstKey = Object.keys(errors)[0];
+  return firstKey ? errors[firstKey] : null;
+};
+
+// Register form validation
 export const validateRegisterForm = (formData) => {
   const errors = {};
   
@@ -360,37 +217,10 @@ export const validateRegisterForm = (formData) => {
   const genderError = validateGender(formData.gender);
   if (genderError) errors.gender = genderError;
   
-  // Address information
-  if (formData.address) {
-    if (formData.address.street) {
-      const streetError = validateAddress(formData.address.street, 'Street address');
-      if (streetError) errors['address.street'] = streetError;
-    }
-    
-    if (formData.address.city) {
-      const cityError = validateAddress(formData.address.city, 'City');
-      if (cityError) errors['address.city'] = cityError;
-    }
-    
-    if (formData.address.state) {
-      const stateError = validateAddress(formData.address.state, 'State');
-      if (stateError) errors['address.state'] = stateError;
-    }
-    
-    if (formData.address.zipCode) {
-      const zipCodeError = validateZipCode(formData.address.zipCode);
-      if (zipCodeError) errors['address.zipCode'] = zipCodeError;
-    }
-    
-    if (formData.address.country) {
-      const countryError = validateAddress(formData.address.country, 'Country');
-      if (countryError) errors['address.country'] = countryError;
-    }
-  }
-  
   return errors;
 };
 
+// Doctor register form validation
 export const validateDoctorRegisterForm = (formData, qualifications = []) => {
   const errors = {};
   
@@ -419,58 +249,60 @@ export const validateDoctorRegisterForm = (formData, qualifications = []) => {
   const genderError = validateGender(formData.gender);
   if (genderError) errors.gender = genderError;
   
-  // Professional information
-  const licenseError = validateLicenseNumber(formData.licenseNumber);
-  if (licenseError) errors.licenseNumber = licenseError;
-  
-  const specializationError = validateSpecialization(formData.specialization);
-  if (specializationError) errors.specialization = specializationError;
-  
-  const experienceError = validateExperience(formData.experience);
-  if (experienceError) errors.experience = experienceError;
-  
-  const feeError = validateConsultationFee(formData.consultationFee);
-  if (feeError) errors.consultationFee = feeError;
-  
-  const bioError = validateBio(formData.bio);
-  if (bioError) errors.bio = bioError;
-  
-  // Validate qualifications
-  if (qualifications && qualifications.length > 0) {
-    qualifications.forEach((qualification, index) => {
-      const qualErrors = validateQualification(qualification);
-      if (qualErrors) {
-        Object.keys(qualErrors).forEach(field => {
-          errors[`qualification_${index}_${field}`] = qualErrors[field];
-        });
-      }
-    });
-  }
-  
-  // Validate languages
-  if (formData.languages && formData.languages.length > 0) {
-    formData.languages.forEach((language, index) => {
-      const languageError = validateLanguage(language);
-      if (languageError) {
-        errors[`language_${index}`] = languageError;
-      }
-    });
-  }
-  
   return errors;
 };
 
-// Helper functions
-export const isFormValid = (errors) => {
-  return Object.keys(errors).length === 0;
+// Qualification validation
+export const validateQualification = (qualification) => {
+  const errors = {};
+  
+  if (!qualification.degree || safeTrim(qualification.degree) === '') {
+    errors.degree = 'Degree is required';
+  } else if (safeTrim(qualification.degree).length > 100) {
+    errors.degree = 'Degree must be no more than 100 characters long';
+  }
+  
+  if (!qualification.institution || safeTrim(qualification.institution) === '') {
+    errors.institution = 'Institution is required';
+  } else if (safeTrim(qualification.institution).length > 200) {
+    errors.institution = 'Institution must be no more than 200 characters long';
+  }
+  
+  if (!qualification.year || safeTrim(qualification.year) === '') {
+    errors.year = 'Year is required';
+  } else {
+    const year = parseInt(qualification.year);
+    const currentYear = new Date().getFullYear();
+    if (isNaN(year)) {
+      errors.year = 'Please enter a valid year';
+    } else if (year < 1950) {
+      errors.year = 'Year cannot be before 1950';
+    } else if (year > currentYear) {
+      errors.year = 'Year cannot be in the future';
+    }
+  }
+  
+  return Object.keys(errors).length > 0 ? errors : null;
 };
 
-export const getFirstError = (errors) => {
-  const firstKey = Object.keys(errors)[0];
-  return firstKey ? errors[firstKey] : null;
+// Language validation
+export const validateLanguage = (language) => {
+  if (!language || safeTrim(language) === '') {
+    return 'Language cannot be empty';
+  }
+  if (safeTrim(language).length < 2) {
+    return 'Language must be at least 2 characters long';
+  }
+  if (safeTrim(language).length > 50) {
+    return 'Language must be no more than 50 characters long';
+  }
+  if (!/^[a-zA-Z\s\-']+$/.test(safeTrim(language))) {
+    return 'Language can only contain letters, spaces, hyphens, and apostrophes';
+  }
+  return null;
 };
 
-// Appointment booking validation functions
+// Appointment booking validation
 export const validateAppointmentBooking = (formData) => {
   const errors = {};
   
@@ -507,7 +339,7 @@ export const validateAppointmentBooking = (formData) => {
   return errors;
 };
 
-// Profile management validation functions
+// Profile update validation
 export const validateProfileUpdate = (formData) => {
   const errors = {};
   
@@ -540,7 +372,24 @@ export const validateProfileUpdate = (formData) => {
   return errors;
 };
 
-// Health goals validation functions
+// Password change validation
+export const validatePasswordChange = (formData) => {
+  const errors = {};
+  
+  if (!formData.currentPassword || formData.currentPassword.trim() === '') {
+    errors.currentPassword = 'Current password is required';
+  }
+  
+  const newPasswordError = validatePassword(formData.newPassword);
+  if (newPasswordError) errors.newPassword = newPasswordError;
+  
+  const confirmPasswordError = validatePasswordMatch(formData.newPassword, formData.confirmPassword);
+  if (confirmPasswordError) errors.confirmPassword = confirmPasswordError;
+  
+  return errors;
+};
+
+// Health goals validation
 export const validateHealthGoal = (formData) => {
   const errors = {};
   
@@ -603,7 +452,7 @@ export const validateHealthGoal = (formData) => {
   return errors;
 };
 
-// Health log validation functions
+// Health log validation
 export const validateHealthLog = (formData) => {
   const errors = {};
   
@@ -799,19 +648,77 @@ export const validateHealthLog = (formData) => {
   return errors;
 };
 
-// Password change validation
-export const validatePasswordChange = (formData) => {
+// Product validation functions
+export const validateProduct = (formData) => {
   const errors = {};
   
-  if (!formData.currentPassword || formData.currentPassword.trim() === '') {
-    errors.currentPassword = 'Current password is required';
+  // Product name validation
+  if (!formData.name || safeTrim(formData.name) === '') {
+    errors.name = 'Product name is required';
+  } else if (safeTrim(formData.name).length < 5) {
+    errors.name = 'Product name must be at least 5 characters long';
+  } else if (safeTrim(formData.name).length > 200) {
+    errors.name = 'Product name must be no more than 200 characters';
   }
   
-  const newPasswordError = validatePassword(formData.newPassword);
-  if (newPasswordError) errors.newPassword = newPasswordError;
+  // Brand validation
+  if (!formData.brand || safeTrim(formData.brand) === '') {
+    errors.brand = 'Brand is required';
+  } else if (safeTrim(formData.brand).length < 2) {
+    errors.brand = 'Brand must be at least 2 characters long';
+  } else if (safeTrim(formData.brand).length > 100) {
+    errors.brand = 'Brand must be no more than 100 characters';
+  }
   
-  const confirmPasswordError = validatePasswordMatch(formData.newPassword, formData.confirmPassword);
-  if (confirmPasswordError) errors.confirmPassword = confirmPasswordError;
+  // Category validation
+  if (!formData.category || safeTrim(formData.category) === '') {
+    errors.category = 'Category is required';
+  }
+  
+  // Price validation
+  if (!formData.price || safeTrim(formData.price) === '') {
+    errors.price = 'Price is required';
+  } else {
+    const price = parseFloat(formData.price);
+    if (isNaN(price) || price <= 0) {
+      errors.price = 'Price must be a valid number greater than 0';
+    } else if (price > 1000000) {
+      errors.price = 'Price must be less than 1,000,000';
+    }
+  }
+  
+  // Description validation
+  if (!formData.description || safeTrim(formData.description) === '') {
+    errors.description = 'Description is required';
+  } else if (safeTrim(formData.description).length < 20) {
+    errors.description = 'Description must be at least 20 characters long';
+  } else if (safeTrim(formData.description).length > 2000) {
+    errors.description = 'Description must be no more than 2000 characters';
+  }
+  
+  // Stock validation
+  if (!formData.stock || safeTrim(formData.stock) === '') {
+    errors.stock = 'Stock quantity is required';
+  } else {
+    const stock = parseInt(formData.stock);
+    if (isNaN(stock) || stock < 0) {
+      errors.stock = 'Stock quantity must be a valid number (0 or more)';
+    } else if (stock > 100000) {
+      errors.stock = 'Stock quantity must be less than 100,000';
+    }
+  }
+  
+  // Low stock threshold validation
+  if (!formData.lowStockThreshold || safeTrim(formData.lowStockThreshold) === '') {
+    errors.lowStockThreshold = 'Low stock threshold is required';
+  } else {
+    const threshold = parseInt(formData.lowStockThreshold);
+    if (isNaN(threshold) || threshold < 0) {
+      errors.lowStockThreshold = 'Low stock threshold must be a valid number (0 or more)';
+    } else if (threshold > 10000) {
+      errors.lowStockThreshold = 'Low stock threshold must be less than 10,000';
+    }
+  }
   
   return errors;
 };

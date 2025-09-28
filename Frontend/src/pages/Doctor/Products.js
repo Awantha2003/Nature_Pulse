@@ -136,6 +136,8 @@ import {
 } from '@mui/icons-material';
 import { useAuth } from '../../contexts/AuthContext';
 import api from '../../utils/api';
+import { ValidatedTextField, ValidatedSelect } from '../../components/Validation';
+import { validateProduct } from '../../utils/validation';
 
 const DoctorProducts = () => {
   const { user } = useAuth();
@@ -198,6 +200,8 @@ const DoctorProducts = () => {
     isActive: true,
     isFeatured: false,
   });
+  const [validationErrors, setValidationErrors] = useState({});
+  const [touchedFields, setTouchedFields] = useState({});
   const [selectedImages, setSelectedImages] = useState([]);
   const [imageUploadProgress, setImageUploadProgress] = useState(0);
   const [uploadingImages, setUploadingImages] = useState(false);
@@ -307,25 +311,10 @@ const DoctorProducts = () => {
   };
 
   const handleAddProduct = async () => {
-    // Client-side validation
-    if (productForm.name.length < 5 || productForm.name.length > 200) {
-      setError('Product name must be between 5 and 200 characters');
-      return;
-    }
-    if (productForm.description.length < 20 || productForm.description.length > 2000) {
-      setError('Description must be between 20 and 2000 characters');
-      return;
-    }
-    if (productForm.brand.length < 2 || productForm.brand.length > 100) {
-      setError('Brand must be between 2 and 100 characters');
-      return;
-    }
-    if (!productForm.category) {
-      setError('Please select a category');
-      return;
-    }
-    if (!productForm.price || parseFloat(productForm.price) <= 0) {
-      setError('Please enter a valid price');
+    // Validate form before submission
+    if (!validateForm()) {
+      const errorMessages = Object.values(validationErrors).filter(Boolean);
+      setError(`Please fix the following errors: ${errorMessages.join(', ')}`);
       return;
     }
 
@@ -442,6 +431,51 @@ const DoctorProducts = () => {
     setSelectedImages([]);
     setImageUploadProgress(0);
     setUploadingImages(false);
+    setValidationErrors({});
+    setTouchedFields({});
+  };
+
+  // Validation functions
+  const validateField = (fieldName, value) => {
+    const errors = validateProduct({ [fieldName]: value });
+    return errors[fieldName] || null;
+  };
+
+  const handleFieldChange = (fieldName, value) => {
+    setProductForm(prev => ({ ...prev, [fieldName]: value }));
+    
+    // Validate field on change
+    const error = validateField(fieldName, value);
+    setValidationErrors(prev => ({
+      ...prev,
+      [fieldName]: error
+    }));
+  };
+
+  const handleFieldBlur = (fieldName) => {
+    setTouchedFields(prev => ({ ...prev, [fieldName]: true }));
+    
+    // Validate field on blur
+    const error = validateField(fieldName, productForm[fieldName]);
+    setValidationErrors(prev => ({
+      ...prev,
+      [fieldName]: error
+    }));
+  };
+
+  const validateForm = () => {
+    const errors = validateProduct(productForm);
+    setValidationErrors(errors);
+    setTouchedFields({
+      name: true,
+      description: true,
+      category: true,
+      brand: true,
+      price: true,
+      stock: true,
+      lowStockThreshold: true
+    });
+    return Object.keys(errors).length === 0;
   };
 
   const handleImageSelect = (event) => {
@@ -2625,11 +2659,15 @@ const DoctorProducts = () => {
           <Stack spacing={3} sx={{ mt: 2 }}>
             <Grid container spacing={2}>
               <Grid size={{ xs: 12, md: 6 }}>
-                <TextField
+                <ValidatedTextField
                   fullWidth
                   label="Product Name"
                   value={productForm.name}
-                  onChange={(e) => setProductForm({...productForm, name: e.target.value})}
+                  onChange={(e) => handleFieldChange('name', e.target.value)}
+                  onBlur={() => handleFieldBlur('name')}
+                  error={touchedFields.name && !!validationErrors.name}
+                  helperText={touchedFields.name && validationErrors.name}
+                  placeholder="Enter product name (5-200 characters)"
                 />
               </Grid>
               <Grid size={{ xs: 12, md: 6 }}>
@@ -2637,7 +2675,10 @@ const DoctorProducts = () => {
                   fullWidth
                   label="Brand"
                   value={productForm.brand}
-                  onChange={(e) => setProductForm({...productForm, brand: e.target.value})}
+                  onChange={(e) => handleFieldChange('brand', e.target.value)}
+                  onBlur={() => handleFieldBlur('brand')}
+                  error={touchedFields.brand && !!validationErrors.brand}
+                  helperText={touchedFields.brand && validationErrors.brand}
                 />
               </Grid>
               <Grid size={{ xs: 12, md: 6 }}>
@@ -2645,7 +2686,9 @@ const DoctorProducts = () => {
                   <InputLabel>Category</InputLabel>
                   <Select
                     value={productForm.category}
-                    onChange={(e) => setProductForm({...productForm, category: e.target.value})}
+                    onChange={(e) => handleFieldChange('category', e.target.value)}
+                  onBlur={() => handleFieldBlur('category')}
+                  error={touchedFields.category && !!validationErrors.category}
                     label="Category"
                   >
                     {categories.map((category) => (
@@ -2662,7 +2705,10 @@ const DoctorProducts = () => {
                   label="Price"
                   type="number"
                   value={productForm.price}
-                  onChange={(e) => setProductForm({...productForm, price: e.target.value})}
+                  onChange={(e) => handleFieldChange('price', e.target.value)}
+                  onBlur={() => handleFieldBlur('price')}
+                  error={touchedFields.price && !!validationErrors.price}
+                  helperText={touchedFields.price && validationErrors.price}
                 />
               </Grid>
               <Grid size={{ xs: 12 }}>
@@ -2672,7 +2718,10 @@ const DoctorProducts = () => {
                   multiline
                   rows={3}
                   value={productForm.description}
-                  onChange={(e) => setProductForm({...productForm, description: e.target.value})}
+                  onChange={(e) => handleFieldChange('description', e.target.value)}
+                  onBlur={() => handleFieldBlur('description')}
+                  error={touchedFields.description && !!validationErrors.description}
+                  helperText={touchedFields.description && validationErrors.description}
                 />
               </Grid>
               <Grid size={{ xs: 12, md: 6 }}>
@@ -2681,7 +2730,10 @@ const DoctorProducts = () => {
                   label="Stock Quantity"
                   type="number"
                   value={productForm.stock}
-                  onChange={(e) => setProductForm({...productForm, stock: e.target.value})}
+                  onChange={(e) => handleFieldChange('stock', e.target.value)}
+                  onBlur={() => handleFieldBlur('stock')}
+                  error={touchedFields.stock && !!validationErrors.stock}
+                  helperText={touchedFields.stock && validationErrors.stock}
                 />
               </Grid>
               <Grid size={{ xs: 12, md: 6 }}>
@@ -2690,7 +2742,10 @@ const DoctorProducts = () => {
                   label="Low Stock Threshold"
                   type="number"
                   value={productForm.lowStockThreshold}
-                  onChange={(e) => setProductForm({...productForm, lowStockThreshold: e.target.value})}
+                  onChange={(e) => handleFieldChange('lowStockThreshold', e.target.value)}
+                  onBlur={() => handleFieldBlur('lowStockThreshold')}
+                  error={touchedFields.lowStockThreshold && !!validationErrors.lowStockThreshold}
+                  helperText={touchedFields.lowStockThreshold && validationErrors.lowStockThreshold}
                 />
               </Grid>
               <Grid size={{ xs: 12 }}>
@@ -2860,7 +2915,10 @@ const DoctorProducts = () => {
                   fullWidth
                   label="Brand"
                   value={productForm.brand}
-                  onChange={(e) => setProductForm({...productForm, brand: e.target.value})}
+                  onChange={(e) => handleFieldChange('brand', e.target.value)}
+                  onBlur={() => handleFieldBlur('brand')}
+                  error={touchedFields.brand && !!validationErrors.brand}
+                  helperText={touchedFields.brand && validationErrors.brand}
                 />
               </Grid>
               <Grid size={{ xs: 12, md: 6 }}>
@@ -2868,7 +2926,9 @@ const DoctorProducts = () => {
                   <InputLabel>Category</InputLabel>
                   <Select
                     value={productForm.category}
-                    onChange={(e) => setProductForm({...productForm, category: e.target.value})}
+                    onChange={(e) => handleFieldChange('category', e.target.value)}
+                  onBlur={() => handleFieldBlur('category')}
+                  error={touchedFields.category && !!validationErrors.category}
                     label="Category"
                   >
                     {categories.map((category) => (
@@ -2885,7 +2945,10 @@ const DoctorProducts = () => {
                   label="Price"
                   type="number"
                   value={productForm.price}
-                  onChange={(e) => setProductForm({...productForm, price: e.target.value})}
+                  onChange={(e) => handleFieldChange('price', e.target.value)}
+                  onBlur={() => handleFieldBlur('price')}
+                  error={touchedFields.price && !!validationErrors.price}
+                  helperText={touchedFields.price && validationErrors.price}
                 />
               </Grid>
               <Grid size={{ xs: 12 }}>
@@ -2895,7 +2958,10 @@ const DoctorProducts = () => {
                   multiline
                   rows={3}
                   value={productForm.description}
-                  onChange={(e) => setProductForm({...productForm, description: e.target.value})}
+                  onChange={(e) => handleFieldChange('description', e.target.value)}
+                  onBlur={() => handleFieldBlur('description')}
+                  error={touchedFields.description && !!validationErrors.description}
+                  helperText={touchedFields.description && validationErrors.description}
                 />
               </Grid>
               <Grid size={{ xs: 12, md: 6 }}>
@@ -2904,7 +2970,10 @@ const DoctorProducts = () => {
                   label="Stock Quantity"
                   type="number"
                   value={productForm.stock}
-                  onChange={(e) => setProductForm({...productForm, stock: e.target.value})}
+                  onChange={(e) => handleFieldChange('stock', e.target.value)}
+                  onBlur={() => handleFieldBlur('stock')}
+                  error={touchedFields.stock && !!validationErrors.stock}
+                  helperText={touchedFields.stock && validationErrors.stock}
                 />
               </Grid>
               <Grid size={{ xs: 12, md: 6 }}>
@@ -2913,7 +2982,10 @@ const DoctorProducts = () => {
                   label="Low Stock Threshold"
                   type="number"
                   value={productForm.lowStockThreshold}
-                  onChange={(e) => setProductForm({...productForm, lowStockThreshold: e.target.value})}
+                  onChange={(e) => handleFieldChange('lowStockThreshold', e.target.value)}
+                  onBlur={() => handleFieldBlur('lowStockThreshold')}
+                  error={touchedFields.lowStockThreshold && !!validationErrors.lowStockThreshold}
+                  helperText={touchedFields.lowStockThreshold && validationErrors.lowStockThreshold}
                 />
               </Grid>
               <Grid size={{ xs: 12 }}>
