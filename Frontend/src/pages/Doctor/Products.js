@@ -324,7 +324,7 @@ const DoctorProducts = () => {
         ...productForm,
         price: {
           current: parseFloat(productForm.price),
-          currency: 'USD'
+          currency: 'LKR'
         },
         inventory: {
           stock: parseInt(productForm.stock),
@@ -385,7 +385,7 @@ const DoctorProducts = () => {
         ...productForm,
         price: {
           current: parseFloat(productForm.price),
-          currency: 'USD'
+          currency: 'LKR'
         },
         inventory: {
           stock: parseInt(productForm.stock),
@@ -1032,7 +1032,7 @@ const DoctorProducts = () => {
           <td style="border: 1px solid #ddd; padding: 8px;">${product.category}</td>
           <td style="border: 1px solid #ddd; padding: 8px;">${product.brand}</td>
           <td style="border: 1px solid #ddd; padding: 8px;">${stock}${isLowStock ? ' (Low)' : ''}</td>
-          <td style="border: 1px solid #ddd; padding: 8px;">$${price}</td>
+          <td style="border: 1px solid #ddd; padding: 8px;">Rs ${price}</td>
           <td style="border: 1px solid #ddd; padding: 8px;">${product.approvalStatus || 'Unknown'}</td>
           <td style="border: 1px solid #ddd; padding: 8px;">${product.isActive ? 'Yes' : 'No'}</td>
           <td style="border: 1px solid #ddd; padding: 8px;">${product.isFeatured ? 'Yes' : 'No'}</td>
@@ -2006,7 +2006,7 @@ const DoctorProducts = () => {
                         fontSize: '1.3rem'
                       }}
                     >
-                      ${price}
+                      Rs {price}
                     </Typography>
                     {rating > 0 && (
                       <Box sx={{ 
@@ -2568,7 +2568,7 @@ const DoctorProducts = () => {
         </Box>
                           </TableCell>
                           <TableCell sx={{ fontWeight: 600, color: '#2e7d32' }}>
-                            ${product.price?.current || product.price}
+                            Rs {product.price?.current || product.price}
                           </TableCell>
                           <TableCell>
                             <Chip 
@@ -3067,7 +3067,7 @@ const DoctorProducts = () => {
                 </Typography>
                 <Box sx={{ mb: 2 }}>
                   <Typography variant="h6" color="primary" sx={{ fontWeight: 700 }}>
-                    ${selectedProduct.price?.current || selectedProduct.price}
+                    Rs {selectedProduct.price?.current || selectedProduct.price}
         </Typography>
                 </Box>
                 <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>

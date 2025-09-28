@@ -161,10 +161,7 @@ const AdminAnalytics = () => {
   };
 
   const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD'
-    }).format(amount || 0);
+    return `Rs ${(amount || 0).toFixed(2)}`;
   };
 
   const formatNumber = (num) => {

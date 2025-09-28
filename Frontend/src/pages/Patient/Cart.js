@@ -343,7 +343,7 @@ const PatientCart = () => {
                             variant="outlined"
                           />
                           <Typography variant="h6" sx={{ fontWeight: 700, color: 'primary.main' }}>
-                            ${item.product.price.current}
+                            Rs {item.product.price.current}
                           </Typography>
                         </Box>
                       </Box>
@@ -393,15 +393,15 @@ const PatientCart = () => {
             <Box sx={{ mb: 3 }}>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
                 <Typography variant="body1">Subtotal ({cart.items?.length || 0} items)</Typography>
-                <Typography variant="body1">${(cart.items?.reduce((total, item) => total + (item.product.price?.current || item.product.price) * item.quantity, 0) || 0).toFixed(2)}</Typography>
+                <Typography variant="body1">Rs {(cart.items?.reduce((total, item) => total + (item.product.price?.current || item.product.price) * item.quantity, 0) || 0).toFixed(2)}</Typography>
               </Box>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
                 <Typography variant="body1">Shipping</Typography>
-                <Typography variant="body1">$10.00</Typography>
+                <Typography variant="body1">Rs 1000.00</Typography>
               </Box>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
                 <Typography variant="body1">Tax</Typography>
-                <Typography variant="body1">${((cart.items?.reduce((total, item) => total + (item.product.price?.current || item.product.price) * item.quantity, 0) || 0) * 0.1).toFixed(2)}</Typography>
+                <Typography variant="body1">Rs {((cart.items?.reduce((total, item) => total + (item.product.price?.current || item.product.price) * item.quantity, 0) || 0) * 0.1).toFixed(2)}</Typography>
               </Box>
               {cart.coupon && (
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
@@ -409,7 +409,7 @@ const PatientCart = () => {
                     Discount ({cart.coupon.code})
                   </Typography>
                   <Typography variant="body1" color="success.main">
-                    -${(cart.totalDiscount || 0).toFixed(2)}
+                    -Rs {(cart.totalDiscount || 0).toFixed(2)}
                   </Typography>
                 </Box>
               )}
@@ -417,7 +417,7 @@ const PatientCart = () => {
               <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                 <Typography variant="h6" sx={{ fontWeight: 700 }}>Total</Typography>
                 <Typography variant="h6" sx={{ fontWeight: 700, color: 'primary.main' }}>
-                  ${((cart.items?.reduce((total, item) => total + (item.product.price?.current || item.product.price) * item.quantity, 0) || 0) + 10 + ((cart.items?.reduce((total, item) => total + (item.product.price?.current || item.product.price) * item.quantity, 0) || 0) * 0.1) - (cart.totalDiscount || 0)).toFixed(2)}
+                  Rs {((cart.items?.reduce((total, item) => total + (item.product.price?.current || item.product.price) * item.quantity, 0) || 0) + 10 + ((cart.items?.reduce((total, item) => total + (item.product.price?.current || item.product.price) * item.quantity, 0) || 0) * 0.1) - (cart.totalDiscount || 0)).toFixed(2)}
                 </Typography>
               </Box>
             </Box>
@@ -536,7 +536,7 @@ const PatientCart = () => {
                   Order Total
                 </Typography>
                 <Typography variant="h4" sx={{ fontWeight: 700, color: 'primary.main' }}>
-                  ${((cart.items?.reduce((total, item) => total + (item.product.price?.current || item.product.price) * item.quantity, 0) || 0) + 10 + ((cart.items?.reduce((total, item) => total + (item.product.price?.current || item.product.price) * item.quantity, 0) || 0) * 0.1) - (cart.totalDiscount || 0)).toFixed(2)}
+                  Rs {((cart.items?.reduce((total, item) => total + (item.product.price?.current || item.product.price) * item.quantity, 0) || 0) + 10 + ((cart.items?.reduce((total, item) => total + (item.product.price?.current || item.product.price) * item.quantity, 0) || 0) * 0.1) - (cart.totalDiscount || 0)).toFixed(2)}
                 </Typography>
               </Box>
             </Grid>

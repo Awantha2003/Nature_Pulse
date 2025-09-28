@@ -119,9 +119,9 @@ const AuthenticatedShell = () => {
       try {
         // This would be replaced with actual moderation API endpoint
         // For now, we'll set a placeholder or fetch from a real endpoint
-        const response = await api.get('/admin/moderation/count');
+        const response = await api.get('/community/admin/stats');
         if (response.data.status === 'success') {
-          setModerationCount(response.data.data.count || 0);
+          setModerationCount(response.data.data.overall.flaggedReports || 0);
         }
       } catch (err) {
         console.error('Fetch moderation count error:', err);

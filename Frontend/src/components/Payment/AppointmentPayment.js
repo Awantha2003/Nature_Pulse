@@ -501,7 +501,7 @@ const AppointmentPayment = () => {
                 
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
                   <Typography variant="body2">Tax</Typography>
-                  <Typography variant="body2">$0.00</Typography>
+                  <Typography variant="body2">Rs 0.00</Typography>
                 </Box>
                 
                 <Divider sx={{ my: 1 }} />

@@ -256,7 +256,7 @@ const AdminCatalog = () => {
         ...productForm,
         price: {
           current: parseFloat(productForm.price),
-          currency: 'USD'
+          currency: 'LKR'
         },
         inventory: {
           stock: parseInt(productForm.stock),
@@ -294,7 +294,7 @@ const AdminCatalog = () => {
         ...productForm,
         price: {
           current: parseFloat(productForm.price),
-          currency: 'USD'
+          currency: 'LKR'
         },
         inventory: {
           stock: parseInt(productForm.stock),

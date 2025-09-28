@@ -57,7 +57,10 @@ import {
   Phone,
   Email,
   TrendingUp,
-  Assessment
+  Assessment,
+  PictureAsPdf,
+  TableChart,
+  FileDownload
 } from '@mui/icons-material';
 import api from '../../utils/api';
 
@@ -92,6 +95,16 @@ const AdminAppointments = () => {
     cancelled: 0,
     today: 0
   });
+  const [reportData, setReportData] = useState(null);
+  const [generatingReport, setGeneratingReport] = useState(false);
+  const [reportFilters, setReportFilters] = useState({
+    startDate: '',
+    endDate: '',
+    status: '',
+    type: '',
+    doctor: ''
+  });
+  const [reportDialogOpen, setReportDialogOpen] = useState(false);
 
   // Fetch appointments
   const fetchAppointments = async () => {
@@ -103,7 +116,7 @@ const AdminAppointments = () => {
         ...filters
       });
 
-      const response = await api.get(`/appointments?${params}`);
+      const response = await api.get(`/admin/appointments?${params}`);
       
       if (response.data.status === 'success') {
         setAppointments(response.data.data.appointments);
@@ -122,7 +135,7 @@ const AdminAppointments = () => {
   // Fetch statistics
   const fetchStats = async () => {
     try {
-      const response = await api.get('/appointments');
+      const response = await api.get('/admin/appointments');
       if (response.data.status === 'success') {
         const allAppointments = response.data.data.appointments;
         const today = new Date().toISOString().split('T')[0];
@@ -247,6 +260,252 @@ const AdminAppointments = () => {
     const statusMap = ['', 'scheduled', 'confirmed', 'completed', 'cancelled'];
     handleFilterChange('status', statusMap[newValue]);
   };
+
+  // Report generation functions
+  const generateReport = async () => {
+    try {
+      setGeneratingReport(true);
+      
+      // Fetch all appointments in batches to respect backend validation limits
+      let allAppointments = [];
+      let page = 1;
+      let hasMore = true;
+      
+      while (hasMore) {
+        const params = new URLSearchParams({
+          ...reportFilters,
+          page: page,
+          limit: 100 // Maximum allowed by backend validation
+        });
+
+        const response = await api.get(`/admin/appointments?${params}`);
+        
+        if (response.data.status === 'success') {
+          const appointments = response.data.data.appointments;
+          allAppointments = [...allAppointments, ...appointments];
+          
+          // Check if there are more pages
+          const pagination = response.data.data.pagination;
+          hasMore = pagination.hasNext;
+          page++;
+        } else {
+          hasMore = false;
+        }
+      }
+      
+      const reportStats = calculateReportStats(allAppointments);
+      
+      setReportData({
+        appointments: allAppointments,
+        stats: reportStats,
+        filters: reportFilters,
+        generatedAt: new Date().toISOString(),
+        totalCount: allAppointments.length
+      });
+      setReportDialogOpen(true);
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to generate report');
+    } finally {
+      setGeneratingReport(false);
+    }
+  };
+
+  const calculateReportStats = (appointments) => {
+    const stats = {
+      total: appointments.length,
+      scheduled: 0,
+      confirmed: 0,
+      completed: 0,
+      cancelled: 0,
+      totalRevenue: 0,
+      averageAppointmentValue: 0,
+      byType: {},
+      byDoctor: {},
+      byMonth: {}
+    };
+
+    appointments.forEach(appointment => {
+      // Count by status
+      stats[appointment.status] = (stats[appointment.status] || 0) + 1;
+      
+      // Calculate revenue
+      if (appointment.payment?.amount) {
+        stats.totalRevenue += appointment.payment.amount;
+      }
+      
+      // Count by type
+      stats.byType[appointment.type] = (stats.byType[appointment.type] || 0) + 1;
+      
+      // Count by doctor
+      const doctorName = `${appointment.doctor?.user?.firstName} ${appointment.doctor?.user?.lastName}`;
+      stats.byDoctor[doctorName] = (stats.byDoctor[doctorName] || 0) + 1;
+      
+      // Count by month
+      const month = new Date(appointment.appointmentDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long' });
+      stats.byMonth[month] = (stats.byMonth[month] || 0) + 1;
+    });
+
+    stats.averageAppointmentValue = stats.total > 0 ? stats.totalRevenue / stats.total : 0;
+    
+    return stats;
+  };
+
+  const exportReport = (format) => {
+    if (!reportData) {
+      setError('No report data available. Please generate a report first.');
+      return;
+    }
+
+    try {
+      const timestamp = new Date().toISOString().split('T')[0];
+      const filename = `appointments_report_${timestamp}`;
+
+      if (format === 'pdf') {
+        generatePDFReport(reportData, filename);
+      } else if (format === 'csv') {
+        generateCSVReport(reportData, filename);
+      } else if (format === 'json') {
+        generateJSONReport(reportData, filename);
+      }
+    } catch (error) {
+      console.error('Export error:', error);
+      setError('Failed to export report. Please try again.');
+    }
+  };
+
+  const generatePDFReport = (data, filename) => {
+    const printWindow = window.open('', '_blank');
+    const reportHTML = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Appointments Report - ${filename}</title>
+        <style>
+          body { font-family: Arial, sans-serif; margin: 20px; }
+          .header { text-align: center; margin-bottom: 30px; }
+          .stats { display: flex; justify-content: space-around; margin: 20px 0; }
+          .stat-box { text-align: center; padding: 10px; border: 1px solid #ddd; }
+          table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+          th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+          th { background-color: #f2f2f2; }
+          .summary { margin: 20px 0; }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h1>Appointments Report</h1>
+          <p>Generated on: ${new Date(data.generatedAt).toLocaleString()}</p>
+          <p>Total Appointments: ${data.totalCount}</p>
+        </div>
+        
+        <div class="stats">
+          <div class="stat-box">
+            <h3>${data.stats.scheduled}</h3>
+            <p>Scheduled</p>
+          </div>
+          <div class="stat-box">
+            <h3>${data.stats.confirmed}</h3>
+            <p>Confirmed</p>
+          </div>
+          <div class="stat-box">
+            <h3>${data.stats.completed}</h3>
+            <p>Completed</p>
+          </div>
+          <div class="stat-box">
+            <h3>${data.stats.cancelled}</h3>
+            <p>Cancelled</p>
+          </div>
+        </div>
+
+        <div class="summary">
+          <h3>Summary</h3>
+          <p>Total Revenue: Rs ${data.stats.totalRevenue.toFixed(2)}</p>
+          <p>Average Appointment Value: Rs ${data.stats.averageAppointmentValue.toFixed(2)}</p>
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Patient</th>
+              <th>Doctor</th>
+              <th>Date</th>
+              <th>Time</th>
+              <th>Type</th>
+              <th>Status</th>
+              <th>Amount</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${data.appointments.map(apt => `
+              <tr>
+                <td>${apt.patient?.firstName} ${apt.patient?.lastName}</td>
+                <td>Dr. ${apt.doctor?.user?.firstName} ${apt.doctor?.user?.lastName}</td>
+                <td>${formatDate(apt.appointmentDate)}</td>
+                <td>${formatTime(apt.appointmentTime)}</td>
+                <td>${apt.type}</td>
+                <td>${apt.status}</td>
+                <td>Rs ${apt.payment?.amount || 0}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </body>
+      </html>
+    `;
+    
+    printWindow.document.write(reportHTML);
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
+    setSuccess('PDF export initiated! Use your browser\'s print dialog to save as PDF.');
+  };
+
+  const generateCSVReport = (data, filename) => {
+    let csvContent = 'Appointments Report\n';
+    csvContent += `Generated on: ${new Date(data.generatedAt).toLocaleString()}\n`;
+    csvContent += `Total Appointments: ${data.totalCount}\n\n`;
+    
+    // Summary section
+    csvContent += 'SUMMARY STATISTICS\n';
+    csvContent += 'Metric,Value\n';
+    csvContent += `Total Appointments,${data.stats.total}\n`;
+    csvContent += `Scheduled,${data.stats.scheduled}\n`;
+    csvContent += `Confirmed,${data.stats.confirmed}\n`;
+    csvContent += `Completed,${data.stats.completed}\n`;
+    csvContent += `Cancelled,${data.stats.cancelled}\n`;
+    csvContent += `Total Revenue,Rs ${data.stats.totalRevenue.toFixed(2)}\n`;
+    csvContent += `Average Appointment Value,Rs ${data.stats.averageAppointmentValue.toFixed(2)}\n\n`;
+    
+    // Detailed data section
+    csvContent += 'DETAILED APPOINTMENT DATA\n';
+    csvContent += 'Patient Name,Patient Email,Doctor Name,Specialization,Date,Time,Type,Status,Amount,Payment Status,Reason\n';
+    
+    data.appointments.forEach(apt => {
+      csvContent += `"${apt.patient?.firstName} ${apt.patient?.lastName}","${apt.patient?.email}","Dr. ${apt.doctor?.user?.firstName} ${apt.doctor?.user?.lastName}","${apt.doctor?.specialization}","${formatDate(apt.appointmentDate)}","${formatTime(apt.appointmentTime)}","${apt.type}","${apt.status}","Rs ${apt.payment?.amount || 0}","${apt.payment?.status || 'N/A'}","${apt.reason || 'N/A'}"\n`;
+    });
+
+    downloadFile(csvContent, `${filename}.csv`, 'text/csv');
+    setSuccess('CSV file download started!');
+  };
+
+  const generateJSONReport = (data, filename) => {
+    const jsonContent = JSON.stringify(data, null, 2);
+    downloadFile(jsonContent, `${filename}.json`, 'application/json');
+    setSuccess('JSON file download started!');
+  };
+
+  const downloadFile = (content, filename, mimeType) => {
+    const blob = new Blob([content], { type: mimeType });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+  };
+
 
   return (
     <Container maxWidth="xl">
@@ -445,6 +704,54 @@ const AdminAppointments = () => {
                   </Button>
                 </Grid>
               </Grid>
+              
+              {/* Report Generation Section */}
+              <Divider sx={{ my: 3 }} />
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
+                <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center' }}>
+                  <Assessment sx={{ mr: 1 }} />
+                  Report Generation
+                </Typography>
+                <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+                  <Button
+                    variant="contained"
+                    startIcon={<Assessment />}
+                    onClick={generateReport}
+                    disabled={generatingReport}
+                    sx={{ borderRadius: '8px' }}
+                  >
+                    {generatingReport ? 'Generating...' : 'Generate Report'}
+                  </Button>
+                  {reportData && (
+                    <>
+                      <Button
+                        variant="outlined"
+                        startIcon={<PictureAsPdf />}
+                        onClick={() => exportReport('pdf')}
+                        sx={{ borderRadius: '8px' }}
+                      >
+                        Export PDF
+                      </Button>
+                      <Button
+                        variant="outlined"
+                        startIcon={<TableChart />}
+                        onClick={() => exportReport('csv')}
+                        sx={{ borderRadius: '8px' }}
+                      >
+                        Export CSV
+                      </Button>
+                      <Button
+                        variant="outlined"
+                        startIcon={<FileDownload />}
+                        onClick={() => exportReport('json')}
+                        sx={{ borderRadius: '8px' }}
+                      >
+                        Export JSON
+                      </Button>
+                    </>
+                  )}
+                </Box>
+              </Box>
             </CardContent>
           </Card>
 
@@ -545,7 +852,7 @@ const AdminAppointments = () => {
                                 <Payment sx={{ mr: 1, fontSize: 16 }} />
                                 <Box>
                                   <Typography variant="subtitle2">
-                                    ₹{appointment.payment?.amount}
+                                    Rs {appointment.payment?.amount}
                                   </Typography>
                                   <Chip
                                     label={appointment.payment?.status}
@@ -730,7 +1037,7 @@ const AdminAppointments = () => {
                             Virtual: {selectedAppointment.isVirtual ? 'Yes' : 'No'}
                           </Typography>
                           <Typography variant="body2" color="text.secondary">
-                            Payment: ₹{selectedAppointment.payment?.amount} ({selectedAppointment.payment?.status})
+                            Payment: Rs {selectedAppointment.payment?.amount} ({selectedAppointment.payment?.status})
                           </Typography>
                         </Grid>
                       </Grid>
@@ -782,6 +1089,195 @@ const AdminAppointments = () => {
               <Button onClick={handleDelete} color="error" variant="contained">
                 Delete
               </Button>
+            </DialogActions>
+          </Dialog>
+
+          {/* Report Preview Dialog */}
+          <Dialog
+            open={reportDialogOpen}
+            onClose={() => setReportDialogOpen(false)}
+            maxWidth="lg"
+            fullWidth
+          >
+            <DialogTitle>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                  <Assessment sx={{ mr: 2 }} />
+                  Appointments Report Preview
+                </Box>
+                <Box sx={{ display: 'flex', gap: 1 }}>
+                  <Button
+                    variant="outlined"
+                    startIcon={<PictureAsPdf />}
+                    onClick={() => exportReport('pdf')}
+                    size="small"
+                  >
+                    PDF
+                  </Button>
+                  <Button
+                    variant="outlined"
+                    startIcon={<TableChart />}
+                    onClick={() => exportReport('csv')}
+                    size="small"
+                  >
+                    CSV
+                  </Button>
+                  <Button
+                    variant="outlined"
+                    startIcon={<FileDownload />}
+                    onClick={() => exportReport('json')}
+                    size="small"
+                  >
+                    JSON
+                  </Button>
+                </Box>
+              </Box>
+            </DialogTitle>
+            <DialogContent>
+              {reportData && (
+                <Box>
+                  {/* Report Summary */}
+                  <Grid container spacing={3} sx={{ mb: 4 }}>
+                    <Grid item xs={12} md={3}>
+                      <Card sx={{ textAlign: 'center', p: 2 }}>
+                        <CardContent>
+                          <Typography variant="h4" color="primary" sx={{ fontWeight: 'bold' }}>
+                            {reportData.stats.total}
+                          </Typography>
+                          <Typography variant="body2" color="text.secondary">
+                            Total Appointments
+                          </Typography>
+                        </CardContent>
+                      </Card>
+                    </Grid>
+                    <Grid item xs={12} md={3}>
+                      <Card sx={{ textAlign: 'center', p: 2 }}>
+                        <CardContent>
+                          <Typography variant="h4" color="success.main" sx={{ fontWeight: 'bold' }}>
+                            {reportData.stats.completed}
+                          </Typography>
+                          <Typography variant="body2" color="text.secondary">
+                            Completed
+                          </Typography>
+                        </CardContent>
+                      </Card>
+                    </Grid>
+                    <Grid item xs={12} md={3}>
+                      <Card sx={{ textAlign: 'center', p: 2 }}>
+                        <CardContent>
+                            <Typography variant="h4" color="info.main" sx={{ fontWeight: 'bold' }}>
+                              Rs {reportData.stats.totalRevenue.toFixed(2)}
+                            </Typography>
+                          <Typography variant="body2" color="text.secondary">
+                            Total Revenue
+                          </Typography>
+                        </CardContent>
+                      </Card>
+                    </Grid>
+                    <Grid item xs={12} md={3}>
+                      <Card sx={{ textAlign: 'center', p: 2 }}>
+                        <CardContent>
+                            <Typography variant="h4" color="warning.main" sx={{ fontWeight: 'bold' }}>
+                              Rs {reportData.stats.averageAppointmentValue.toFixed(2)}
+                            </Typography>
+                          <Typography variant="body2" color="text.secondary">
+                            Avg. Value
+                          </Typography>
+                        </CardContent>
+                      </Card>
+                    </Grid>
+                  </Grid>
+
+                  {/* Status Breakdown */}
+                  <Typography variant="h6" gutterBottom sx={{ mt: 3 }}>
+                    Status Breakdown
+                  </Typography>
+                  <Grid container spacing={2} sx={{ mb: 3 }}>
+                    <Grid item xs={6} md={2}>
+                      <Box sx={{ textAlign: 'center', p: 2, border: '1px solid #e0e0e0', borderRadius: 1 }}>
+                        <Typography variant="h6" color="info.main">{reportData.stats.scheduled}</Typography>
+                        <Typography variant="caption">Scheduled</Typography>
+                      </Box>
+                    </Grid>
+                    <Grid item xs={6} md={2}>
+                      <Box sx={{ textAlign: 'center', p: 2, border: '1px solid #e0e0e0', borderRadius: 1 }}>
+                        <Typography variant="h6" color="success.main">{reportData.stats.confirmed}</Typography>
+                        <Typography variant="caption">Confirmed</Typography>
+                      </Box>
+                    </Grid>
+                    <Grid item xs={6} md={2}>
+                      <Box sx={{ textAlign: 'center', p: 2, border: '1px solid #e0e0e0', borderRadius: 1 }}>
+                        <Typography variant="h6" color="success.main">{reportData.stats.completed}</Typography>
+                        <Typography variant="caption">Completed</Typography>
+                      </Box>
+                    </Grid>
+                    <Grid item xs={6} md={2}>
+                      <Box sx={{ textAlign: 'center', p: 2, border: '1px solid #e0e0e0', borderRadius: 1 }}>
+                        <Typography variant="h6" color="error.main">{reportData.stats.cancelled}</Typography>
+                        <Typography variant="caption">Cancelled</Typography>
+                      </Box>
+                    </Grid>
+                  </Grid>
+
+                  {/* Appointments Table Preview */}
+                  <Typography variant="h6" gutterBottom sx={{ mt: 3 }}>
+                    Appointments Data ({reportData.appointments.length} records)
+                  </Typography>
+                  <TableContainer component={Paper} variant="outlined" sx={{ maxHeight: 400 }}>
+                    <Table stickyHeader>
+                      <TableHead>
+                        <TableRow>
+                          <TableCell>Patient</TableCell>
+                          <TableCell>Doctor</TableCell>
+                          <TableCell>Date</TableCell>
+                          <TableCell>Time</TableCell>
+                          <TableCell>Type</TableCell>
+                          <TableCell>Status</TableCell>
+                          <TableCell>Amount</TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {reportData.appointments.slice(0, 10).map((appointment) => (
+                          <TableRow key={appointment._id}>
+                            <TableCell>
+                              {appointment.patient?.firstName} {appointment.patient?.lastName}
+                            </TableCell>
+                            <TableCell>
+                              Dr. {appointment.doctor?.user?.firstName} {appointment.doctor?.user?.lastName}
+                            </TableCell>
+                            <TableCell>{formatDate(appointment.appointmentDate)}</TableCell>
+                            <TableCell>{formatTime(appointment.appointmentTime)}</TableCell>
+                            <TableCell>
+                              <Chip label={appointment.type} size="small" color="info" variant="outlined" />
+                            </TableCell>
+                            <TableCell>
+                              <Chip
+                                label={appointment.status}
+                                size="small"
+                                color={getStatusColor(appointment.status)}
+                              />
+                            </TableCell>
+                            <TableCell>Rs {appointment.payment?.amount || 0}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                  {reportData.appointments.length > 10 && (
+                    <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+                      Showing first 10 appointments. Full data ({reportData.appointments.length} records) will be included in exported files.
+                    </Typography>
+                  )}
+                  {reportData.appointments.length === 100 && (
+                    <Typography variant="caption" color="warning.main" sx={{ mt: 1, display: 'block' }}>
+                      Note: Report shows first 100 appointments due to system limits. Use filters to narrow down results for specific date ranges or criteria.
+                    </Typography>
+                  )}
+                </Box>
+              )}
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={() => setReportDialogOpen(false)}>Close</Button>
             </DialogActions>
           </Dialog>
 
