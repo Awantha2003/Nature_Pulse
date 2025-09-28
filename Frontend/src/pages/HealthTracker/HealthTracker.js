@@ -1748,7 +1748,6 @@ Generated on: ${new Date().toLocaleString()}
                               <HealthAndSafety sx={{ color: 'primary.main' }} />
                             </ListItemIcon>
                             <ListItemText
-                              component="div"
                               primary={new Date(log.date).toLocaleDateString()}
                               secondary={
                                 <Box component="div">
@@ -2163,7 +2162,6 @@ Generated on: ${new Date().toLocaleString()}
                             </Avatar>
                           </ListItemAvatar>
                           <ListItemText
-                            component="div"
                             primary={new Date(log.date).toLocaleDateString()}
                             secondary={
                               <Box component="div" sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
@@ -2331,7 +2329,6 @@ Generated on: ${new Date().toLocaleString()}
                                   <HealthAndSafety sx={{ color: getMoodColor(log.mood) }} />
                                 </ListItemIcon>
                                 <ListItemText
-                                  component="div"
                                   primary={new Date(log.date).toLocaleDateString()}
                                   secondary={
                                     <Box component="div">

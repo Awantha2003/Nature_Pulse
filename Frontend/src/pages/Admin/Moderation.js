@@ -53,13 +53,18 @@ import {
   Healing,
   Favorite,
   Report,
-  Analytics
+  Analytics,
+  PictureAsPdf,
+  TableChart,
+  FileDownload,
+  Assessment
 } from '@mui/icons-material';
 import { useAuth } from '../../contexts/AuthContext';
 import api from '../../utils/api';
 
 const AdminModeration = () => {
-  const { user } = useAuth();
+  const { user, hasRole } = useAuth();
+  
   const [reports, setReports] = useState([]);
   const [flaggedReports, setFlaggedReports] = useState([]);
   const [stats, setStats] = useState(null);
@@ -84,6 +89,15 @@ const AdminModeration = () => {
   const [moderationNotes, setModerationNotes] = useState('');
   const [verificationMethod, setVerificationMethod] = useState('');
   const [verificationNotes, setVerificationNotes] = useState('');
+  
+  // Report generation states
+  const [reportDialogOpen, setReportDialogOpen] = useState(false);
+  const [reportType, setReportType] = useState('pdf');
+  const [reportDateRange, setReportDateRange] = useState({
+    startDate: '',
+    endDate: ''
+  });
+  const [generatingReport, setGeneratingReport] = useState(false);
 
   const categories = [
     { value: 'treatment_experience', label: 'Treatment Experience', icon: <LocalHospital /> },
@@ -113,10 +127,24 @@ const AdminModeration = () => {
   ];
 
   useEffect(() => {
-    fetchReports();
-    fetchFlaggedReports();
-    fetchStats();
-  }, [currentPage, selectedStatus, selectedCategory, sortBy, sortOrder]);
+    if (hasRole('admin')) {
+      fetchReports();
+      fetchStats();
+    } else {
+      console.log('User does not have admin role, skipping admin data fetch');
+      setReports([]);
+      setStats(null);
+    }
+  }, [currentPage, selectedStatus, selectedCategory, sortBy, sortOrder, hasRole]);
+
+  useEffect(() => {
+    if (hasRole('admin')) {
+      fetchFlaggedReports();
+    } else {
+      console.log('User does not have admin role, skipping flagged reports fetch');
+      setFlaggedReports([]);
+    }
+  }, [hasRole]);
 
   const fetchReports = async () => {
     try {
@@ -132,8 +160,11 @@ const AdminModeration = () => {
       if (selectedCategory) params.append('category', selectedCategory);
 
       const response = await api.get(`/community/admin/reports?${params}`);
-      setReports(response.data.data.reports || []);
+      const reportsData = response.data.data.reports || [];
+      setReports(reportsData);
       setTotalPages(response.data.data.pagination?.totalPages || 1);
+      
+      
     } catch (err) {
       console.error('Fetch reports error:', err);
       setError('Failed to fetch reports. Please check if the backend API is running.');
@@ -146,13 +177,27 @@ const AdminModeration = () => {
 
   const fetchFlaggedReports = async () => {
     try {
+      // First try the dedicated flagged endpoint
       const response = await api.get('/community/admin/flagged?limit=10');
-      setFlaggedReports(response.data.data.reports || []);
+      if (response.data.data && response.data.data.reports) {
+        setFlaggedReports(response.data.data.reports);
+        return;
+      }
     } catch (err) {
-      console.error('Fetch flagged reports error:', err);
-      // Fallback: filter flagged reports from main reports
-      const flagged = reports.filter(report => report.status === 'flagged');
-      setFlaggedReports(flagged);
+      console.log('Flagged endpoint not available, using fallback:', err.message);
+    }
+    
+    // Fallback: fetch all reports and filter flagged ones
+    try {
+      const response = await api.get('/community/admin/reports?status=flagged&limit=50');
+      if (response.data.data && response.data.data.reports) {
+        setFlaggedReports(response.data.data.reports);
+      } else {
+        setFlaggedReports([]);
+      }
+    } catch (err) {
+      console.error('Failed to fetch flagged reports:', err);
+      setFlaggedReports([]);
     }
   };
 
@@ -281,35 +326,342 @@ const AdminModeration = () => {
     );
   };
 
+  // Report generation functions
+  const handleGenerateReport = () => {
+    setReportDialogOpen(true);
+  };
+
+  const handleReportTypeChange = (event) => {
+    setReportType(event.target.value);
+  };
+
+  const handleDateRangeChange = (field) => (event) => {
+    setReportDateRange(prev => ({
+      ...prev,
+      [field]: event.target.value
+    }));
+  };
+
+  const generateReport = async () => {
+    try {
+      setGeneratingReport(true);
+      
+      // Fetch all reports for the selected date range
+      const params = new URLSearchParams({
+        limit: 1000, // Get all reports
+        sortBy: 'createdAt',
+        sortOrder: 'desc'
+      });
+
+      if (reportDateRange.startDate) {
+        params.append('startDate', reportDateRange.startDate);
+      }
+      if (reportDateRange.endDate) {
+        params.append('endDate', reportDateRange.endDate);
+      }
+
+      const response = await api.get(`/community/admin/reports?${params}`);
+      const allReports = response.data.data.reports || [];
+      
+      // Calculate statistics
+      const totalReports = allReports.length;
+      const approvedReports = allReports.filter(r => r.status === 'approved').length;
+      const pendingReports = allReports.filter(r => r.status === 'pending').length;
+      const flaggedReports = allReports.filter(r => r.status === 'flagged').length;
+      const rejectedReports = allReports.filter(r => r.status === 'rejected').length;
+      
+      // Category breakdown
+      const categoryStats = {};
+      allReports.forEach(report => {
+        const category = report.category;
+        if (!categoryStats[category]) {
+          categoryStats[category] = { total: 0, approved: 0, pending: 0, flagged: 0, rejected: 0 };
+        }
+        categoryStats[category].total++;
+        categoryStats[category][report.status]++;
+      });
+
+      // Flag analysis
+      const flagStats = {
+        total: 0,
+        byType: {},
+        byReason: {}
+      };
+      
+      allReports.forEach(report => {
+        if (report.moderation && report.moderation.flags) {
+          report.moderation.flags.forEach(flag => {
+            flagStats.total++;
+            flagStats.byType[flag.type] = (flagStats.byType[flag.type] || 0) + 1;
+            flagStats.byReason[flag.reason] = (flagStats.byReason[flag.reason] || 0) + 1;
+          });
+        }
+      });
+
+      const reportData = {
+        generatedAt: new Date().toISOString(),
+        dateRange: {
+          start: reportDateRange.startDate || 'All time',
+          end: reportDateRange.endDate || 'All time'
+        },
+        summary: {
+          totalReports,
+          approvedReports,
+          pendingReports,
+          flaggedReports,
+          rejectedReports,
+          approvalRate: totalReports > 0 ? ((approvedReports / totalReports) * 100).toFixed(1) : 0,
+          flagRate: totalReports > 0 ? ((flaggedReports / totalReports) * 100).toFixed(1) : 0
+        },
+        categoryBreakdown: categoryStats,
+        flagAnalysis: flagStats,
+        reports: allReports
+      };
+
+      if (reportType === 'pdf') {
+        generatePDFReport(reportData);
+      } else if (reportType === 'csv') {
+        generateCSVReport(reportData);
+      } else if (reportType === 'json') {
+        generateJSONReport(reportData);
+      }
+
+      setReportDialogOpen(false);
+      setSuccess('Report generated successfully!');
+      
+    } catch (error) {
+      console.error('Error generating report:', error);
+      setError('Failed to generate report. Please try again.');
+    } finally {
+      setGeneratingReport(false);
+    }
+  };
+
+  const generatePDFReport = (data) => {
+    // Create a simple PDF report using browser's print functionality
+    const printWindow = window.open('', '_blank');
+    const reportHTML = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Content Moderation Report</title>
+        <style>
+          body { font-family: Arial, sans-serif; margin: 20px; }
+          .header { text-align: center; margin-bottom: 30px; }
+          .section { margin-bottom: 25px; }
+          .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 20px; }
+          .stat-card { border: 1px solid #ddd; padding: 15px; text-align: center; }
+          .stat-number { font-size: 24px; font-weight: bold; color: #1976d2; }
+          .stat-label { font-size: 14px; color: #666; }
+          table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+          th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+          th { background-color: #f5f5f5; }
+          .footer { margin-top: 30px; font-size: 12px; color: #666; }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h1>Content Moderation Report</h1>
+          <p>Generated on: ${new Date(data.generatedAt).toLocaleString()}</p>
+          <p>Date Range: ${data.dateRange.start} to ${data.dateRange.end}</p>
+        </div>
+        
+        <div class="section">
+          <h2>Summary Statistics</h2>
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-number">${data.summary.totalReports}</div>
+              <div class="stat-label">Total Reports</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-number">${data.summary.approvedReports}</div>
+              <div class="stat-label">Approved</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-number">${data.summary.flaggedReports}</div>
+              <div class="stat-label">Flagged</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-number">${data.summary.pendingReports}</div>
+              <div class="stat-label">Pending</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-number">${data.summary.rejectedReports}</div>
+              <div class="stat-label">Rejected</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-number">${data.summary.approvalRate}%</div>
+              <div class="stat-label">Approval Rate</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <h2>Category Breakdown</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>Category</th>
+                <th>Total</th>
+                <th>Approved</th>
+                <th>Pending</th>
+                <th>Flagged</th>
+                <th>Rejected</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${Object.entries(data.categoryBreakdown).map(([category, stats]) => `
+                <tr>
+                  <td>${getCategoryLabel(category)}</td>
+                  <td>${stats.total}</td>
+                  <td>${stats.approved}</td>
+                  <td>${stats.pending}</td>
+                  <td>${stats.flagged}</td>
+                  <td>${stats.rejected}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+
+        <div class="section">
+          <h2>Flag Analysis</h2>
+          <p><strong>Total Flags:</strong> ${data.flagAnalysis.total}</p>
+          <h3>Flags by Type:</h3>
+          <ul>
+            ${Object.entries(data.flagAnalysis.byType).map(([type, count]) => `
+              <li>${type}: ${count}</li>
+            `).join('')}
+          </ul>
+        </div>
+
+        <div class="footer">
+          <p>This report was generated by Nature Pulse Content Moderation System</p>
+        </div>
+      </body>
+      </html>
+    `;
+    
+    printWindow.document.write(reportHTML);
+    printWindow.document.close();
+    printWindow.print();
+  };
+
+  const generateCSVReport = (data) => {
+    const csvContent = [
+      ['Content Moderation Report'],
+      ['Generated on:', new Date(data.generatedAt).toLocaleString()],
+      ['Date Range:', `${data.dateRange.start} to ${data.dateRange.end}`],
+      [],
+      ['Summary Statistics'],
+      ['Total Reports', data.summary.totalReports],
+      ['Approved Reports', data.summary.approvedReports],
+      ['Pending Reports', data.summary.pendingReports],
+      ['Flagged Reports', data.summary.flaggedReports],
+      ['Rejected Reports', data.summary.rejectedReports],
+      ['Approval Rate (%)', data.summary.approvalRate],
+      ['Flag Rate (%)', data.summary.flagRate],
+      [],
+      ['Category Breakdown'],
+      ['Category', 'Total', 'Approved', 'Pending', 'Flagged', 'Rejected'],
+      ...Object.entries(data.categoryBreakdown).map(([category, stats]) => [
+        getCategoryLabel(category),
+        stats.total,
+        stats.approved,
+        stats.pending,
+        stats.flagged,
+        stats.rejected
+      ]),
+      [],
+      ['Flag Analysis'],
+      ['Total Flags', data.flagAnalysis.total],
+      ...Object.entries(data.flagAnalysis.byType).map(([type, count]) => [type, count])
+    ].map(row => row.join(',')).join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `moderation-report-${new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
+    window.URL.revokeObjectURL(url);
+  };
+
+  const generateJSONReport = (data) => {
+    const jsonContent = JSON.stringify(data, null, 2);
+    const blob = new Blob([jsonContent], { type: 'application/json' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `moderation-report-${new Date().toISOString().split('T')[0]}.json`;
+    link.click();
+    window.URL.revokeObjectURL(url);
+  };
+
+  if (!hasRole('admin')) {
+    return (
+      <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+        <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
+          <Card sx={{ p: 4, textAlign: 'center' }}>
+            <Warning sx={{ fontSize: 64, color: 'warning.main', mb: 2 }} />
+            <Typography variant="h5" gutterBottom>
+              Access Denied
+            </Typography>
+            <Typography variant="body1" color="text.secondary">
+              You do not have admin permissions to access the moderation panel.
+            </Typography>
+          </Card>
+        </Box>
+      </Container>
+    );
+  }
+
   return (
     <Container maxWidth="lg">
       <Fade in timeout={800}>
         <Box sx={{ py: 4 }}>
           {/* Header */}
           <Box sx={{ mb: 4 }}>
-            <Typography 
-              variant="h3" 
-              component="h1" 
-              gutterBottom
-              sx={{ 
-                fontWeight: 700,
-                background: 'linear-gradient(45deg, #2E7D32 30%, #1976D2 90%)',
-                backgroundClip: 'text',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-              }}
-            >
-              Content Moderation 🛡️
-            </Typography>
-            <Typography variant="h6" color="text.secondary">
-              Moderate community content and ensure platform safety
-            </Typography>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+              <Box>
+                <Typography 
+                  variant="h3" 
+                  component="h1" 
+                  gutterBottom
+                  sx={{ 
+                    fontWeight: 700,
+                    background: 'linear-gradient(45deg, #2E7D32 30%, #1976D2 90%)',
+                    backgroundClip: 'text',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                  }}
+                >
+                  Content Moderation 🛡️
+                </Typography>
+                <Typography variant="h6" color="text.secondary">
+                  Moderate community content and ensure platform safety
+                </Typography>
+              </Box>
+              <Button
+                variant="contained"
+                startIcon={<Assessment />}
+                onClick={handleGenerateReport}
+                sx={{
+                  background: 'linear-gradient(45deg, #1976D2 30%, #2E7D32 90%)',
+                  '&:hover': {
+                    background: 'linear-gradient(45deg, #1565C0 30%, #1B5E20 90%)',
+                  },
+                }}
+              >
+                Generate Report
+              </Button>
+            </Box>
           </Box>
 
           {/* Search and Filter */}
           <Paper sx={{ p: 2, mb: 3 }}>
             <Grid container spacing={2} alignItems="center">
-              <Grid item xs={12} md={3}>
+              <Grid size={{ xs: 12, md: 3 }}>
                 <TextField
                   fullWidth
                   placeholder="Search reports..."
@@ -324,7 +676,7 @@ const AdminModeration = () => {
                   }}
                 />
               </Grid>
-              <Grid item xs={12} md={2}>
+              <Grid size={{ xs: 12, md: 2 }}>
                 <FormControl fullWidth>
                   <InputLabel>Status</InputLabel>
                   <Select
@@ -341,7 +693,7 @@ const AdminModeration = () => {
                   </Select>
                 </FormControl>
               </Grid>
-              <Grid item xs={12} md={2}>
+              <Grid size={{ xs: 12, md: 2 }}>
                 <FormControl fullWidth>
                   <InputLabel>Category</InputLabel>
                   <Select
@@ -358,7 +710,7 @@ const AdminModeration = () => {
                   </Select>
                 </FormControl>
               </Grid>
-              <Grid item xs={12} md={2}>
+              <Grid size={{ xs: 12, md: 2 }}>
                 <FormControl fullWidth>
                   <InputLabel>Sort By</InputLabel>
                   <Select
@@ -373,7 +725,7 @@ const AdminModeration = () => {
                   </Select>
                 </FormControl>
               </Grid>
-              <Grid item xs={12} md={3}>
+              <Grid size={{ xs: 12, md: 3 }}>
                 <Button
                   fullWidth
                   variant="contained"
@@ -418,7 +770,7 @@ const AdminModeration = () => {
                 <>
                   <Grid container spacing={3}>
                     {reports.map((report) => (
-                      <Grid item xs={12} md={6} lg={4} key={report._id}>
+                      <Grid size={{ xs: 12, md: 6, lg: 4 }} key={report._id}>
                         <Zoom in timeout={300}>
                           <Card 
                             sx={{ 
@@ -631,7 +983,7 @@ const AdminModeration = () => {
                   ) : (
                     <Grid container spacing={3}>
                       {flaggedReports.map((report) => (
-                        <Grid item xs={12} md={6} lg={4} key={report._id}>
+                        <Grid size={{ xs: 12, md: 6, lg: 4 }} key={report._id}>
                           <Zoom in timeout={300}>
                             <Card 
                               sx={{ 
@@ -762,7 +1114,7 @@ const AdminModeration = () => {
                     <>
                       {/* Overall Stats */}
                       <Grid container spacing={3} sx={{ mb: 4 }}>
-                        <Grid item xs={12} md={3}>
+                        <Grid size={{ xs: 12, md: 3 }}>
                           <Card>
                             <CardContent>
                               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -781,7 +1133,7 @@ const AdminModeration = () => {
                             </CardContent>
                           </Card>
                         </Grid>
-                        <Grid item xs={12} md={3}>
+                        <Grid size={{ xs: 12, md: 3 }}>
                           <Card>
                             <CardContent>
                               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -800,7 +1152,7 @@ const AdminModeration = () => {
                             </CardContent>
                           </Card>
                         </Grid>
-                        <Grid item xs={12} md={3}>
+                        <Grid size={{ xs: 12, md: 3 }}>
                           <Card>
                             <CardContent>
                               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -819,7 +1171,7 @@ const AdminModeration = () => {
                             </CardContent>
                           </Card>
                         </Grid>
-                        <Grid item xs={12} md={3}>
+                        <Grid size={{ xs: 12, md: 3 }}>
                           <Card>
                             <CardContent>
                               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -848,7 +1200,7 @@ const AdminModeration = () => {
                           </Typography>
                           <Grid container spacing={2}>
                             {stats.categories.map((category) => (
-                              <Grid item xs={12} sm={6} md={4} key={category._id}>
+                              <Grid size={{ xs: 12, sm: 6, md: 4 }} key={category._id}>
                                 <Box sx={{ p: 2, border: '1px solid #e0e0e0', borderRadius: 1 }}>
                                   <Typography variant="subtitle2" gutterBottom>
                                     {getCategoryLabel(category._id)}
@@ -1114,6 +1466,98 @@ const AdminModeration = () => {
                 startIcon={<Verified />}
               >
                 Verify Report
+              </Button>
+            </DialogActions>
+          </Dialog>
+
+          {/* Report Generation Dialog */}
+          <Dialog 
+            open={reportDialogOpen} 
+            onClose={() => setReportDialogOpen(false)}
+            maxWidth="sm"
+            fullWidth
+          >
+            <DialogTitle>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Assessment />
+                Generate Moderation Report
+              </Box>
+            </DialogTitle>
+            <DialogContent>
+              <Typography variant="body1" paragraph>
+                Generate a comprehensive report of content moderation activities.
+              </Typography>
+
+              <FormControl fullWidth sx={{ mb: 3 }}>
+                <InputLabel>Report Type</InputLabel>
+                <Select
+                  value={reportType}
+                  onChange={handleReportTypeChange}
+                  label="Report Type"
+                >
+                  <MenuItem value="pdf">
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <PictureAsPdf />
+                      PDF Report
+                    </Box>
+                  </MenuItem>
+                  <MenuItem value="csv">
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <TableChart />
+                      CSV Export
+                    </Box>
+                  </MenuItem>
+                  <MenuItem value="json">
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <FileDownload />
+                      JSON Data
+                    </Box>
+                  </MenuItem>
+                </Select>
+              </FormControl>
+
+              <Typography variant="h6" gutterBottom>
+                Date Range (Optional)
+              </Typography>
+              
+              <Grid container spacing={2}>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <TextField
+                    fullWidth
+                    label="Start Date"
+                    type="date"
+                    value={reportDateRange.startDate}
+                    onChange={handleDateRangeChange('startDate')}
+                    InputLabelProps={{ shrink: true }}
+                  />
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <TextField
+                    fullWidth
+                    label="End Date"
+                    type="date"
+                    value={reportDateRange.endDate}
+                    onChange={handleDateRangeChange('endDate')}
+                    InputLabelProps={{ shrink: true }}
+                  />
+                </Grid>
+              </Grid>
+
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+                Leave date fields empty to include all reports.
+              </Typography>
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={() => setReportDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button 
+                onClick={generateReport}
+                variant="contained"
+                startIcon={generatingReport ? <CircularProgress size={20} /> : <Assessment />}
+                disabled={generatingReport}
+              >
+                {generatingReport ? 'Generating...' : 'Generate Report'}
               </Button>
             </DialogActions>
           </Dialog>
