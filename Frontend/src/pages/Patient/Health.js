@@ -29,7 +29,13 @@ import {
   ListItemIcon,
   Divider,
   IconButton,
-  Stack
+  Stack,
+  Paper,
+  Stepper,
+  Step,
+  StepLabel,
+  FormHelperText,
+  InputAdornment
 } from '@mui/material';
 import {
   HealthAndSafety,
@@ -40,7 +46,11 @@ import {
   Psychology,
   Edit,
   Delete,
-  Timeline
+  Timeline,
+  CheckCircle,
+  Error,
+  Warning,
+  Close
 } from '@mui/icons-material';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -49,6 +59,9 @@ import { XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveCont
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+import { ValidatedTextField, ValidatedSelect } from '../../components/Validation';
+import useFormValidation from '../../hooks/useFormValidation';
+import { validateHealthLog } from '../../utils/validation';
 
 const PatientHealth = () => {
   const { user } = useAuth();
@@ -61,8 +74,8 @@ const PatientHealth = () => {
   const [editingLog, setEditingLog] = useState(null);
   const [activeTab, setActiveTab] = useState(0);
 
-  // Form state
-  const [formData, setFormData] = useState({
+  // Initial form data
+  const initialFormData = {
     date: new Date(),
     vitalSigns: {
       bloodPressure: { systolic: '', diastolic: '' },
@@ -92,6 +105,22 @@ const PatientHealth = () => {
     medications: '',
     notes: '',
     tags: []
+  };
+
+  // Use form validation hook
+  const {
+    formData,
+    fieldErrors,
+    isValid,
+    handleChange,
+    handleBlur,
+    resetForm,
+    setFormData,
+    updateFormData
+  } = useFormValidation(initialFormData, validateHealthLog, {
+    validateOnChange: false,
+    validateOnBlur: true,
+    clearErrorsOnChange: true
   });
 
   useEffect(() => {
@@ -99,10 +128,12 @@ const PatientHealth = () => {
     fetchHealthLogs();
   }, []);
 
+
   const fetchHealthData = async () => {
     try {
       setLoading(true);
       const response = await api.get('/health-tracker/summary');
+      console.log('Health data response:', response.data);
       setHealthData(response.data.data);
     } catch (err) {
       setError('Failed to load health data');
@@ -124,7 +155,15 @@ const PatientHealth = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Validate form before submission
+    if (!isValid) {
+      setError('Please fix the validation errors before submitting');
+      return;
+    }
+
     try {
+      setLoading(true);
       if (editingLog) {
         await api.put(`/health-tracker/logs/${editingLog._id}`, formData);
       } else {
@@ -135,28 +174,53 @@ const PatientHealth = () => {
       resetForm();
       fetchHealthLogs();
       fetchHealthData();
+      setError(null);
     } catch (err) {
       setError('Failed to save health log');
       console.error('Save error:', err);
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleEdit = (log) => {
     setEditingLog(log);
-    setFormData({
+    const editData = {
       date: new Date(log.date),
-      vitalSigns: log.vitalSigns || formData.vitalSigns,
+      vitalSigns: log.vitalSigns || initialFormData.vitalSigns,
       symptoms: log.symptoms || [],
       mood: log.mood || '',
       energyLevel: log.energyLevel || '',
-      sleep: log.sleep || formData.sleep,
-      exercise: log.exercise || formData.exercise,
-      nutrition: log.nutrition || formData.nutrition,
+      sleep: log.sleep || initialFormData.sleep,
+      exercise: log.exercise || initialFormData.exercise,
+      nutrition: log.nutrition || initialFormData.nutrition,
       medications: log.medications || '',
       notes: log.notes || '',
       tags: log.tags || []
-    });
+    };
+    setFormData(editData);
     setOpenDialog(true);
+  };
+
+  const handleAddNew = () => {
+    setEditingLog(null);
+    resetForm();
+    setOpenDialog(true);
+  };
+
+  const handleClose = () => {
+    setOpenDialog(false);
+    setEditingLog(null);
+    setError(null);
+  };
+
+  // Custom handler for numeric fields to prevent non-numeric input
+  const handleNumericChange = (e) => {
+    const { name, value } = e.target;
+    // Allow numbers, decimal point, and empty string
+    if (value === '' || /^\d*\.?\d*$/.test(value)) {
+      handleChange(e);
+    }
   };
 
   const handleDelete = async (logId) => {
@@ -170,39 +234,7 @@ const PatientHealth = () => {
     }
   };
 
-  const resetForm = () => {
-    setFormData({
-      date: new Date(),
-      vitalSigns: {
-        bloodPressure: { systolic: '', diastolic: '' },
-        heartRate: '',
-        temperature: '',
-        weight: '',
-        height: '',
-        bloodSugar: ''
-      },
-      symptoms: [],
-      mood: '',
-      energyLevel: '',
-      sleep: {
-        duration: '',
-        quality: ''
-      },
-      exercise: {
-        type: '',
-        duration: '',
-        intensity: ''
-      },
-      nutrition: {
-        meals: '',
-        waterIntake: '',
-        supplements: ''
-      },
-      medications: '',
-      notes: '',
-      tags: []
-    });
-  };
+  // Simplified form - no steps needed
 
   const getMoodColor = (mood) => {
     switch (mood) {
@@ -263,6 +295,10 @@ const PatientHealth = () => {
 
   const dashboard = healthData?.dashboard || {};
   const recentLogs = Array.isArray(healthLogs) ? healthLogs.slice(0, 5) : [];
+  
+  // Debug logging
+  console.log('Dashboard data:', dashboard);
+  console.log('Health logs:', healthLogs);
 
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns}>
@@ -506,7 +542,7 @@ const PatientHealth = () => {
         <Button
           variant="contained"
           startIcon={<Add />}
-                      onClick={() => setOpenDialog(true)}
+          onClick={handleAddNew}
           sx={{ borderRadius: '15px' }}
         >
                       Add Your First Log
@@ -555,114 +591,361 @@ const PatientHealth = () => {
         </Grid>
 
         {/* Add/Edit Health Log Dialog */}
-        <Dialog open={openDialog} onClose={() => setOpenDialog(false)} maxWidth="md" fullWidth>
+        <Dialog open={openDialog} onClose={handleClose} maxWidth="lg" fullWidth>
           <DialogTitle>
-            {editingLog ? 'Edit Health Log' : 'Add Health Log'}
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Typography variant="h6">
+                {editingLog ? 'Edit Health Log' : 'Add New Health Log'}
+              </Typography>
+              <IconButton onClick={handleClose} size="small">
+                <Close />
+              </IconButton>
+            </Box>
           </DialogTitle>
+          
           <form onSubmit={handleSubmit}>
             <DialogContent>
-              <Grid container spacing={3} sx={{ mt: 1 }}>
-                <Grid size={{ xs: 12, sm: 6 }}>
+              {/* Error Alert */}
+              {error && (
+                <Alert severity="error" onClose={() => setError(null)} sx={{ mb: 2 }}>
+                  {error}
+                </Alert>
+              )}
+
+              {/* Simplified Single-Page Form */}
+              
+              {/* Basic Information */}
+              <Typography variant="h6" gutterBottom sx={{ mt: 2, mb: 2 }}>
+                📅 Basic Information
+              </Typography>
+              <Grid container spacing={3}>
+                <Grid size={12}>
                   <DatePicker
-                    label="Date"
+                    label="Date *"
                     value={formData.date}
-                    onChange={(newValue) => setFormData({ ...formData, date: newValue })}
+                    onChange={(newValue) => updateFormData({ date: newValue })}
                     slotProps={{
                       textField: {
-                        fullWidth: true
+                        fullWidth: true,
+                        error: !!fieldErrors.date,
+                        helperText: fieldErrors.date || 'Select the date for this health log'
                       }
                     }}
                   />
                 </Grid>
+              </Grid>
 
+              {/* Vital Signs */}
+              <Typography variant="h6" gutterBottom sx={{ mt: 3, mb: 2 }}>
+                ❤️ Vital Signs
+              </Typography>
+              <Grid container spacing={3}>
                 <Grid size={{ xs: 12, sm: 6 }}>
-                  <FormControl fullWidth>
-                    <InputLabel>Mood</InputLabel>
-                    <Select
-                      value={formData.mood}
-                      onChange={(e) => setFormData({ ...formData, mood: e.target.value })}
-                    >
-                      <MenuItem value="excellent">Excellent</MenuItem>
-                      <MenuItem value="good">Good</MenuItem>
-                      <MenuItem value="fair">Fair</MenuItem>
-                      <MenuItem value="poor">Poor</MenuItem>
-                      <MenuItem value="terrible">Terrible</MenuItem>
-                    </Select>
-                  </FormControl>
+                  <Typography variant="subtitle2" gutterBottom>
+                    Blood Pressure (mmHg)
+                  </Typography>
+                  <Box sx={{ display: 'flex', gap: 1 }}>
+                    <ValidatedTextField
+                      fullWidth
+                      label="Systolic *"
+                      type="number"
+                      name="vitalSigns.bloodPressure.systolic"
+                      value={formData.vitalSigns.bloodPressure.systolic}
+                      onChange={handleNumericChange}
+                      onBlur={handleBlur}
+                      error={fieldErrors['vitalSigns.bloodPressure.systolic']}
+                      helperText="50-250"
+                      inputProps={{ min: 50, max: 250, step: 1 }}
+                    />
+                    <ValidatedTextField
+                      fullWidth
+                      label="Diastolic *"
+                      type="number"
+                      name="vitalSigns.bloodPressure.diastolic"
+                      value={formData.vitalSigns.bloodPressure.diastolic}
+                      onChange={handleNumericChange}
+                      onBlur={handleBlur}
+                      error={fieldErrors['vitalSigns.bloodPressure.diastolic']}
+                      helperText="30-150"
+                      inputProps={{ min: 30, max: 150, step: 1 }}
+                    />
+                  </Box>
                 </Grid>
 
                 <Grid size={{ xs: 12, sm: 6 }}>
-                  <FormControl fullWidth>
-                    <InputLabel>Energy Level</InputLabel>
-                    <Select
-                      value={formData.energyLevel}
-                      onChange={(e) => setFormData({ ...formData, energyLevel: e.target.value })}
-                    >
-                      <MenuItem value="high">High</MenuItem>
-                      <MenuItem value="medium">Medium</MenuItem>
-                      <MenuItem value="low">Low</MenuItem>
-                      <MenuItem value="very-low">Very Low</MenuItem>
-                    </Select>
-                  </FormControl>
-                </Grid>
-
-                <Grid size={{ xs: 12, sm: 6 }}>
-                  <TextField
+                  <ValidatedTextField
                     fullWidth
-                    label="Weight (kg)"
+                    label="Heart Rate (bpm) *"
                     type="number"
-                    value={formData.vitalSigns.weight}
-                    onChange={(e) => setFormData({
-                      ...formData,
-                      vitalSigns: { ...formData.vitalSigns, weight: e.target.value }
-                    })}
-                  />
-                </Grid>
-
-                <Grid size={{ xs: 12, sm: 6 }}>
-                  <TextField
-                    fullWidth
-                    label="Heart Rate (bpm)"
-                    type="number"
+                    name="vitalSigns.heartRate"
                     value={formData.vitalSigns.heartRate}
-                    onChange={(e) => setFormData({
-                      ...formData,
-                      vitalSigns: { ...formData.vitalSigns, heartRate: e.target.value }
-                    })}
+                    onChange={handleNumericChange}
+                    onBlur={handleBlur}
+                    error={fieldErrors['vitalSigns.heartRate']}
+                    helperText="40-200"
+                    inputProps={{ min: 40, max: 200 }}
                   />
                 </Grid>
 
                 <Grid size={{ xs: 12, sm: 6 }}>
-                  <TextField
+                  <ValidatedTextField
                     fullWidth
-                    label="Temperature (°C)"
+                    label="Temperature (°C) *"
                     type="number"
+                    name="vitalSigns.temperature"
                     value={formData.vitalSigns.temperature}
-                    onChange={(e) => setFormData({
-                      ...formData,
-                      vitalSigns: { ...formData.vitalSigns, temperature: e.target.value }
-                    })}
+                    onChange={handleNumericChange}
+                    onBlur={handleBlur}
+                    error={fieldErrors['vitalSigns.temperature']}
+                    helperText="25-45"
+                    inputProps={{ min: 25, max: 45, step: 0.1 }}
+                  />
+                </Grid>
+
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <ValidatedTextField
+                    fullWidth
+                    label="Weight (kg) *"
+                    type="number"
+                    name="vitalSigns.weight"
+                    value={formData.vitalSigns.weight}
+                    onChange={handleNumericChange}
+                    onBlur={handleBlur}
+                    error={fieldErrors['vitalSigns.weight']}
+                    helperText="20-300"
+                    inputProps={{ min: 20, max: 300, step: 0.1 }}
+                  />
+                </Grid>
+
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <ValidatedTextField
+                    fullWidth
+                    label="Height (cm) *"
+                    type="number"
+                    name="vitalSigns.height"
+                    value={formData.vitalSigns.height}
+                    onChange={handleNumericChange}
+                    onBlur={handleBlur}
+                    error={fieldErrors['vitalSigns.height']}
+                    helperText="50-250"
+                    inputProps={{ min: 50, max: 250, step: 0.1 }}
+                  />
+                </Grid>
+              </Grid>
+
+              {/* Wellness */}
+              <Typography variant="h6" gutterBottom sx={{ mt: 3, mb: 2 }}>
+                😊 Wellness
+              </Typography>
+              <Grid container spacing={3}>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <ValidatedSelect
+                    fullWidth
+                    label="Mood *"
+                    name="mood"
+                    value={formData.mood}
+                    onChange={handleChange}
+                    onBlur={handleBlur}
+                    error={fieldErrors.mood}
+                    helperText="How are you feeling?"
+                  >
+                    <MenuItem value="excellent">😊 Excellent</MenuItem>
+                    <MenuItem value="good">😌 Good</MenuItem>
+                    <MenuItem value="fair">😐 Fair</MenuItem>
+                    <MenuItem value="poor">😔 Poor</MenuItem>
+                    <MenuItem value="terrible">😢 Terrible</MenuItem>
+                  </ValidatedSelect>
+                </Grid>
+
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <ValidatedSelect
+                    fullWidth
+                    label="Energy Level *"
+                    name="energyLevel"
+                    value={formData.energyLevel}
+                    onChange={handleChange}
+                    onBlur={handleBlur}
+                    error={fieldErrors.energyLevel}
+                    helperText="Select your energy level"
+                  >
+                    <MenuItem value="high">⚡ High</MenuItem>
+                    <MenuItem value="medium">🔋 Medium</MenuItem>
+                    <MenuItem value="low">🔋 Low</MenuItem>
+                    <MenuItem value="very-low">🔋 Very Low</MenuItem>
+                  </ValidatedSelect>
+                </Grid>
+
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <ValidatedTextField
+                    fullWidth
+                    label="Sleep Duration (hours) *"
+                    type="number"
+                    name="sleep.duration"
+                    value={formData.sleep.duration}
+                    onChange={handleNumericChange}
+                    onBlur={handleBlur}
+                    error={fieldErrors['sleep.duration']}
+                    helperText="0-24 hours"
+                    inputProps={{ min: 0, max: 24, step: 0.5 }}
+                  />
+                </Grid>
+
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <ValidatedSelect
+                    fullWidth
+                    label="Sleep Quality *"
+                    name="sleep.quality"
+                    value={formData.sleep.quality}
+                    onChange={handleChange}
+                    onBlur={handleBlur}
+                    error={fieldErrors['sleep.quality']}
+                    helperText="Rate your sleep quality"
+                  >
+                    <MenuItem value="excellent">😴 Excellent</MenuItem>
+                    <MenuItem value="good">😌 Good</MenuItem>
+                    <MenuItem value="fair">😐 Fair</MenuItem>
+                    <MenuItem value="poor">😔 Poor</MenuItem>
+                    <MenuItem value="terrible">😢 Terrible</MenuItem>
+                  </ValidatedSelect>
+                </Grid>
+
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <ValidatedTextField
+                    fullWidth
+                    label="Exercise Duration (minutes) *"
+                    type="number"
+                    name="exercise.duration"
+                    value={formData.exercise.duration}
+                    onChange={handleNumericChange}
+                    onBlur={handleBlur}
+                    error={fieldErrors['exercise.duration']}
+                    helperText="0-300 minutes"
+                    inputProps={{ min: 0, max: 300 }}
+                  />
+                </Grid>
+
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <ValidatedSelect
+                    fullWidth
+                    label="Exercise Intensity *"
+                    name="exercise.intensity"
+                    value={formData.exercise.intensity}
+                    onChange={handleChange}
+                    onBlur={handleBlur}
+                    error={fieldErrors['exercise.intensity']}
+                    helperText="How intense was your workout?"
+                  >
+                    <MenuItem value="low">🟢 Low</MenuItem>
+                    <MenuItem value="moderate">🟡 Moderate</MenuItem>
+                    <MenuItem value="high">🔴 High</MenuItem>
+                  </ValidatedSelect>
+                </Grid>
+              </Grid>
+
+              {/* Nutrition */}
+              <Typography variant="h6" gutterBottom sx={{ mt: 3, mb: 2 }}>
+                🥗 Nutrition
+              </Typography>
+              <Grid container spacing={3}>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <ValidatedTextField
+                    fullWidth
+                    label="Water Intake (oz) *"
+                    type="number"
+                    name="nutrition.waterIntake"
+                    value={formData.nutrition.waterIntake}
+                    onChange={handleNumericChange}
+                    onBlur={handleBlur}
+                    error={fieldErrors['nutrition.waterIntake']}
+                    helperText="0-300 oz"
+                    inputProps={{ min: 0, max: 300 }}
+                  />
+                </Grid>
+
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <ValidatedTextField
+                    fullWidth
+                    label="Supplements"
+                    name="nutrition.supplements"
+                    value={formData.nutrition.supplements}
+                    onChange={handleChange}
+                    onBlur={handleBlur}
+                    error={fieldErrors['nutrition.supplements']}
+                    helperText="Optional - max 200 chars"
+                    multiline
+                    rows={2}
+                    inputProps={{ maxLength: 200 }}
                   />
                 </Grid>
 
                 <Grid size={12}>
-                  <TextField
+                  <ValidatedTextField
                     fullWidth
+                    label="Meals Description"
+                    name="nutrition.meals"
+                    value={formData.nutrition.meals}
+                    onChange={handleChange}
+                    onBlur={handleBlur}
+                    error={fieldErrors['nutrition.meals']}
+                    helperText="Optional - describe your meals today"
                     multiline
                     rows={3}
+                    inputProps={{ maxLength: 500 }}
+                  />
+                </Grid>
+              </Grid>
+
+              {/* Additional Info */}
+              <Typography variant="h6" gutterBottom sx={{ mt: 3, mb: 2 }}>
+                📝 Additional Information
+              </Typography>
+              <Grid container spacing={3}>
+                <Grid size={12}>
+                  <ValidatedTextField
+                    fullWidth
+                    label="Medications"
+                    name="medications"
+                    value={formData.medications}
+                    onChange={handleChange}
+                    onBlur={handleBlur}
+                    error={fieldErrors.medications}
+                    helperText="Optional - list any medications taken"
+                    multiline
+                    rows={2}
+                    inputProps={{ maxLength: 300 }}
+                  />
+                </Grid>
+
+                <Grid size={12}>
+                  <ValidatedTextField
+                    fullWidth
                     label="Notes"
+                    name="notes"
                     value={formData.notes}
-                    onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                    onChange={handleChange}
+                    onBlur={handleBlur}
+                    error={fieldErrors.notes}
+                    helperText="Optional - additional health notes"
+                    multiline
+                    rows={3}
+                    inputProps={{ maxLength: 1000 }}
                   />
                 </Grid>
               </Grid>
             </DialogContent>
+            
             <DialogActions sx={{ p: 3 }}>
-              <Button onClick={() => setOpenDialog(false)}>
+              <Button onClick={handleClose}>
                 Cancel
               </Button>
-              <Button type="submit" variant="contained" sx={{ borderRadius: '15px' }}>
-                {editingLog ? 'Update' : 'Save'} Log
+              <Button 
+                type="submit" 
+                variant="contained" 
+                disabled={!isValid || loading}
+                sx={{ borderRadius: '15px' }}
+                startIcon={loading ? <CircularProgress size={20} /> : <CheckCircle />}
+              >
+                {loading ? 'Saving...' : (editingLog ? 'Update' : 'Save')} Log
               </Button>
             </DialogActions>
           </form>
@@ -681,7 +964,7 @@ const PatientHealth = () => {
               background: 'linear-gradient(45deg, #5a6fd8 30%, #6a4190 90%)',
             }
           }}
-          onClick={() => setOpenDialog(true)}
+          onClick={handleAddNew}
         >
           <Add />
         </Fab>
@@ -690,4 +973,4 @@ const PatientHealth = () => {
   );
 };
 
-export default PatientHealth;
+export default PatientHealth;                   

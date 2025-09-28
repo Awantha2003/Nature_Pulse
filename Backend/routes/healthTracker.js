@@ -75,10 +75,12 @@ const transformHealthLogData = (data, userId) => {
       };
     }
 
-    // Height
+    // Height - convert from cm to inches
     if (data.vitalSigns.height && data.vitalSigns.height !== '') {
+      const heightCm = parseFloat(data.vitalSigns.height);
+      const heightInches = heightCm / 2.54; // Convert cm to inches
       transformed.vitalSigns.height = {
-        value: parseFloat(data.vitalSigns.height),
+        value: heightInches,
         unit: 'inches'
       };
     }
@@ -105,15 +107,9 @@ const transformHealthLogData = (data, userId) => {
     transformed.mood = moodMap[data.mood] || parseInt(data.mood) || 5;
   }
 
-  // Transform energy level (convert string to number)
+  // Transform energy level (keep as string)
   if (data.energyLevel && data.energyLevel !== '') {
-    const energyMap = {
-      'high': 10,
-      'medium': 6,
-      'low': 3,
-      'very-low': 1
-    };
-    transformed.energyLevel = energyMap[data.energyLevel] || parseInt(data.energyLevel) || 5;
+    transformed.energyLevel = data.energyLevel;
   }
 
   // Transform sleep data
@@ -123,7 +119,13 @@ const transformHealthLogData = (data, userId) => {
       transformed.sleep.duration = parseFloat(data.sleep.duration);
     }
     if (data.sleep.quality && data.sleep.quality !== '') {
-      transformed.sleep.quality = data.sleep.quality;
+      const sleepQualityMap = {
+        'excellent': 10,
+        'good': 8,
+        'fair': 6,
+        'poor': 4
+      };
+      transformed.sleep.quality = sleepQualityMap[data.sleep.quality] || parseInt(data.sleep.quality) || 5;
     }
   }
 
@@ -292,6 +294,16 @@ router.post('/logs', protect, checkActive, validateHealthLog, handleValidationEr
     });
   } catch (error) {
     console.error('Create health log error:', error);
+    
+    // Handle validation errors
+    if (error.name === 'ValidationError') {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Validation failed',
+        errors: error.errors
+      });
+    }
+    
     res.status(500).json({
       status: 'error',
       message: 'Failed to create health log'
@@ -566,18 +578,27 @@ router.get('/summary', protect, checkActive, async (req, res) => {
     const today = new Date();
     const weekAgo = new Date();
     weekAgo.setDate(weekAgo.getDate() - 7);
+    
+    // Set time to start/end of day for proper date comparison
+    const startOfToday = new Date(today);
+    startOfToday.setHours(0, 0, 0, 0);
+    const endOfToday = new Date(today);
+    endOfToday.setHours(23, 59, 59, 999);
 
     // Get today's log
     const todayLog = await HealthLog.findOne({
       user: req.user._id,
-      date: today.toDateString()
+      date: { $gte: startOfToday, $lte: endOfToday }
     });
 
     // Get weekly summary
     const weeklyLogs = await HealthLog.find({
       user: req.user._id,
-      date: { $gte: weekAgo, $lte: today }
+      date: { $gte: weekAgo, $lte: endOfToday }
     }).sort({ date: -1 });
+    
+    console.log('Found weekly logs:', weeklyLogs.length);
+    console.log('Date range:', weekAgo, 'to', endOfToday);
 
     // Calculate weekly averages
     const weeklyMetrics = {
@@ -589,8 +610,22 @@ router.get('/summary', protect, checkActive, async (req, res) => {
     };
 
     if (weeklyLogs.length > 0) {
-      const moodValues = weeklyLogs.filter(log => log.mood).map(log => log.mood);
-      const energyValues = weeklyLogs.filter(log => log.energyLevel).map(log => log.energyLevel);
+      // Convert mood strings to numbers for calculation
+      const moodValues = weeklyLogs.filter(log => log.mood).map(log => {
+        const moodMap = {
+          'excellent': 10, 'good': 8, 'fair': 6, 'poor': 4, 'terrible': 2
+        };
+        return moodMap[log.mood] || parseInt(log.mood) || 5;
+      });
+      
+      // Convert energy level strings to numbers for calculation
+      const energyValues = weeklyLogs.filter(log => log.energyLevel).map(log => {
+        const energyMap = {
+          'very-high': 10, 'high': 8, 'medium': 6, 'low': 4, 'very-low': 2
+        };
+        return energyMap[log.energyLevel] || parseInt(log.energyLevel) || 5;
+      });
+      
       const sleepValues = weeklyLogs.filter(log => log.sleep?.duration).map(log => log.sleep.duration);
       const symptomCount = weeklyLogs.reduce((total, log) => total + (log.symptoms?.length || 0), 0);
 
@@ -615,17 +650,26 @@ router.get('/summary', protect, checkActive, async (req, res) => {
         { 'vitalSigns.weight.value': { $exists: true } }
       ]
     }).sort({ date: -1 });
+    
+    console.log('Latest vitals found:', latestVitals ? 'Yes' : 'No');
+    if (latestVitals) {
+      console.log('Latest vitals data:', latestVitals.vitalSigns);
+    }
 
     // Transform data for frontend dashboard
     const dashboard = {
       currentStreak: weeklyLogs.length,
-      currentWeight: latestVitals?.weight?.value || null,
+      currentWeight: latestVitals?.vitalSigns?.weight?.value || null,
       avgMood: weeklyMetrics.averageMood > 0 ? weeklyMetrics.averageMood : null,
       avgEnergy: weeklyMetrics.averageEnergy > 0 ? weeklyMetrics.averageEnergy : null,
       avgSleep: weeklyMetrics.averageSleepDuration > 0 ? weeklyMetrics.averageSleepDuration : null,
       totalSymptoms: weeklyMetrics.totalSymptoms,
       logCount: weeklyMetrics.logCount
     };
+
+    console.log('Dashboard data being sent:', dashboard);
+    console.log('Latest vitals:', latestVitals);
+    console.log('Weekly logs count:', weeklyLogs.length);
 
     res.status(200).json({
       status: 'success',

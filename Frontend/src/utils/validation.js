@@ -452,197 +452,393 @@ export const validateHealthGoal = (formData) => {
   return errors;
 };
 
-// Health log validation
+// Health log validation constants
+const HEALTH_VALIDATION = {
+  BLOOD_PRESSURE: {
+    SYSTOLIC: { min: 50, max: 250 },
+    DIASTOLIC: { min: 30, max: 150 }
+  },
+  HEART_RATE: { min: 40, max: 200 },
+  TEMPERATURE: { min: 25, max: 45 }, // Celsius
+  WEIGHT: { min: 20, max: 300 }, // kg
+  HEIGHT: { min: 50, max: 250 }, // cm
+  ENERGY_LEVEL: { min: 1, max: 10 },
+  SLEEP_DURATION: { min: 0, max: 24 }, // hours
+  EXERCISE_DURATION: { min: 0, max: 300 }, // minutes
+  WATER_INTAKE: { min: 0, max: 300 }, // oz
+  EXERCISE_TYPE_MAX: 100,
+  SUPPLEMENTS_MAX: 200,
+  MEALS_MAX: 500,
+  MEDICATIONS_MAX: 300,
+  TAGS_MAX: 200,
+  TAG_MAX: 50,
+  NOTES_MAX: 1000
+};
+
+// Individual field validation functions for health logs
+export const validateBloodPressure = (systolic, diastolic) => {
+  const errors = {};
+  
+  if (systolic && systolic !== '') {
+    const sysNum = parseInt(systolic);
+    if (isNaN(sysNum)) {
+      errors.systolic = 'Enter a value between 50 and 250';
+    } else if (sysNum < HEALTH_VALIDATION.BLOOD_PRESSURE.SYSTOLIC.min || sysNum > HEALTH_VALIDATION.BLOOD_PRESSURE.SYSTOLIC.max) {
+      errors.systolic = 'Enter a value between 50 and 250';
+    }
+  }
+  
+  if (diastolic && diastolic !== '') {
+    const diaNum = parseInt(diastolic);
+    if (isNaN(diaNum)) {
+      errors.diastolic = 'Enter a value between 30 and 150';
+    } else if (diaNum < HEALTH_VALIDATION.BLOOD_PRESSURE.DIASTOLIC.min || diaNum > HEALTH_VALIDATION.BLOOD_PRESSURE.DIASTOLIC.max) {
+      errors.diastolic = 'Enter a value between 30 and 150';
+    }
+  }
+  
+  // Cross-validation: systolic must be higher than diastolic
+  if (systolic && diastolic && systolic !== '' && diastolic !== '') {
+    const sysNum = parseInt(systolic);
+    const diaNum = parseInt(diastolic);
+    if (!isNaN(sysNum) && !isNaN(diaNum) && sysNum <= diaNum) {
+      errors.systolic = 'Systolic pressure must be higher than diastolic pressure';
+    }
+  }
+  
+  return errors;
+};
+
+export const validateHeartRate = (heartRate) => {
+  if (!heartRate || heartRate === '') return null;
+  
+  const hr = parseInt(heartRate);
+  if (isNaN(hr) || hr < HEALTH_VALIDATION.HEART_RATE.min || hr > HEALTH_VALIDATION.HEART_RATE.max) {
+    return 'Heart rate must be between 40 and 200';
+  }
+  return null;
+};
+
+export const validateTemperature = (temperature) => {
+  if (!temperature || temperature === '') return null;
+  
+  const temp = parseFloat(temperature);
+  if (isNaN(temp) || temp < HEALTH_VALIDATION.TEMPERATURE.min || temp > HEALTH_VALIDATION.TEMPERATURE.max) {
+    return 'Enter a valid temperature (25–45 °C)';
+  }
+  return null;
+};
+
+export const validateWeight = (weight) => {
+  if (!weight || weight === '') return null;
+  
+  const w = parseFloat(weight);
+  if (isNaN(w) || w < HEALTH_VALIDATION.WEIGHT.min || w > HEALTH_VALIDATION.WEIGHT.max) {
+    return 'Weight must be between 20 and 300 kg';
+  }
+  return null;
+};
+
+export const validateHeight = (height) => {
+  if (!height || height === '') return null;
+  
+  const h = parseFloat(height);
+  if (isNaN(h) || h < HEALTH_VALIDATION.HEIGHT.min || h > HEALTH_VALIDATION.HEIGHT.max) {
+    return 'Height must be between 50 and 250 cm';
+  }
+  return null;
+};
+
+export const validateEnergyLevel = (energyLevel) => {
+  if (!energyLevel || energyLevel === '') return null;
+  
+  const level = parseInt(energyLevel);
+  if (isNaN(level) || level < HEALTH_VALIDATION.ENERGY_LEVEL.min || level > HEALTH_VALIDATION.ENERGY_LEVEL.max) {
+    return 'Energy level must be between 1 and 10';
+  }
+  return null;
+};
+
+export const validateSleepDuration = (duration) => {
+  if (!duration || duration === '') return null;
+  
+  const d = parseFloat(duration);
+  if (isNaN(d) || d < HEALTH_VALIDATION.SLEEP_DURATION.min || d > HEALTH_VALIDATION.SLEEP_DURATION.max) {
+    return 'Enter sleep hours between 0 and 24';
+  }
+  return null;
+};
+
+export const validateExerciseDuration = (duration) => {
+  if (!duration || duration === '') return null;
+  
+  const d = parseFloat(duration);
+  if (isNaN(d) || d < HEALTH_VALIDATION.EXERCISE_DURATION.min || d > HEALTH_VALIDATION.EXERCISE_DURATION.max) {
+    return 'Exercise duration must be between 0 and 300 minutes';
+  }
+  return null;
+};
+
+export const validateWaterIntake = (waterIntake) => {
+  if (!waterIntake || waterIntake === '') return null;
+  
+  const w = parseFloat(waterIntake);
+  if (isNaN(w) || w < HEALTH_VALIDATION.WATER_INTAKE.min || w > HEALTH_VALIDATION.WATER_INTAKE.max) {
+    return 'Water intake must be between 0 and 300 oz';
+  }
+  return null;
+};
+
+export const validateExerciseType = (exerciseType) => {
+  if (!exerciseType || exerciseType === '') return null;
+  
+  if (exerciseType.length > HEALTH_VALIDATION.EXERCISE_TYPE_MAX) {
+    return 'Exercise type must be under 100 characters';
+  }
+  return null;
+};
+
+export const validateSupplements = (supplements) => {
+  if (!supplements || supplements === '') return null;
+  
+  if (supplements.length > HEALTH_VALIDATION.SUPPLEMENTS_MAX) {
+    return 'Supplements must be under 200 characters';
+  }
+  return null;
+};
+
+export const validateMeals = (meals) => {
+  if (!meals || meals === '') return null;
+  
+  if (meals.length > HEALTH_VALIDATION.MEALS_MAX) {
+    return 'Meals description must be under 500 characters';
+  }
+  return null;
+};
+
+export const validateMedications = (medications) => {
+  if (!medications || medications === '') return null;
+  
+  if (medications.length > HEALTH_VALIDATION.MEDICATIONS_MAX) {
+    return 'Medications must be under 300 characters';
+  }
+  return null;
+};
+
+export const validateTags = (tags) => {
+  if (!tags || !Array.isArray(tags) || tags.length === 0) return null;
+  
+  const tagsString = tags.join(', ');
+  if (tagsString.length > HEALTH_VALIDATION.TAGS_MAX) {
+    return 'Tags must be under 200 characters total';
+  }
+  
+  for (let i = 0; i < tags.length; i++) {
+    const tag = tags[i].trim();
+    if (tag.length > HEALTH_VALIDATION.TAG_MAX) {
+      return 'Each tag must be under 50 characters';
+    }
+  }
+  return null;
+};
+
+export const validateNotes = (notes) => {
+  if (!notes || notes === '') return null;
+  
+  if (notes.length > HEALTH_VALIDATION.NOTES_MAX) {
+    return 'Notes must be under 1000 characters';
+  }
+  return null;
+};
+
+// Health log validation - Matches backend validation exactly
 export const validateHealthLog = (formData) => {
   const errors = {};
   
-  // Basic Information - Required fields
+  // 1. Basic Information - Required fields
   if (!formData.date) {
     errors.date = 'Date is required';
+  } else {
+    const selectedDate = new Date(formData.date);
+    const today = new Date();
+    today.setHours(23, 59, 59, 999);
+    if (selectedDate > today) {
+      errors.date = 'Date cannot be in the future';
+    }
   }
   
+  // Mood - Required
   if (!formData.mood) {
-    errors.mood = 'Mood is required';
+    errors.mood = 'Please select your mood';
+  } else if (!['excellent', 'good', 'fair', 'poor', 'terrible'].includes(formData.mood)) {
+    errors.mood = 'Please select your mood';
   }
   
+  // Energy Level - Required (dropdown)
   if (!formData.energyLevel) {
-    errors.energyLevel = 'Energy level is required';
+    errors.energyLevel = 'Please select your energy level';
+  } else if (!['high', 'medium', 'low', 'very-low'].includes(formData.energyLevel)) {
+    errors.energyLevel = 'Please select your energy level';
   }
   
-  // Validate vital signs - Required fields
-  if (formData.vitalSigns) {
-    if (!formData.vitalSigns.bloodPressure || !formData.vitalSigns.bloodPressure.systolic || !formData.vitalSigns.bloodPressure.diastolic) {
-      errors['vitalSigns.bloodPressure'] = 'Blood pressure is required';
-    } else {
-      const systolic = parseInt(formData.vitalSigns.bloodPressure.systolic);
-      const diastolic = parseInt(formData.vitalSigns.bloodPressure.diastolic);
-      
-      if (isNaN(systolic) || systolic < 70 || systolic > 250) {
-        errors['vitalSigns.bloodPressure.systolic'] = 'Systolic pressure must be between 70-250 mmHg';
-      }
-      
-      if (isNaN(diastolic) || diastolic < 40 || diastolic > 150) {
-        errors['vitalSigns.bloodPressure.diastolic'] = 'Diastolic pressure must be between 40-150 mmHg';
-      }
-      
-      if (systolic <= diastolic) {
-        errors['vitalSigns.bloodPressure'] = 'Systolic pressure must be higher than diastolic pressure';
-      }
-    }
-    
-    if (formData.vitalSigns.heartRate) {
-      const heartRate = parseInt(formData.vitalSigns.heartRate);
-      if (isNaN(heartRate) || heartRate < 30 || heartRate > 220) {
-        errors['vitalSigns.heartRate'] = 'Heart rate must be between 30-220 bpm';
-      }
-    }
-    
-    if (formData.vitalSigns.temperature) {
-      const temperature = parseFloat(formData.vitalSigns.temperature);
-      if (isNaN(temperature) || temperature < 20 || temperature > 45) {
-        errors['vitalSigns.temperature'] = 'Temperature must be between 20-45°C (68-113°F)';
-      }
-    }
-    
-    if (formData.vitalSigns.weight) {
-      const weight = parseFloat(formData.vitalSigns.weight);
-      if (isNaN(weight) || weight < 20 || weight > 500) {
-        errors['vitalSigns.weight'] = 'Weight must be between 20-500 kg';
-      }
-    }
-    
-    if (formData.vitalSigns.height) {
-      const height = parseFloat(formData.vitalSigns.height);
-      if (isNaN(height) || height < 50 || height > 250) {
-        errors['vitalSigns.height'] = 'Height must be between 50-250 cm';
-      }
-    }
-    
-    if (formData.vitalSigns.bloodSugar) {
-      const bloodSugar = parseFloat(formData.vitalSigns.bloodSugar);
-      if (isNaN(bloodSugar) || bloodSugar < 0 || bloodSugar > 600) {
-        errors['vitalSigns.bloodSugar'] = 'Blood sugar must be between 0-600 mg/dL';
-      }
-    }
-  }
-  
-  // Validate sleep - Required fields
-  if (!formData.sleep || !formData.sleep.duration) {
-    errors['sleep.duration'] = 'Sleep duration is required';
+  // 2. Vital Signs - Required fields
+  // Blood pressure - Required
+  if (!formData.vitalSigns?.bloodPressure?.systolic) {
+    errors['vitalSigns.bloodPressure.systolic'] = 'Enter systolic pressure (top number)';
   } else {
-    const duration = parseFloat(formData.sleep.duration);
-    if (isNaN(duration) || duration < 0 || duration > 24) {
-      errors['sleep.duration'] = 'Sleep duration must be between 0-24 hours';
+    const num = parseInt(formData.vitalSigns.bloodPressure.systolic);
+    if (isNaN(num)) {
+      errors['vitalSigns.bloodPressure.systolic'] = 'Enter numbers only (50-250)';
+    } else if (num < 50 || num > 250) {
+      errors['vitalSigns.bloodPressure.systolic'] = 'Systolic pressure must be between 50 and 250 mmHg';
     }
   }
   
-  if (!formData.sleep || !formData.sleep.quality) {
-    errors['sleep.quality'] = 'Sleep quality is required';
-  }
-  
-  // Validate exercise - Required fields
-  if (!formData.exercise || !formData.exercise.type) {
-    errors['exercise.type'] = 'Exercise type is required';
-  }
-  
-  if (!formData.exercise || !formData.exercise.duration) {
-    errors['exercise.duration'] = 'Exercise duration is required';
+  if (!formData.vitalSigns?.bloodPressure?.diastolic) {
+    errors['vitalSigns.bloodPressure.diastolic'] = 'Enter diastolic pressure (bottom number)';
   } else {
-    const duration = parseFloat(formData.exercise.duration);
-    if (isNaN(duration) || duration < 0 || duration > 12) {
-      errors['exercise.duration'] = 'Exercise duration must be between 0-12 hours';
+    const num = parseInt(formData.vitalSigns.bloodPressure.diastolic);
+    if (isNaN(num)) {
+      errors['vitalSigns.bloodPressure.diastolic'] = 'Enter numbers only (30-150)';
+    } else if (num < 30 || num > 150) {
+      errors['vitalSigns.bloodPressure.diastolic'] = 'Diastolic pressure must be between 30 and 150 mmHg';
     }
   }
   
-  if (!formData.exercise || !formData.exercise.intensity) {
-    errors['exercise.intensity'] = 'Exercise intensity is required';
+  // Cross-validation: systolic must be higher than diastolic
+  if (formData.vitalSigns?.bloodPressure?.systolic && formData.vitalSigns?.bloodPressure?.diastolic) {
+    const systolic = parseInt(formData.vitalSigns.bloodPressure.systolic);
+    const diastolic = parseInt(formData.vitalSigns.bloodPressure.diastolic);
+    if (!isNaN(systolic) && !isNaN(diastolic) && systolic <= diastolic) {
+      errors['vitalSigns.bloodPressure.systolic'] = `Systolic (${systolic}) must be higher than diastolic (${diastolic})`;
+      errors['vitalSigns.bloodPressure.diastolic'] = `Diastolic (${diastolic}) must be lower than systolic (${systolic})`;
+    }
   }
   
-  // Validate nutrition - Required fields
-  if (!formData.nutrition || !formData.nutrition.waterIntake) {
-    errors['nutrition.waterIntake'] = 'Water intake is required';
+  // Heart rate - Required
+  if (!formData.vitalSigns?.heartRate) {
+    errors['vitalSigns.heartRate'] = 'Enter heart rate';
   } else {
-    const waterIntake = parseFloat(formData.nutrition.waterIntake);
-    if (isNaN(waterIntake) || waterIntake < 0 || waterIntake > 20) {
-      errors['nutrition.waterIntake'] = 'Water intake must be between 0-20 liters';
+    const num = parseInt(formData.vitalSigns.heartRate);
+    if (isNaN(num) || num < 40 || num > 200) {
+      errors['vitalSigns.heartRate'] = 'Enter a value between 40 and 200';
     }
   }
   
-  if (!formData.nutrition || !formData.nutrition.supplements) {
-    errors['nutrition.supplements'] = 'Supplements information is required';
-  }
-  
-  if (!formData.nutrition || !formData.nutrition.meals) {
-    errors['nutrition.meals'] = 'Meals description is required';
-  }
-  
-  if (!formData.medications) {
-    errors.medications = 'Medications information is required';
-  }
-  
-  if (!formData.tags || formData.tags.length === 0) {
-    errors.tags = 'At least one tag is required';
-  }
-  
-  if (!formData.notes) {
-    errors.notes = 'Notes are required';
-  }
-  
-  // Validate meals description
-  if (formData.nutrition && formData.nutrition.meals) {
-    const meals = safeTrim(formData.nutrition.meals);
-    if (meals.length > 500) {
-      errors['nutrition.meals'] = 'Meals description must be no more than 500 characters';
+  // Temperature - Required
+  if (!formData.vitalSigns?.temperature) {
+    errors['vitalSigns.temperature'] = 'Enter temperature';
+  } else {
+    const num = parseFloat(formData.vitalSigns.temperature);
+    if (isNaN(num) || num < 25 || num > 45) {
+      errors['vitalSigns.temperature'] = 'Enter a value between 25 and 45';
     }
   }
   
-  // Validate supplements
-  if (formData.nutrition && formData.nutrition.supplements) {
-    const supplements = safeTrim(formData.nutrition.supplements);
-    if (supplements.length > 200) {
-      errors['nutrition.supplements'] = 'Supplements must be no more than 200 characters';
+  // Weight - Required
+  if (!formData.vitalSigns?.weight) {
+    errors['vitalSigns.weight'] = 'Enter weight';
+  } else {
+    const num = parseFloat(formData.vitalSigns.weight);
+    if (isNaN(num) || num < 20 || num > 300) {
+      errors['vitalSigns.weight'] = 'Enter a value between 20 and 300';
     }
   }
   
-  // Validate exercise type
-  if (formData.exercise && formData.exercise.type) {
-    const exerciseType = safeTrim(formData.exercise.type);
-    if (exerciseType.length > 100) {
-      errors['exercise.type'] = 'Exercise type must be no more than 100 characters';
+  // Height - Required
+  if (!formData.vitalSigns?.height) {
+    errors['vitalSigns.height'] = 'Enter height';
+  } else {
+    const num = parseFloat(formData.vitalSigns.height);
+    if (isNaN(num) || num < 50 || num > 250) {
+      errors['vitalSigns.height'] = 'Enter a value between 50 and 250';
     }
   }
   
-  // Validate medications
-  if (formData.medications) {
-    const medications = safeTrim(formData.medications);
-    if (medications.length > 300) {
-      errors.medications = 'Medications must be no more than 300 characters';
+  // 3. Sleep & Exercise - Required fields
+  // Sleep duration - Required
+  if (!formData.sleep?.duration) {
+    errors['sleep.duration'] = 'Enter sleep hours between 0 and 24';
+  } else {
+    const num = parseFloat(formData.sleep.duration);
+    if (isNaN(num) || num < 0 || num > 24) {
+      errors['sleep.duration'] = 'Enter sleep hours between 0 and 24';
     }
   }
   
-  // Validate notes
-  if (formData.notes) {
-    const notes = safeTrim(formData.notes);
-    if (notes.length > 1000) {
-      errors.notes = 'Notes must be no more than 1000 characters';
+  // Sleep quality - Required
+  if (!formData.sleep?.quality) {
+    errors['sleep.quality'] = 'Please rate your sleep quality';
+  } else if (!['excellent', 'good', 'fair', 'poor'].includes(formData.sleep.quality)) {
+    errors['sleep.quality'] = 'Please rate your sleep quality';
+  }
+  
+  // Exercise type - Optional but validate if filled
+  if (formData.exercise?.type && formData.exercise.type.length > 100) {
+    errors['exercise.type'] = 'Exercise type must be under 100 characters';
+  }
+  
+  // Exercise duration - Required
+  if (!formData.exercise?.duration) {
+    errors['exercise.duration'] = 'Exercise duration must be between 0 and 300 minutes';
+  } else {
+    const num = parseFloat(formData.exercise.duration);
+    if (isNaN(num) || num < 0 || num > 300) {
+      errors['exercise.duration'] = 'Exercise duration must be between 0 and 300 minutes';
     }
   }
   
-  // Validate tags
+  // Exercise intensity - Required
+  if (!formData.exercise?.intensity) {
+    errors['exercise.intensity'] = 'Please select exercise intensity';
+  } else if (!['low', 'moderate', 'high'].includes(formData.exercise.intensity)) {
+    errors['exercise.intensity'] = 'Please select exercise intensity';
+  }
+  
+  // 4. Nutrition & Notes - Required fields
+  // Water intake - Required
+  if (!formData.nutrition?.waterIntake) {
+    errors['nutrition.waterIntake'] = 'Water intake must be between 0 and 300 oz';
+  } else {
+    const num = parseFloat(formData.nutrition.waterIntake);
+    if (isNaN(num) || num < 0 || num > 300) {
+      errors['nutrition.waterIntake'] = 'Water intake must be between 0 and 300 oz';
+    }
+  }
+  
+  // Supplements - Optional but validate if filled
+  if (formData.nutrition?.supplements && formData.nutrition.supplements.length > 200) {
+    errors['nutrition.supplements'] = 'Supplements must be under 200 characters';
+  }
+  
+  // Meals - Optional but validate if filled
+  if (formData.nutrition?.meals && formData.nutrition.meals.length > 500) {
+    errors['nutrition.meals'] = 'Meals description must be under 500 characters';
+  }
+  
+  // Medications - Optional but validate if filled
+  if (formData.medications && formData.medications.length > 300) {
+    errors.medications = 'Medications must be under 300 characters';
+  }
+  
+  // Tags - Optional but validate if filled
   if (formData.tags && Array.isArray(formData.tags)) {
     const tagsString = formData.tags.join(', ');
     if (tagsString.length > 200) {
-      errors.tags = 'Tags must be no more than 200 characters total';
+      errors.tags = 'Tags must be under 200 characters total';
     }
-    
-    // Check individual tag length
     for (let i = 0; i < formData.tags.length; i++) {
-      const tag = safeTrim(formData.tags[i]);
+      const tag = formData.tags[i].trim();
       if (tag.length > 50) {
-        errors.tags = 'Each tag must be no more than 50 characters';
+        errors.tags = 'Each tag must be under 50 characters';
         break;
       }
     }
+  }
+  
+  // Notes - Optional but validate if filled
+  if (formData.notes && formData.notes.length > 1000) {
+    errors.notes = 'Notes must be under 1000 characters';
   }
   
   return errors;

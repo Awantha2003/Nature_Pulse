@@ -262,113 +262,228 @@ exports.validateAppointment = [
     .withMessage('Invalid payment method')
 ];
 
-// Health log validation rules
+// Health log validation rules - Updated to match frontend requirements
 exports.validateHealthLog = [
+  // 1. Basic Information - Required fields
   body('date')
-    .optional()
+    .notEmpty()
+    .withMessage('Date is required')
     .isISO8601()
-    .withMessage('Please provide a valid date'),
-  
-  body('vitalSigns.bloodPressure.systolic')
-    .optional()
+    .withMessage('Please provide a valid date')
     .custom((value) => {
-      if (value === '' || value === null || value === undefined) return true;
-      const num = parseInt(value);
-      if (isNaN(num) || num < 50 || num > 250) {
-        throw new Error('Systolic pressure must be between 50 and 250');
-      }
-      return true;
-    }),
-  
-  body('vitalSigns.bloodPressure.diastolic')
-    .optional()
-    .custom((value) => {
-      if (value === '' || value === null || value === undefined) return true;
-      const num = parseInt(value);
-      if (isNaN(num) || num < 30 || num > 150) {
-        throw new Error('Diastolic pressure must be between 30 and 150');
-      }
-      return true;
-    }),
-  
-  body('vitalSigns.heartRate')
-    .optional()
-    .custom((value) => {
-      if (value === '' || value === null || value === undefined) return true;
-      const num = parseInt(value);
-      if (isNaN(num) || num < 30 || num > 220) {
-        throw new Error('Heart rate must be between 30 and 220');
-      }
-      return true;
-    }),
-  
-  body('vitalSigns.temperature')
-    .optional()
-    .custom((value) => {
-      if (value === '' || value === null || value === undefined) return true;
-      const num = parseFloat(value);
-      if (isNaN(num)) {
-        throw new Error('Temperature must be a valid number');
-      }
-      // Accept both Celsius (20-45°C) and Fahrenheit (68-113°F) ranges
-      if ((num >= 20 && num <= 45) || (num >= 68 && num <= 113)) {
-        return true;
-      }
-      throw new Error('Temperature must be between 20-45°C (68-113°F)');
-    }),
-  
-  body('vitalSigns.weight')
-    .optional()
-    .custom((value) => {
-      if (value === '' || value === null || value === undefined) return true;
-      const num = parseFloat(value);
-      if (isNaN(num) || num < 20 || num > 1000) {
-        throw new Error('Weight must be between 20 and 1000 lbs');
+      const selectedDate = new Date(value);
+      const today = new Date();
+      today.setHours(23, 59, 59, 999);
+      if (selectedDate > today) {
+        throw new Error('Date cannot be in the future');
       }
       return true;
     }),
   
   body('mood')
-    .optional()
-    .custom((value) => {
-      if (value === '' || value === null || value === undefined) return true;
-      // Allow string values like 'excellent', 'good', etc.
-      const validMoods = ['excellent', 'good', 'fair', 'poor', 'terrible'];
-      if (typeof value === 'string' && validMoods.includes(value)) return true;
-      // Also allow numeric values 1-10
-      const num = parseInt(value);
-      if (!isNaN(num) && num >= 1 && num <= 10) return true;
-      throw new Error('Mood must be a valid mood string or number between 1 and 10');
-    }),
+    .notEmpty()
+    .withMessage('Please select your mood')
+    .isIn(['excellent', 'good', 'fair', 'poor', 'terrible'])
+    .withMessage('Please select your mood'),
   
   body('energyLevel')
-    .optional()
+    .notEmpty()
+    .withMessage('Please select your energy level')
+    .isIn(['high', 'medium', 'low', 'very-low'])
+    .withMessage('Please select your energy level'),
+  
+  // 2. Vital Signs - Required fields
+  body('vitalSigns.bloodPressure.systolic')
+    .notEmpty()
+    .withMessage('Enter systolic pressure')
     .custom((value) => {
-      if (value === '' || value === null || value === undefined) return true;
-      // Allow string values like 'high', 'medium', etc.
-      const validLevels = ['high', 'medium', 'low', 'very-low'];
-      if (typeof value === 'string' && validLevels.includes(value)) return true;
-      // Also allow numeric values 1-10
       const num = parseInt(value);
-      if (!isNaN(num) && num >= 1 && num <= 10) return true;
-      throw new Error('Energy level must be a valid level string or number between 1 and 10');
+      if (isNaN(num)) {
+        throw new Error('Enter numbers only (50-250)');
+      }
+      if (num < 50 || num > 250) {
+        throw new Error('Enter a value between 50 and 250');
+      }
+      return true;
     }),
   
-  body('symptoms')
+  body('vitalSigns.bloodPressure.diastolic')
+    .notEmpty()
+    .withMessage('Enter diastolic pressure')
+    .custom((value) => {
+      const num = parseInt(value);
+      if (isNaN(num)) {
+        throw new Error('Enter numbers only (30-150)');
+      }
+      if (num < 30 || num > 150) {
+        throw new Error('Enter a value between 30 and 150');
+      }
+      return true;
+    })
+    .custom((value, { req }) => {
+      const systolic = parseInt(req.body.vitalSigns?.bloodPressure?.systolic);
+      const diastolic = parseInt(value);
+      if (!isNaN(systolic) && !isNaN(diastolic) && systolic <= diastolic) {
+        throw new Error('Systolic pressure must be higher than diastolic pressure');
+      }
+      return true;
+    }),
+  
+  body('vitalSigns.heartRate')
+    .notEmpty()
+    .withMessage('Enter heart rate')
+    .custom((value) => {
+      const num = parseInt(value);
+      if (isNaN(num) || num < 40 || num > 200) {
+        throw new Error('Enter a value between 40 and 200');
+      }
+      return true;
+    }),
+  
+  body('vitalSigns.temperature')
+    .notEmpty()
+    .withMessage('Enter temperature')
+    .custom((value) => {
+      const num = parseFloat(value);
+      if (isNaN(num) || num < 25 || num > 45) {
+        throw new Error('Enter a value between 25 and 45');
+      }
+      return true;
+    }),
+  
+  body('vitalSigns.weight')
+    .notEmpty()
+    .withMessage('Enter weight')
+    .custom((value) => {
+      const num = parseFloat(value);
+      if (isNaN(num) || num < 20 || num > 300) {
+        throw new Error('Enter a value between 20 and 300');
+      }
+      return true;
+    }),
+  
+  body('vitalSigns.height')
+    .notEmpty()
+    .withMessage('Enter height')
+    .custom((value) => {
+      const num = parseFloat(value);
+      if (isNaN(num) || num < 50 || num > 250) {
+        throw new Error('Enter a value between 50 and 250');
+      }
+      return true;
+    }),
+  
+  // 3. Sleep & Exercise - Required fields
+  body('sleep.duration')
+    .notEmpty()
+    .withMessage('Enter sleep hours between 0 and 24')
+    .custom((value) => {
+      const num = parseFloat(value);
+      if (isNaN(num) || num < 0 || num > 24) {
+        throw new Error('Enter sleep hours between 0 and 24');
+      }
+      return true;
+    }),
+  
+  body('sleep.quality')
+    .notEmpty()
+    .withMessage('Please rate your sleep quality')
+    .isIn(['excellent', 'good', 'fair', 'poor'])
+    .withMessage('Please rate your sleep quality'),
+  
+  body('exercise.type')
+    .optional()
+    .custom((value) => {
+      if (value && value.length > 100) {
+        throw new Error('Exercise type must be under 100 characters');
+      }
+      return true;
+    }),
+  
+  body('exercise.duration')
+    .notEmpty()
+    .withMessage('Exercise duration must be between 0 and 300 minutes')
+    .custom((value) => {
+      const num = parseFloat(value);
+      if (isNaN(num) || num < 0 || num > 300) {
+        throw new Error('Exercise duration must be between 0 and 300 minutes');
+      }
+      return true;
+    }),
+  
+  body('exercise.intensity')
+    .notEmpty()
+    .withMessage('Please select exercise intensity')
+    .isIn(['low', 'moderate', 'high'])
+    .withMessage('Please select exercise intensity'),
+  
+  // 4. Nutrition & Notes - Required fields
+  body('nutrition.waterIntake')
+    .notEmpty()
+    .withMessage('Water intake must be between 0 and 300 oz')
+    .custom((value) => {
+      const num = parseFloat(value);
+      if (isNaN(num) || num < 0 || num > 300) {
+        throw new Error('Water intake must be between 0 and 300 oz');
+      }
+      return true;
+    }),
+  
+  body('nutrition.supplements')
+    .optional()
+    .custom((value) => {
+      if (value && value.length > 200) {
+        throw new Error('Supplements must be under 200 characters');
+      }
+      return true;
+    }),
+  
+  body('nutrition.meals')
+    .optional()
+    .custom((value) => {
+      if (value && value.length > 500) {
+        throw new Error('Meals description must be under 500 characters');
+      }
+      return true;
+    }),
+  
+  body('medications')
+    .optional()
+    .custom((value) => {
+      if (value && value.length > 300) {
+        throw new Error('Medications must be under 300 characters');
+      }
+      return true;
+    }),
+  
+  body('tags')
     .optional()
     .isArray()
-    .withMessage('Symptoms must be an array'),
+    .withMessage('Tags must be an array')
+    .custom((tags) => {
+      if (tags) {
+        const tagsString = tags.join(', ');
+        if (tagsString.length > 200) {
+          throw new Error('Tags must be under 200 characters total');
+        }
+        for (let i = 0; i < tags.length; i++) {
+          const tag = tags[i].trim();
+          if (tag.length > 50) {
+            throw new Error('Each tag must be under 50 characters');
+          }
+        }
+      }
+      return true;
+    }),
   
-  body('symptoms.*.name')
+  body('notes')
     .optional()
-    .trim()
-    .isLength({ min: 2, max: 100 })
-    .withMessage('Symptom name must be between 2 and 100 characters'),
-  
-  body('symptoms.*.severity')
-    .optional()
-    .isInt({ min: 1, max: 10 })
-    .withMessage('Symptom severity must be between 1 and 10')
+    .custom((value) => {
+      if (value && value.length > 1000) {
+        throw new Error('Notes must be under 1000 characters');
+      }
+      return true;
+    })
 ];
 
 // Community report validation rules

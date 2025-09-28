@@ -140,6 +140,27 @@ const HealthTracker = () => {
     console.log('Health log change:', name, value);
     console.log('Current formData before update:', formData);
     
+    // Define numeric fields that should only accept numbers
+    const numericFields = [
+      'vitalSigns.bloodPressure.systolic',
+      'vitalSigns.bloodPressure.diastolic', 
+      'vitalSigns.heartRate',
+      'vitalSigns.temperature',
+      'vitalSigns.weight',
+      'vitalSigns.height',
+      'sleep.duration',
+      'exercise.duration',
+      'nutrition.waterIntake'
+    ];
+    
+    // Check if this is a numeric field and validate input
+    if (numericFields.includes(name)) {
+      // Only allow numbers, decimal point, and empty string
+      if (value !== '' && !/^\d*\.?\d*$/.test(value)) {
+        return; // Don't update if invalid input
+      }
+    }
+    
     if (name.includes('.')) {
       const parts = name.split('.');
       console.log('Nested field parts:', parts);
@@ -203,19 +224,332 @@ const HealthTracker = () => {
     const { name, value } = e.target;
     console.log('Field blur:', name, value);
     
-    // Validate only the specific field that was blurred
-    const fieldErrors = validateHealthLog({ [name]: value });
-    if (fieldErrors[name]) {
+    // Validate the entire form to get proper nested object validation
+    const allErrors = validateHealthLog(formData);
+    setFieldErrors(allErrors);
+  };
+
+  // Real-time validation for blood pressure fields
+  const handleBloodPressureChange = (e) => {
+    const { name, value } = e.target;
+    
+    // Only allow numbers
+    if (value !== '' && !/^\d*$/.test(value)) {
+      return;
+    }
+    
+    // Update the form data
+    handleHealthLogChange(e);
+    
+    // If both systolic and diastolic are filled, validate immediately
+    if (name === 'vitalSigns.bloodPressure.systolic' && formData.vitalSigns?.bloodPressure?.diastolic) {
+      const systolic = parseInt(value);
+      const diastolic = parseInt(formData.vitalSigns.bloodPressure.diastolic);
+      if (!isNaN(systolic) && !isNaN(diastolic)) {
+        const errors = validateHealthLog({ ...formData, vitalSigns: { ...formData.vitalSigns, bloodPressure: { ...formData.vitalSigns.bloodPressure, [name.split('.')[2]]: value } } });
+        setFieldErrors(prev => ({ ...prev, ...errors }));
+      }
+    } else if (name === 'vitalSigns.bloodPressure.diastolic' && formData.vitalSigns?.bloodPressure?.systolic) {
+      const systolic = parseInt(formData.vitalSigns.bloodPressure.systolic);
+      const diastolic = parseInt(value);
+      if (!isNaN(systolic) && !isNaN(diastolic)) {
+        const errors = validateHealthLog({ ...formData, vitalSigns: { ...formData.vitalSigns, bloodPressure: { ...formData.vitalSigns.bloodPressure, [name.split('.')[2]]: value } } });
+        setFieldErrors(prev => ({ ...prev, ...errors }));
+      }
+    }
+  };
+
+  // Real-time validation for height field
+  const handleHeightChange = (e) => {
+    const { name, value } = e.target;
+    
+    // Only allow numbers and decimal point
+    if (value !== '' && !/^\d*\.?\d*$/.test(value)) {
+      return;
+    }
+    
+    // Update the form data
+    handleHealthLogChange(e);
+    
+    // Validate height immediately
+    if (value !== '') {
+      const height = parseFloat(value);
+      if (!isNaN(height)) {
+        let errorMessage = '';
+        if (height < 50) {
+          errorMessage = 'Height must be at least 50 cm (20 inches)';
+        } else if (height > 250) {
+          errorMessage = 'Height cannot exceed 250 cm (98 inches)';
+        }
+        
+        setFieldErrors(prev => ({
+          ...prev,
+          [name]: errorMessage || undefined
+        }));
+      }
+    } else {
+      // Clear error when field is empty
       setFieldErrors(prev => ({
         ...prev,
-        [name]: fieldErrors[name]
+        [name]: undefined
       }));
+    }
+  };
+
+  // Real-time validation for exercise type field
+  const handleExerciseTypeChange = (e) => {
+    const { name, value } = e.target;
+    
+    // Valid exercise types from backend enum
+    const validExerciseTypes = ['cardio', 'strength', 'yoga', 'walking', 'running', 'cycling', 'swimming', 'other'];
+    
+    // Check for comma-separated values and show error
+    if (value.includes(',')) {
+      setFieldErrors(prev => ({
+        ...prev,
+        [name]: 'Please enter only one exercise type (no commas)'
+      }));
+      return;
+    }
+    
+    // Update the form data
+    handleHealthLogChange(e);
+    
+    // Validate against allowed values
+    if (value !== '') {
+      const lowerValue = value.toLowerCase().trim();
+      if (!validExerciseTypes.includes(lowerValue)) {
+        setFieldErrors(prev => ({
+          ...prev,
+          [name]: `Please enter a valid exercise type: ${validExerciseTypes.join(', ')}`
+        }));
+      } else {
+        setFieldErrors(prev => ({
+          ...prev,
+          [name]: undefined
+        }));
+      }
     } else {
-      setFieldErrors(prev => {
-        const newErrors = { ...prev };
-        delete newErrors[name];
-        return newErrors;
-      });
+      setFieldErrors(prev => ({
+        ...prev,
+        [name]: undefined
+      }));
+    }
+  };
+
+  // Real-time validation for heart rate field
+  const handleHeartRateChange = (e) => {
+    const { name, value } = e.target;
+    
+    // Only allow numbers
+    if (value !== '' && !/^\d*$/.test(value)) {
+      return;
+    }
+    
+    // Update the form data
+    handleHealthLogChange(e);
+    
+    // Validate heart rate immediately
+    if (value !== '') {
+      const heartRate = parseInt(value);
+      if (!isNaN(heartRate)) {
+        let errorMessage = '';
+        if (heartRate < 40) {
+          errorMessage = 'Heart rate must be at least 40 bpm';
+        } else if (heartRate > 200) {
+          errorMessage = 'Heart rate cannot exceed 200 bpm';
+        }
+        
+        setFieldErrors(prev => ({
+          ...prev,
+          [name]: errorMessage || undefined
+        }));
+      }
+    } else {
+      setFieldErrors(prev => ({
+        ...prev,
+        [name]: undefined
+      }));
+    }
+  };
+
+  // Real-time validation for temperature field
+  const handleTemperatureChange = (e) => {
+    const { name, value } = e.target;
+    
+    // Only allow numbers and decimal point
+    if (value !== '' && !/^\d*\.?\d*$/.test(value)) {
+      return;
+    }
+    
+    // Update the form data
+    handleHealthLogChange(e);
+    
+    // Validate temperature immediately
+    if (value !== '') {
+      const temperature = parseFloat(value);
+      if (!isNaN(temperature)) {
+        let errorMessage = '';
+        if (temperature < 25) {
+          errorMessage = 'Temperature must be at least 25°C (77°F)';
+        } else if (temperature > 45) {
+          errorMessage = 'Temperature cannot exceed 45°C (113°F)';
+        }
+        
+        setFieldErrors(prev => ({
+          ...prev,
+          [name]: errorMessage || undefined
+        }));
+      }
+    } else {
+      setFieldErrors(prev => ({
+        ...prev,
+        [name]: undefined
+      }));
+    }
+  };
+
+  // Real-time validation for weight field
+  const handleWeightChange = (e) => {
+    const { name, value } = e.target;
+    
+    // Only allow numbers and decimal point
+    if (value !== '' && !/^\d*\.?\d*$/.test(value)) {
+      return;
+    }
+    
+    // Update the form data
+    handleHealthLogChange(e);
+    
+    // Validate weight immediately
+    if (value !== '') {
+      const weight = parseFloat(value);
+      if (!isNaN(weight)) {
+        let errorMessage = '';
+        if (weight < 20) {
+          errorMessage = 'Weight must be at least 20 kg (44 lbs)';
+        } else if (weight > 300) {
+          errorMessage = 'Weight cannot exceed 300 kg (660 lbs)';
+        }
+        
+        setFieldErrors(prev => ({
+          ...prev,
+          [name]: errorMessage || undefined
+        }));
+      }
+    } else {
+      setFieldErrors(prev => ({
+        ...prev,
+        [name]: undefined
+      }));
+    }
+  };
+
+  // Real-time validation for exercise duration field
+  const handleExerciseDurationChange = (e) => {
+    const { name, value } = e.target;
+    
+    // Only allow numbers
+    if (value !== '' && !/^\d*$/.test(value)) {
+      return;
+    }
+    
+    // Update the form data
+    handleHealthLogChange(e);
+    
+    // Validate exercise duration immediately
+    if (value !== '') {
+      const duration = parseInt(value);
+      if (!isNaN(duration)) {
+        let errorMessage = '';
+        if (duration < 0) {
+          errorMessage = 'Exercise duration cannot be negative';
+        } else if (duration > 480) {
+          errorMessage = 'Exercise duration cannot exceed 480 minutes (8 hours)';
+        }
+        
+        setFieldErrors(prev => ({
+          ...prev,
+          [name]: errorMessage || undefined
+        }));
+      }
+    } else {
+      setFieldErrors(prev => ({
+        ...prev,
+        [name]: undefined
+      }));
+    }
+  };
+
+  // Real-time validation for water intake field
+  const handleWaterIntakeChange = (e) => {
+    const { name, value } = e.target;
+    
+    // Only allow numbers and decimal point
+    if (value !== '' && !/^\d*\.?\d*$/.test(value)) {
+      return;
+    }
+    
+    // Update the form data
+    handleHealthLogChange(e);
+    
+    // Validate water intake immediately
+    if (value !== '') {
+      const waterIntake = parseFloat(value);
+      if (!isNaN(waterIntake)) {
+        let errorMessage = '';
+        if (waterIntake < 0) {
+          errorMessage = 'Water intake cannot be negative';
+        } else if (waterIntake > 20) {
+          errorMessage = 'Water intake cannot exceed 20 liters per day';
+        }
+        
+        setFieldErrors(prev => ({
+          ...prev,
+          [name]: errorMessage || undefined
+        }));
+      }
+    } else {
+      setFieldErrors(prev => ({
+        ...prev,
+        [name]: undefined
+      }));
+    }
+  };
+
+  // Real-time validation for sleep duration field
+  const handleSleepDurationChange = (e) => {
+    const { name, value } = e.target;
+    
+    // Only allow numbers and decimal point
+    if (value !== '' && !/^\d*\.?\d*$/.test(value)) {
+      return;
+    }
+    
+    // Update the form data
+    handleHealthLogChange(e);
+    
+    // Validate sleep duration immediately
+    if (value !== '') {
+      const duration = parseFloat(value);
+      if (!isNaN(duration)) {
+        let errorMessage = '';
+        if (duration < 0) {
+          errorMessage = 'Sleep duration cannot be negative';
+        } else if (duration > 24) {
+          errorMessage = 'Sleep duration cannot exceed 24 hours';
+        }
+        
+        setFieldErrors(prev => ({
+          ...prev,
+          [name]: errorMessage || undefined
+        }));
+      }
+    } else {
+      setFieldErrors(prev => ({
+        ...prev,
+        [name]: undefined
+      }));
     }
   };
 
@@ -344,8 +678,8 @@ const HealthTracker = () => {
       // Transform form data to match backend model structure
       const transformedData = {
         date: formData.date,
-        mood: formData.mood ? convertMoodToNumber(formData.mood) : undefined,
-        energyLevel: formData.energyLevel ? convertEnergyToNumber(formData.energyLevel) : undefined,
+        mood: formData.mood || undefined,
+        energyLevel: formData.energyLevel || undefined,
         vitalSigns: {
           bloodPressure: {
             systolic: formData.vitalSigns.bloodPressure.systolic ? parseInt(formData.vitalSigns.bloodPressure.systolic) : undefined,
@@ -358,7 +692,7 @@ const HealthTracker = () => {
         },
         sleep: {
           duration: formData.sleep.duration ? parseFloat(formData.sleep.duration) : undefined,
-          quality: formData.sleep.quality ? convertMoodToNumber(formData.sleep.quality) : undefined
+          quality: formData.sleep.quality || undefined
         },
         exercise: {
           type: formData.exercise.type || undefined,
@@ -419,11 +753,43 @@ const HealthTracker = () => {
       setTimeout(() => setSuccessMessage(null), 3000);
     } catch (err) {
       console.error('Save error:', err);
+      console.error('Error response:', err.response?.data);
+      
       if (err.response?.data?.message) {
         setError(`Failed to save health log: ${err.response.data.message}`);
       } else if (err.response?.data?.errors) {
         // Handle validation errors from backend
-        setValidationErrors(Array.isArray(err.response.data.errors) ? err.response.data.errors : []);
+        const backendErrors = err.response.data.errors;
+        console.log('Backend validation errors:', backendErrors);
+        
+        // Convert backend errors to frontend field errors
+        const fieldErrors = {};
+        if (Array.isArray(backendErrors)) {
+          backendErrors.forEach(error => {
+            if (error.path) {
+              fieldErrors[error.path] = error.msg;
+            }
+          });
+        } else if (typeof backendErrors === 'object') {
+          // Handle mongoose validation errors
+          Object.keys(backendErrors).forEach(key => {
+            const error = backendErrors[key];
+            if (error.message) {
+              // Map backend field names to frontend field names
+              let frontendField = key;
+              if (key === 'vitalSigns.height.value') {
+                frontendField = 'vitalSigns.height';
+              } else if (key === 'exercise.type') {
+                frontendField = 'exercise.type';
+              }
+              fieldErrors[frontendField] = error.message;
+            }
+          });
+        }
+        
+        console.log('Mapped field errors:', fieldErrors);
+        setFieldErrors(fieldErrors);
+        setValidationErrors(Array.isArray(backendErrors) ? backendErrors : []);
         setError('Please fix the validation errors below.');
       } else {
         setError('Failed to save health log. Please check your input and try again.');
@@ -701,6 +1067,9 @@ const HealthTracker = () => {
     setFieldErrors(errors);
     const isValid = Object.keys(errors).length === 0;
     console.log('Form is valid:', isValid);
+    if (!isValid) {
+      console.log('Validation errors:', errors);
+    }
     return isValid;
   };
 
@@ -1594,7 +1963,7 @@ const HealthTracker = () => {
                     label="Systolic Pressure (mmHg) *"
                     name="vitalSigns.bloodPressure.systolic"
                     value={formData.vitalSigns.bloodPressure.systolic || ''}
-                    onChange={handleHealthLogChange}
+                    onChange={handleBloodPressureChange}
                     onBlur={handleHealthLogBlur}
                     error={fieldErrors['vitalSigns.bloodPressure.systolic']}
                     helperText={fieldErrors['vitalSigns.bloodPressure.systolic'] ? fieldErrors['vitalSigns.bloodPressure.systolic'] : "Range: 50-250 mmHg (Normal: 90-140 mmHg)"}
@@ -1607,12 +1976,20 @@ const HealthTracker = () => {
                     label="Diastolic Pressure (mmHg) *"
                     name="vitalSigns.bloodPressure.diastolic"
                     value={formData.vitalSigns.bloodPressure.diastolic || ''}
-                    onChange={handleHealthLogChange}
+                    onChange={handleBloodPressureChange}
                     onBlur={handleHealthLogBlur}
                     error={fieldErrors['vitalSigns.bloodPressure.diastolic']}
                     helperText={fieldErrors['vitalSigns.bloodPressure.diastolic'] ? fieldErrors['vitalSigns.bloodPressure.diastolic'] : "Range: 30-150 mmHg (Normal: 60-90 mmHg)"}
                     placeholder="Enter diastolic pressure"
                   />
+                </Grid>
+                <Grid size={{ xs: 12 }}>
+                  <Alert severity="info" sx={{ mt: 1, mb: 2 }}>
+                    <Typography variant="body2">
+                      <strong>💡 Tip:</strong> Systolic pressure (top number) should always be higher than diastolic pressure (bottom number). 
+                      Normal blood pressure is typically 120/80 mmHg or lower.
+                    </Typography>
+                  </Alert>
                 </Grid>
                 <Grid size={{ xs: 12, sm: 6 }}>
                   <ValidatedTextField
@@ -1620,7 +1997,7 @@ const HealthTracker = () => {
                     label="Heart Rate (bpm) *"
                     name="vitalSigns.heartRate"
                     value={formData.vitalSigns.heartRate || ''}
-                    onChange={handleHealthLogChange}
+                    onChange={handleHeartRateChange}
                     onBlur={handleHealthLogBlur}
                     error={fieldErrors['vitalSigns.heartRate']}
                     helperText={fieldErrors['vitalSigns.heartRate'] ? fieldErrors['vitalSigns.heartRate'] : "Normal range: 60-100 bpm"}
@@ -1633,10 +2010,10 @@ const HealthTracker = () => {
                     label="Temperature (°C or °F) *"
                     name="vitalSigns.temperature"
                     value={formData.vitalSigns.temperature || ''}
-                    onChange={handleHealthLogChange}
+                    onChange={handleTemperatureChange}
                     onBlur={handleHealthLogBlur}
                     error={fieldErrors['vitalSigns.temperature']}
-                    helperText={fieldErrors['vitalSigns.temperature'] ? fieldErrors['vitalSigns.temperature'] : "Enter temperature in Celsius (20-45) or Fahrenheit (68-113)"}
+                    helperText={fieldErrors['vitalSigns.temperature'] ? fieldErrors['vitalSigns.temperature'] : "Enter temperature in Celsius (25-45) or Fahrenheit (77-113)"}
                     placeholder="e.g., 37°C or 98.6°F"
                   />
                 </Grid>
@@ -1646,10 +2023,10 @@ const HealthTracker = () => {
                     label="Weight (kg) *"
                     name="vitalSigns.weight"
                     value={formData.vitalSigns.weight || ''}
-                    onChange={handleHealthLogChange}
+                    onChange={handleWeightChange}
                     onBlur={handleHealthLogBlur}
                     error={fieldErrors['vitalSigns.weight']}
-                    helperText={fieldErrors['vitalSigns.weight'] ? fieldErrors['vitalSigns.weight'] : "Enter weight in kilograms"}
+                    helperText={fieldErrors['vitalSigns.weight'] ? fieldErrors['vitalSigns.weight'] : "Enter weight in kilograms (20-300 kg)"}
                     placeholder="Enter weight"
                   />
                 </Grid>
@@ -1659,10 +2036,10 @@ const HealthTracker = () => {
                     label="Height (cm) *"
                     name="vitalSigns.height"
                     value={formData.vitalSigns.height || ''}
-                    onChange={handleHealthLogChange}
+                    onChange={handleHeightChange}
                     onBlur={handleHealthLogBlur}
                     error={fieldErrors['vitalSigns.height']}
-                    helperText={fieldErrors['vitalSigns.height'] ? fieldErrors['vitalSigns.height'] : "Enter height in centimeters"}
+                    helperText={fieldErrors['vitalSigns.height'] ? fieldErrors['vitalSigns.height'] : "Enter height in centimeters (50-250 cm)"}
                     placeholder="Enter height"
                   />
                 </Grid>
@@ -1682,10 +2059,10 @@ const HealthTracker = () => {
                     type="number"
                     name="sleep.duration"
                     value={formData.sleep.duration || ''}
-                    onChange={handleHealthLogChange}
+                    onChange={handleSleepDurationChange}
                     onBlur={handleHealthLogBlur}
                     error={fieldErrors['sleep.duration']}
-                    helperText={fieldErrors['sleep.duration'] ? fieldErrors['sleep.duration'] : "Recommended: 7-9 hours"}
+                    helperText={fieldErrors['sleep.duration'] ? fieldErrors['sleep.duration'] : "Recommended: 7-9 hours (max 24 hours)"}
                     placeholder="Enter sleep duration"
                   />
                 </Grid>
@@ -1709,17 +2086,27 @@ const HealthTracker = () => {
                   </ValidatedSelect>
                 </Grid>
                 <Grid size={{ xs: 12, sm: 4 }}>
-                  <ValidatedTextField
+                  <ValidatedSelect
                     fullWidth
+                    id="exercise.type"
                     label="Exercise Type *"
                     name="exercise.type"
                     value={formData.exercise.type || ''}
                     onChange={handleHealthLogChange}
                     onBlur={handleHealthLogBlur}
                     error={fieldErrors['exercise.type']}
-                    helperText={fieldErrors['exercise.type'] ? fieldErrors['exercise.type'] : "Max 100 characters (e.g., cardio, strength, yoga)"}
-                    placeholder="e.g., cardio, strength, yoga"
-                  />
+                    helperText={fieldErrors['exercise.type'] ? fieldErrors['exercise.type'] : "Select exercise type"}
+                  >
+                    <MenuItem value="">Select exercise type</MenuItem>
+                    <MenuItem value="cardio">Cardio</MenuItem>
+                    <MenuItem value="strength">Strength Training</MenuItem>
+                    <MenuItem value="yoga">Yoga</MenuItem>
+                    <MenuItem value="walking">Walking</MenuItem>
+                    <MenuItem value="running">Running</MenuItem>
+                    <MenuItem value="cycling">Cycling</MenuItem>
+                    <MenuItem value="swimming">Swimming</MenuItem>
+                    <MenuItem value="other">Other</MenuItem>
+                  </ValidatedSelect>
                 </Grid>
                 <Grid size={{ xs: 12, sm: 4 }}>
                   <ValidatedTextField
@@ -1728,10 +2115,10 @@ const HealthTracker = () => {
                     type="number"
                     name="exercise.duration"
                     value={formData.exercise.duration || ''}
-                    onChange={handleHealthLogChange}
+                    onChange={handleExerciseDurationChange}
                     onBlur={handleHealthLogBlur}
                     error={fieldErrors['exercise.duration']}
-                    helperText={fieldErrors['exercise.duration'] ? fieldErrors['exercise.duration'] : "Recommended: 30-60 minutes"}
+                    helperText={fieldErrors['exercise.duration'] ? fieldErrors['exercise.duration'] : "Recommended: 30-60 minutes (max 480 minutes)"}
                     placeholder="Enter duration"
                   />
                 </Grid>
@@ -1769,10 +2156,10 @@ const HealthTracker = () => {
                     type="number"
                     name="nutrition.waterIntake"
                     value={formData.nutrition.waterIntake || ''}
-                    onChange={handleHealthLogChange}
+                    onChange={handleWaterIntakeChange}
                     onBlur={handleHealthLogBlur}
                     error={fieldErrors['nutrition.waterIntake']}
-                    helperText={fieldErrors['nutrition.waterIntake'] ? fieldErrors['nutrition.waterIntake'] : "Recommended: 64-128 oz daily"}
+                    helperText={fieldErrors['nutrition.waterIntake'] ? fieldErrors['nutrition.waterIntake'] : "Recommended: 64-128 oz daily (max 676 oz)"}
                     placeholder="Enter water intake"
                   />
                 </Grid>

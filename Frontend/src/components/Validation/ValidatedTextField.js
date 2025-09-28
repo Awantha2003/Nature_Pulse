@@ -9,16 +9,19 @@ const ValidatedTextField = ({
   slotProps,
   ...props 
 }) => {
+  const hasError = !!error;
+  const errorMessage = typeof error === 'string' ? error : '';
+  
   return (
     <>
       <TextField
         {...props}
-        error={!!error}
-        helperText={error ? '' : helperText}
+        error={hasError}
+        helperText={hasError ? '' : helperText}
         inputProps={inputProps}
         slotProps={slotProps}
       />
-      {error && showErrorBelow && (
+      {hasError && showErrorBelow && errorMessage && (
         <Typography 
           variant="caption" 
           color="error" 
@@ -29,7 +32,7 @@ const ValidatedTextField = ({
             fontSize: '0.75rem'
           }}
         >
-          {error}
+          {errorMessage}
         </Typography>
       )}
     </>

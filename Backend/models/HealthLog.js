@@ -118,10 +118,9 @@ const healthLogSchema = new mongoose.Schema({
     description: 'Mood scale from 1 (very poor) to 10 (excellent)'
   },
   energyLevel: {
-    type: Number,
-    min: 1,
-    max: 10,
-    description: 'Energy level from 1 (very low) to 10 (very high)'
+    type: String,
+    enum: ['high', 'medium', 'low', 'very-low'],
+    description: 'Energy level: high, medium, low, or very-low'
   },
   sleep: {
     duration: {
