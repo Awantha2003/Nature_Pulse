@@ -333,8 +333,14 @@ const DoctorEDRC = () => {
   const handleFlagReport = async () => {
     if (!selectedReport || !flagData.type) return;
     
+    // Ensure reason is provided (backend requires it)
+    const flagPayload = {
+      type: flagData.type,
+      reason: flagData.reason || 'No specific reason provided'
+    };
+    
     try {
-      await api.post(`/community/reports/${selectedReport._id}/flag`, flagData);
+      await api.post(`/community/reports/${selectedReport._id}/flag`, flagPayload);
       setSuccess('Report flagged successfully!');
       setFlagDialogOpen(false);
       setFlagData({ type: '', reason: '' });
@@ -780,7 +786,7 @@ const DoctorEDRC = () => {
       ) : (
         <Grid container spacing={3} sx={{ mb: 4 }}>
           {reports.map((report, index) => (
-            <Grid size={{ xs: 12, md: 6 }} lg={4} key={report._id}>
+            <Grid size={{ xs: 12, md: 6, lg: 4 }} key={report._id}>
               {renderReportCard(report)}
             </Grid>
           ))}

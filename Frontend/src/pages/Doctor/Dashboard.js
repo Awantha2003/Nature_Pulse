@@ -247,7 +247,7 @@ const DoctorDashboard = () => {
 
       {/* Practice Metrics Cards */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid size={{ xs: 12, sm: 6 }} md={3}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <Zoom in timeout={1000}>
             <Card 
               sx={{ 
@@ -286,7 +286,7 @@ const DoctorDashboard = () => {
           </Zoom>
         </Grid>
 
-        <Grid size={{ xs: 12, sm: 6 }} md={3}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <Zoom in timeout={1200}>
             <Card 
               sx={{ 
@@ -325,7 +325,7 @@ const DoctorDashboard = () => {
           </Zoom>
         </Grid>
 
-        <Grid size={{ xs: 12, sm: 6 }} md={3}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <Zoom in timeout={1400}>
             <Card 
               sx={{ 
@@ -366,7 +366,7 @@ const DoctorDashboard = () => {
           </Zoom>
         </Grid>
 
-        <Grid size={{ xs: 12, sm: 6 }} md={3}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <Zoom in timeout={1600}>
             <Card 
               sx={{ 
@@ -532,16 +532,7 @@ const DoctorDashboard = () => {
                           </ListItemAvatar>
                           <ListItemText
                             primary={`${appointment.patient?.firstName} ${appointment.patient?.lastName}`}
-                            secondary={
-                              <Box>
-                                <Typography variant="body2" color="text.secondary">
-                                  {new Date(appointment.appointmentDate).toLocaleTimeString()}
-                                </Typography>
-                                <Typography variant="body2" color="text.secondary">
-                                  {appointment.reason || 'General consultation'}
-                                </Typography>
-                              </Box>
-                            }
+                            secondary={`${new Date(appointment.appointmentDate).toLocaleTimeString()} - ${appointment.reason || 'General consultation'}`}
                           />
                           <Chip 
                             label={appointment.status} 
@@ -594,16 +585,7 @@ const DoctorDashboard = () => {
                           </ListItemAvatar>
                           <ListItemText
                             primary={`${request.patient?.firstName} ${request.patient?.lastName}`}
-                            secondary={
-                              <Box>
-                                <Typography variant="body2" color="text.secondary">
-                                  {new Date(request.appointmentDate).toLocaleDateString()} at {new Date(request.appointmentDate).toLocaleTimeString()}
-                                </Typography>
-                                <Typography variant="body2" color="text.secondary">
-                                  {request.reason || 'General consultation'}
-                                </Typography>
-                              </Box>
-                            }
+                            secondary={`${new Date(request.appointmentDate).toLocaleDateString()} at ${new Date(request.appointmentDate).toLocaleTimeString()} - ${request.reason || 'General consultation'}`}
                           />
                           <Box>
                             <Button 
@@ -656,7 +638,7 @@ const DoctorDashboard = () => {
                 </Typography>
                 
                 <Grid container spacing={2}>
-                  <Grid size={{ xs: 12, sm: 6 }} md={3}>
+                  <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                     <Button
                       variant="outlined"
                       fullWidth
@@ -676,7 +658,7 @@ const DoctorDashboard = () => {
                       Manage Patients
                     </Button>
                   </Grid>
-                  <Grid size={{ xs: 12, sm: 6 }} md={3}>
+                  <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                     <Button
                       variant="outlined"
                       fullWidth
@@ -696,7 +678,7 @@ const DoctorDashboard = () => {
                       Appointments
                     </Button>
                   </Grid>
-                  <Grid size={{ xs: 12, sm: 6 }} md={3}>
+                  <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                     <Button
                       variant="outlined"
                       fullWidth
@@ -716,7 +698,7 @@ const DoctorDashboard = () => {
                       EDRC Reports
                     </Button>
                   </Grid>
-                  <Grid size={{ xs: 12, sm: 6 }} md={3}>
+                  <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                     <Button
                       variant="outlined"
                       fullWidth

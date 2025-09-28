@@ -214,7 +214,7 @@ const PatientDashboard = () => {
 
       {/* Health Metrics Cards */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid size={{ xs: 12, sm: 6 }} md={3}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <Zoom in timeout={1000}>
             <Card 
               sx={{ 
@@ -255,7 +255,7 @@ const PatientDashboard = () => {
           </Zoom>
         </Grid>
 
-        <Grid size={{ xs: 12, sm: 6 }} md={3}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <Zoom in timeout={1200}>
             <Card 
               sx={{ 
@@ -296,7 +296,7 @@ const PatientDashboard = () => {
           </Zoom>
         </Grid>
 
-        <Grid size={{ xs: 12, sm: 6 }} md={3}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <Zoom in timeout={1400}>
             <Card 
               sx={{ 
@@ -335,7 +335,7 @@ const PatientDashboard = () => {
           </Zoom>
         </Grid>
 
-        <Grid size={{ xs: 12, sm: 6 }} md={3}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <Zoom in timeout={1600}>
             <Card 
               sx={{ 

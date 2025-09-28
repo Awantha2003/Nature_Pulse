@@ -206,7 +206,7 @@ const DoctorPatientDetail = () => {
           <Card sx={{ mb: 3, background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: 'white' }}>
             <CardContent>
               <Grid container spacing={3} alignItems="center">
-                <Grid item xs={12} md={3}>
+                <Grid size={{ xs: 12, md: 3 }}>
                   <Box sx={{ display: 'flex', justifyContent: 'center' }}>
                     <Avatar 
                       sx={{ 
@@ -221,7 +221,7 @@ const DoctorPatientDetail = () => {
                     </Avatar>
                   </Box>
                 </Grid>
-                <Grid item xs={12} md={9}>
+                <Grid size={{ xs: 12, md: 9 }}>
                   <Typography variant="h4" gutterBottom sx={{ fontWeight: 'bold' }}>
                     {patient.firstName} {patient.lastName}
                   </Typography>
