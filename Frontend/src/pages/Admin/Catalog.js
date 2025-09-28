@@ -57,6 +57,7 @@ import {
 } from '@mui/icons-material';
 import { useAuth } from '../../contexts/AuthContext';
 import api from '../../utils/api';
+import { validateProduct } from '../../utils/validation';
 
 const AdminCatalog = () => {
   const { user } = useAuth();
@@ -114,6 +115,18 @@ const AdminCatalog = () => {
   const [selectedImages, setSelectedImages] = useState([]);
   const [imageUploadProgress, setImageUploadProgress] = useState(0);
   const [uploadingImages, setUploadingImages] = useState(false);
+  
+  // Validation states
+  const [validationErrors, setValidationErrors] = useState({});
+  const [touchedFields, setTouchedFields] = useState({});
+  
+  // Validate form whenever productForm changes (for real-time validation)
+  useEffect(() => {
+    if (Object.keys(touchedFields).length > 0) {
+      const errors = validateProduct(productForm);
+      setValidationErrors(errors);
+    }
+  }, [productForm, touchedFields]);
   
   // Tab and approval states
   const [currentTab, setCurrentTab] = useState(0);
@@ -231,25 +244,9 @@ const AdminCatalog = () => {
   };
 
   const handleAddProduct = async () => {
-    // Client-side validation
-    if (productForm.name.length < 5 || productForm.name.length > 200) {
-      setError('Product name must be between 5 and 200 characters');
-      return;
-    }
-    if (productForm.description.length < 20 || productForm.description.length > 2000) {
-      setError('Description must be between 20 and 2000 characters');
-      return;
-    }
-    if (productForm.brand.length < 2 || productForm.brand.length > 100) {
-      setError('Brand must be between 2 and 100 characters');
-      return;
-    }
-    if (!productForm.category) {
-      setError('Please select a category');
-      return;
-    }
-    if (!productForm.price || parseFloat(productForm.price) <= 0) {
-      setError('Please enter a valid price');
+    // Validate form before submission
+    if (!validateForm()) {
+      setError('Please fix the validation errors before submitting');
       return;
     }
 
@@ -285,25 +282,9 @@ const AdminCatalog = () => {
   };
 
   const handleUpdateProduct = async () => {
-    // Client-side validation
-    if (productForm.name.length < 5 || productForm.name.length > 200) {
-      setError('Product name must be between 5 and 200 characters');
-      return;
-    }
-    if (productForm.description.length < 20 || productForm.description.length > 2000) {
-      setError('Description must be between 20 and 2000 characters');
-      return;
-    }
-    if (productForm.brand.length < 2 || productForm.brand.length > 100) {
-      setError('Brand must be between 2 and 100 characters');
-      return;
-    }
-    if (!productForm.category) {
-      setError('Please select a category');
-      return;
-    }
-    if (!productForm.price || parseFloat(productForm.price) <= 0) {
-      setError('Please enter a valid price');
+    // Validate form before submission
+    if (!validateForm()) {
+      setError('Please fix the validation errors before submitting');
       return;
     }
 
@@ -357,6 +338,128 @@ const AdminCatalog = () => {
     setSelectedImages([]);
     setImageUploadProgress(0);
     setUploadingImages(false);
+    setValidationErrors({});
+    setTouchedFields({});
+  };
+
+  // Validation functions
+  const validateField = (fieldName, value) => {
+    const errors = validateProduct({ [fieldName]: value });
+    return errors[fieldName] || null;
+  };
+
+  const handleFieldChange = (fieldName, value) => {
+    setProductForm(prev => ({ ...prev, [fieldName]: value }));
+    
+    // Clear error when user starts typing
+    if (validationErrors[fieldName]) {
+      setValidationErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[fieldName];
+        return newErrors;
+      });
+    }
+    
+    // Validate field in real-time if it's been touched
+    if (touchedFields[fieldName]) {
+      const error = validateFieldSimple(fieldName, value);
+      setValidationErrors(prev => ({
+        ...prev,
+        [fieldName]: error
+      }));
+    }
+  };
+
+  const handleFieldBlur = (fieldName) => {
+    setTouchedFields(prev => ({ ...prev, [fieldName]: true }));
+    
+    // Validate field on blur
+    const error = validateFieldSimple(fieldName, productForm[fieldName]);
+    setValidationErrors(prev => ({
+      ...prev,
+      [fieldName]: error
+    }));
+  };
+
+  // Simple validation function for individual fields
+  const validateFieldSimple = (fieldName, value) => {
+    const errors = {};
+    
+    switch (fieldName) {
+      case 'name':
+        if (!value || value.trim().length < 5) {
+          errors.name = 'Product name must be at least 5 characters';
+        } else if (value.trim().length > 200) {
+          errors.name = 'Product name must be no more than 200 characters';
+        }
+        break;
+      case 'brand':
+        if (!value || value.trim().length < 2) {
+          errors.brand = 'Brand must be at least 2 characters';
+        } else if (value.trim().length > 100) {
+          errors.brand = 'Brand must be no more than 100 characters';
+        }
+        break;
+      case 'category':
+        if (!value) {
+          errors.category = 'Category is required';
+        }
+        break;
+      case 'price':
+        const price = parseFloat(value);
+        if (!value || isNaN(price) || price <= 0) {
+          errors.price = 'Price must be a valid number greater than 0';
+        }
+        break;
+      case 'description':
+        if (!value || value.trim().length < 20) {
+          errors.description = 'Description must be at least 20 characters';
+        } else if (value.trim().length > 2000) {
+          errors.description = 'Description must be no more than 2000 characters';
+        }
+        break;
+      case 'stock':
+        const stock = parseInt(value);
+        if (!value || isNaN(stock) || stock < 0) {
+          errors.stock = 'Stock must be a valid number (0 or more)';
+        }
+        break;
+      case 'lowStockThreshold':
+        const threshold = parseInt(value);
+        if (!value || isNaN(threshold) || threshold < 0) {
+          errors.lowStockThreshold = 'Low stock threshold must be a valid number (0 or more)';
+        }
+        break;
+    }
+    
+    return errors[fieldName] || null;
+  };
+
+  const validateForm = () => {
+    const errors = {};
+    
+    // Validate all fields
+    Object.keys(productForm).forEach(fieldName => {
+      if (['name', 'brand', 'category', 'price', 'description', 'stock', 'lowStockThreshold'].includes(fieldName)) {
+        const error = validateFieldSimple(fieldName, productForm[fieldName]);
+        if (error) {
+          errors[fieldName] = error;
+        }
+      }
+    });
+    
+    setValidationErrors(errors);
+    setTouchedFields({
+      name: true,
+      description: true,
+      category: true,
+      brand: true,
+      price: true,
+      stock: true,
+      lowStockThreshold: true
+    });
+    const isValid = Object.keys(errors).length === 0;
+    return isValid;
   };
 
   const handleImageSelect = (event) => {
@@ -431,6 +534,8 @@ const AdminCatalog = () => {
       isActive: product.isActive,
       isFeatured: product.isFeatured,
     });
+    setValidationErrors({});
+    setTouchedFields({});
     setEditDialogOpen(true);
   };
 
@@ -796,7 +901,7 @@ const AdminCatalog = () => {
       </Grid>
 
       {/* Add Product Dialog */}
-      <Dialog open={addDialogOpen} onClose={() => { setAddDialogOpen(false); setError(null); }} maxWidth="md" fullWidth>
+      <Dialog open={addDialogOpen} onClose={() => { setAddDialogOpen(false); setError(null); resetForm(); }} maxWidth="md" fullWidth>
         <DialogTitle>
           <Typography variant="h6" sx={{ fontWeight: 600 }}>
             Add New Product
@@ -815,7 +920,11 @@ const AdminCatalog = () => {
                   fullWidth
                   label="Product Name"
                   value={productForm.name}
-                  onChange={(e) => setProductForm({...productForm, name: e.target.value})}
+                  onChange={(e) => handleFieldChange('name', e.target.value)}
+                  onBlur={() => handleFieldBlur('name')}
+                  error={touchedFields.name && !!validationErrors.name}
+                  helperText={touchedFields.name && validationErrors.name}
+                  required
                 />
               </Grid>
               <Grid size={{ xs: 12, md: 6 }}>
@@ -823,23 +932,33 @@ const AdminCatalog = () => {
                   fullWidth
                   label="Brand"
                   value={productForm.brand}
-                  onChange={(e) => setProductForm({...productForm, brand: e.target.value})}
+                  onChange={(e) => handleFieldChange('brand', e.target.value)}
+                  onBlur={() => handleFieldBlur('brand')}
+                  error={touchedFields.brand && !!validationErrors.brand}
+                  helperText={touchedFields.brand && validationErrors.brand}
+                  required
                 />
               </Grid>
               <Grid size={{ xs: 12, md: 6 }}>
-                <FormControl fullWidth>
+                <FormControl fullWidth error={touchedFields.category && !!validationErrors.category}>
                   <InputLabel>Category</InputLabel>
                   <Select
                     value={productForm.category}
-                    onChange={(e) => setProductForm({...productForm, category: e.target.value})}
+                    onChange={(e) => handleFieldChange('category', e.target.value)}
+                    onBlur={() => handleFieldBlur('category')}
                     label="Category"
                   >
                     {categories.map((category) => (
                       <MenuItem key={category._id || category} value={category.name || category}>
-                        {category.name || category}
+                        {category.displayName || category.name || category}
                       </MenuItem>
                     ))}
                   </Select>
+                  {touchedFields.category && validationErrors.category && (
+                    <Typography variant="caption" color="error" sx={{ mt: 1, ml: 2 }}>
+                      {validationErrors.category}
+                    </Typography>
+                  )}
                 </FormControl>
               </Grid>
               <Grid size={{ xs: 12, md: 6 }}>
@@ -848,7 +967,12 @@ const AdminCatalog = () => {
                   label="Price"
                   type="number"
                   value={productForm.price}
-                  onChange={(e) => setProductForm({...productForm, price: e.target.value})}
+                  onChange={(e) => handleFieldChange('price', e.target.value)}
+                  onBlur={() => handleFieldBlur('price')}
+                  error={touchedFields.price && !!validationErrors.price}
+                  helperText={touchedFields.price && validationErrors.price}
+                  required
+                  inputProps={{ min: 0, step: 0.01 }}
                 />
               </Grid>
               <Grid size={{ xs: 12 }}>
@@ -858,7 +982,11 @@ const AdminCatalog = () => {
                   multiline
                   rows={3}
                   value={productForm.description}
-                  onChange={(e) => setProductForm({...productForm, description: e.target.value})}
+                  onChange={(e) => handleFieldChange('description', e.target.value)}
+                  onBlur={() => handleFieldBlur('description')}
+                  error={touchedFields.description && !!validationErrors.description}
+                  helperText={touchedFields.description && validationErrors.description}
+                  required
                 />
               </Grid>
               <Grid size={{ xs: 12, md: 6 }}>
@@ -867,7 +995,12 @@ const AdminCatalog = () => {
                   label="Stock Quantity"
                   type="number"
                   value={productForm.stock}
-                  onChange={(e) => setProductForm({...productForm, stock: e.target.value})}
+                  onChange={(e) => handleFieldChange('stock', e.target.value)}
+                  onBlur={() => handleFieldBlur('stock')}
+                  error={touchedFields.stock && !!validationErrors.stock}
+                  helperText={touchedFields.stock && validationErrors.stock}
+                  required
+                  inputProps={{ min: 0 }}
                 />
               </Grid>
               <Grid size={{ xs: 12, md: 6 }}>
@@ -876,7 +1009,12 @@ const AdminCatalog = () => {
                   label="Low Stock Threshold"
                   type="number"
                   value={productForm.lowStockThreshold}
-                  onChange={(e) => setProductForm({...productForm, lowStockThreshold: e.target.value})}
+                  onChange={(e) => handleFieldChange('lowStockThreshold', e.target.value)}
+                  onBlur={() => handleFieldBlur('lowStockThreshold')}
+                  error={touchedFields.lowStockThreshold && !!validationErrors.lowStockThreshold}
+                  helperText={touchedFields.lowStockThreshold && validationErrors.lowStockThreshold}
+                  required
+                  inputProps={{ min: 0 }}
                 />
               </Grid>
               <Grid size={{ xs: 12 }}>
@@ -1007,7 +1145,7 @@ const AdminCatalog = () => {
       </Dialog>
 
       {/* Edit Product Dialog */}
-      <Dialog open={editDialogOpen} onClose={() => { setEditDialogOpen(false); setError(null); }} maxWidth="md" fullWidth>
+      <Dialog open={editDialogOpen} onClose={() => { setEditDialogOpen(false); setError(null); resetForm(); }} maxWidth="md" fullWidth>
         <DialogTitle>
           <Typography variant="h6" sx={{ fontWeight: 600 }}>
             Edit Product - {selectedProduct?.name}
@@ -1026,7 +1164,11 @@ const AdminCatalog = () => {
                   fullWidth
                   label="Product Name"
                   value={productForm.name}
-                  onChange={(e) => setProductForm({...productForm, name: e.target.value})}
+                  onChange={(e) => handleFieldChange('name', e.target.value)}
+                  onBlur={() => handleFieldBlur('name')}
+                  error={touchedFields.name && !!validationErrors.name}
+                  helperText={touchedFields.name && validationErrors.name}
+                  required
                 />
               </Grid>
               <Grid size={{ xs: 12, md: 6 }}>
@@ -1034,23 +1176,33 @@ const AdminCatalog = () => {
                   fullWidth
                   label="Brand"
                   value={productForm.brand}
-                  onChange={(e) => setProductForm({...productForm, brand: e.target.value})}
+                  onChange={(e) => handleFieldChange('brand', e.target.value)}
+                  onBlur={() => handleFieldBlur('brand')}
+                  error={touchedFields.brand && !!validationErrors.brand}
+                  helperText={touchedFields.brand && validationErrors.brand}
+                  required
                 />
               </Grid>
               <Grid size={{ xs: 12, md: 6 }}>
-                <FormControl fullWidth>
+                <FormControl fullWidth error={touchedFields.category && !!validationErrors.category}>
                   <InputLabel>Category</InputLabel>
                   <Select
                     value={productForm.category}
-                    onChange={(e) => setProductForm({...productForm, category: e.target.value})}
+                    onChange={(e) => handleFieldChange('category', e.target.value)}
+                    onBlur={() => handleFieldBlur('category')}
                     label="Category"
                   >
                     {categories.map((category) => (
                       <MenuItem key={category._id || category} value={category.name || category}>
-                        {category.name || category}
+                        {category.displayName || category.name || category}
                       </MenuItem>
                     ))}
                   </Select>
+                  {touchedFields.category && validationErrors.category && (
+                    <Typography variant="caption" color="error" sx={{ mt: 1, ml: 2 }}>
+                      {validationErrors.category}
+                    </Typography>
+                  )}
                 </FormControl>
               </Grid>
               <Grid size={{ xs: 12, md: 6 }}>
@@ -1059,7 +1211,12 @@ const AdminCatalog = () => {
                   label="Price"
                   type="number"
                   value={productForm.price}
-                  onChange={(e) => setProductForm({...productForm, price: e.target.value})}
+                  onChange={(e) => handleFieldChange('price', e.target.value)}
+                  onBlur={() => handleFieldBlur('price')}
+                  error={touchedFields.price && !!validationErrors.price}
+                  helperText={touchedFields.price && validationErrors.price}
+                  required
+                  inputProps={{ min: 0, step: 0.01 }}
                 />
               </Grid>
               <Grid size={{ xs: 12 }}>
@@ -1069,7 +1226,11 @@ const AdminCatalog = () => {
                   multiline
                   rows={3}
                   value={productForm.description}
-                  onChange={(e) => setProductForm({...productForm, description: e.target.value})}
+                  onChange={(e) => handleFieldChange('description', e.target.value)}
+                  onBlur={() => handleFieldBlur('description')}
+                  error={touchedFields.description && !!validationErrors.description}
+                  helperText={touchedFields.description && validationErrors.description}
+                  required
                 />
               </Grid>
               <Grid size={{ xs: 12, md: 6 }}>
@@ -1078,7 +1239,12 @@ const AdminCatalog = () => {
                   label="Stock Quantity"
                   type="number"
                   value={productForm.stock}
-                  onChange={(e) => setProductForm({...productForm, stock: e.target.value})}
+                  onChange={(e) => handleFieldChange('stock', e.target.value)}
+                  onBlur={() => handleFieldBlur('stock')}
+                  error={touchedFields.stock && !!validationErrors.stock}
+                  helperText={touchedFields.stock && validationErrors.stock}
+                  required
+                  inputProps={{ min: 0 }}
                 />
               </Grid>
               <Grid size={{ xs: 12, md: 6 }}>
@@ -1087,7 +1253,12 @@ const AdminCatalog = () => {
                   label="Low Stock Threshold"
                   type="number"
                   value={productForm.lowStockThreshold}
-                  onChange={(e) => setProductForm({...productForm, lowStockThreshold: e.target.value})}
+                  onChange={(e) => handleFieldChange('lowStockThreshold', e.target.value)}
+                  onBlur={() => handleFieldBlur('lowStockThreshold')}
+                  error={touchedFields.lowStockThreshold && !!validationErrors.lowStockThreshold}
+                  helperText={touchedFields.lowStockThreshold && validationErrors.lowStockThreshold}
+                  required
+                  inputProps={{ min: 0 }}
                 />
               </Grid>
               <Grid size={{ xs: 12 }}>

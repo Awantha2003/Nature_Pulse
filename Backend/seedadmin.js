@@ -1,5 +1,4 @@
 const mongoose = require('mongoose');
-const bcrypt = require('bcryptjs');
 const User = require('./models/User');
 require('dotenv').config({ path: './config.env' });
 
@@ -21,23 +20,20 @@ const connectDB = async () => {
 const createAdmin = async () => {
   try {
     // Check if admin already exists
-    const existingAdmin = await User.findOne({ email: 'admin@naturepulse.com' });
+    const existingAdmin = await User.findOne({ email: 'admin1@naturepulse.com' });
     if (existingAdmin) {
       console.log('Admin user already exists!');
-      console.log('Email: admin@naturepulse.com');
-      console.log('Password: admin123');
+      console.log('Email: admin1@naturepulse.com');
+      console.log('Password: admin123@');
       return;
     }
 
-    // Hash password
-    const hashedPassword = await bcrypt.hash('admin123', 12);
-
-    // Create admin user
+    // Create admin user (password will be hashed automatically by the User model)
     const admin = await User.create({
       firstName: 'System',
       lastName: 'Administrator',
-      email: 'admin@naturepulse.com',
-      password: hashedPassword,
+      email: 'admin1@naturepulse.com',
+      password: 'admin123@',
       phone: '0704949394',
       dateOfBirth: new Date('1990-01-01'),
       gender: 'other',
@@ -55,8 +51,8 @@ const createAdmin = async () => {
     });
 
     console.log('✅ Admin user created successfully!');
-    console.log('📧 Email: admin@naturepulse.com');
-    console.log('🔑 Password: admin123');
+    console.log('📧 Email: admin1@naturepulse.com');
+    console.log('🔑 Password: admin123@');
     console.log('🆔 User ID:', admin._id);
     console.log('👤 Role: admin');
     console.log('');
