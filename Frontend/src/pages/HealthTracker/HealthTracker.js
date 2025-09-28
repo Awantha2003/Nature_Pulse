@@ -53,7 +53,7 @@ import {
 import { useAuth } from '../../contexts/AuthContext';
 import api from '../../utils/api';
 import { ValidatedTextField, ValidatedSelect } from '../../components/Validation';
-import { validateHealthLog, validateHealthGoal, isFormValid } from '../../utils/validation';
+import { validateHealthLog, validateHealthGoal } from '../../utils/validation';
 import { XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, AreaChart, Area, Legend } from 'recharts';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -220,42 +220,7 @@ const HealthTracker = () => {
   };
 
   // Validation handlers for health goals
-  const handleGoalChange = (e) => {
-    const { name, value } = e.target;
-    
-    if (name.includes('.')) {
-      const [parentKey, childKey] = name.split('.');
-      setGoalFormData(prev => ({
-        ...prev,
-        [parentKey]: {
-          ...prev[parentKey],
-          [childKey]: value,
-        },
-      }));
-    } else {
-      setGoalFormData(prev => ({
-        ...prev,
-        [name]: value,
-      }));
-    }
-    
-    // Clear field error when user starts typing
-    if (goalFieldErrors[name]) {
-      setGoalFieldErrors(prev => {
-        const newErrors = { ...prev };
-        delete newErrors[name];
-        return newErrors;
-      });
-    }
-  };
-
-  const handleGoalBlur = (e) => {
-    const { name } = e.target;
-    const errors = validateHealthGoal(goalFormData);
-    if (errors[name]) {
-      setGoalFieldErrors(prev => ({ ...prev, [name]: errors[name] }));
-    }
-  };
+  // Removed unused handleGoalChange and handleGoalBlur functions
 
   // Real-time validation - only validate specific fields on change
   // Removed automatic validation on every formData change to prevent input blocking
@@ -640,7 +605,8 @@ const HealthTracker = () => {
   };
 
   // Sample data function removed
-  const fillSampleData = () => {
+  // Removed unused fillSampleData function
+  const _fillSampleData = () => {
     console.log('Filling sample data...');
     
     // Create a simple, guaranteed-to-work sample data
@@ -681,116 +647,7 @@ const HealthTracker = () => {
     setValidationErrors({});
     setError('');
     console.log('Simple sample data set successfully');
-    return;
-    
-    const sampleDataOptions = [
-      {
-        date: new Date(),
-        vitalSigns: {
-          bloodPressure: { systolic: '120', diastolic: '80' },
-          heartRate: '72',
-          temperature: '98.6',
-          weight: '154', // 70kg = 154lbs
-          height: '69', // 175cm = 69 inches
-          bloodSugar: '95'
-        },
-        mood: 'good',
-        energyLevel: 'medium',
-        sleep: {
-          duration: '7.5',
-          quality: 'good'
-        },
-        exercise: {
-          type: 'cardio',
-          duration: '30',
-          intensity: 'moderate'
-        },
-        nutrition: {
-          meals: 'Breakfast: Oatmeal with berries, Lunch: Grilled chicken salad, Dinner: Salmon with vegetables',
-          waterIntake: '64',
-          supplements: 'Vitamin D, Omega-3, Multivitamin'
-        },
-        medications: 'Vitamin D, Omega-3',
-        notes: 'Feeling good today, had a great workout and ate healthy meals',
-        tags: ['healthy', 'active', 'wellness']
-      },
-      {
-        date: new Date(),
-        vitalSigns: {
-          bloodPressure: { systolic: '115', diastolic: '75' },
-          heartRate: '68',
-          temperature: '98.4',
-          weight: '150', // 68kg = 150lbs
-          height: '67', // 170cm = 67 inches
-          bloodSugar: '88'
-        },
-        mood: 'excellent',
-        energyLevel: 'high',
-        sleep: {
-          duration: '8.0',
-          quality: 'excellent'
-        },
-        exercise: {
-          type: 'strength',
-          duration: '45',
-          intensity: 'high'
-        },
-        nutrition: {
-          meals: 'Breakfast: Greek yogurt with granola, Lunch: Quinoa bowl with vegetables, Dinner: Lean beef with sweet potato',
-          waterIntake: '72',
-          supplements: 'Protein powder, Creatine, B-complex'
-        },
-        medications: 'Protein powder, Creatine',
-        notes: 'Excellent day! Hit new personal records in the gym and felt very energetic',
-        tags: ['gym', 'strength', 'energetic']
-      },
-      {
-        date: new Date(),
-        vitalSigns: {
-          bloodPressure: { systolic: '125', diastolic: '82' },
-          heartRate: '75',
-          temperature: '98.8',
-          weight: '159', // 72kg = 159lbs
-          height: '71', // 180cm = 71 inches
-          bloodSugar: '102'
-        },
-        mood: 'fair',
-        energyLevel: 'low',
-        sleep: {
-          duration: '6.0',
-          quality: 'fair'
-        },
-        exercise: {
-          type: 'yoga',
-          duration: '20',
-          intensity: 'low'
-        },
-        nutrition: {
-          meals: 'Breakfast: Toast with avocado, Lunch: Soup and salad, Dinner: Pasta with vegetables',
-          waterIntake: '48',
-          supplements: 'Magnesium, Ashwagandha'
-        },
-        medications: 'Magnesium, Ashwagandha',
-        notes: 'Had a stressful day at work, feeling a bit tired. Yoga helped me relax',
-        tags: ['stress', 'relaxation', 'tired']
-      }
-    ];
-    
-    // Randomly select one of the sample data options
-    const randomIndex = Math.floor(Math.random() * sampleDataOptions.length);
-    const sampleData = sampleDataOptions[randomIndex];
-    
-    console.log('Selected sample data:', sampleData);
-    console.log('Sample data structure check:');
-    console.log('- mood type:', typeof sampleData.mood, 'value:', sampleData.mood);
-    console.log('- energyLevel type:', typeof sampleData.energyLevel, 'value:', sampleData.energyLevel);
-    console.log('- sleep.quality type:', typeof sampleData.sleep.quality, 'value:', sampleData.sleep.quality);
-    console.log('- tags type:', typeof sampleData.tags, 'value:', sampleData.tags);
-    setFormData(sampleData);
-    setFieldErrors({});
-    setValidationErrors({});
-    setError('');
-    console.log('Sample data set successfully');
+    // Removed unreachable code after return statement
   };
 
   const resetGoalForm = () => {
@@ -864,7 +721,7 @@ const HealthTracker = () => {
     }));
   }, [healthLogs]);
   const activeGoals = healthGoals.filter(goal => goal.status === 'active');
-  const completedGoals = healthGoals.filter(goal => goal.status === 'completed');
+  // Removed unused completedGoals variable
 
   if (loading) {
     return (
@@ -2062,7 +1919,7 @@ const HealthTracker = () => {
                     onChange={(e) => setGoalFormData({ ...goalFormData, title: e.target.value })}
                     required
                     error={Array.isArray(validationErrors) && validationErrors.some(err => err.path === 'title')}
-                    helperText={Array.isArray(validationErrors) && validationErrors.find(err => err.path === 'title')?.msg || 'Enter a descriptive title for your goal (3-100 characters)'}
+                    helperText={(Array.isArray(validationErrors) && validationErrors.find(err => err.path === 'title')?.msg) || 'Enter a descriptive title for your goal (3-100 characters)'}
                   />
                 </Grid>
 
@@ -2075,7 +1932,7 @@ const HealthTracker = () => {
                     value={goalFormData.description}
                     onChange={(e) => setGoalFormData({ ...goalFormData, description: e.target.value })}
                     error={Array.isArray(validationErrors) && validationErrors.some(err => err.path === 'description')}
-                    helperText={Array.isArray(validationErrors) && validationErrors.find(err => err.path === 'description')?.msg || 'Describe your goal in detail (10-500 characters)'}
+                    helperText={(Array.isArray(validationErrors) && validationErrors.find(err => err.path === 'description')?.msg) || 'Describe your goal in detail (10-500 characters)'}
                   />
                 </Grid>
 

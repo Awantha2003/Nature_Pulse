@@ -50,7 +50,7 @@ const safeTrim = (value) => {
   return '';
 };
 
-// Validation functions
+// Email validation
 export const validateEmail = (email) => {
   if (!email || safeTrim(email) === '') {
     return 'Email is required';
@@ -64,6 +64,7 @@ export const validateEmail = (email) => {
   return null;
 };
 
+// Password validation
 export const validatePassword = (password) => {
   if (!password || password.trim() === '') {
     return 'Password is required';
@@ -77,6 +78,7 @@ export const validatePassword = (password) => {
   return null;
 };
 
+// Password match validation
 export const validatePasswordMatch = (password, confirmPassword) => {
   if (!confirmPassword || confirmPassword.trim() === '') {
     return 'Please confirm your password';
@@ -87,6 +89,7 @@ export const validatePasswordMatch = (password, confirmPassword) => {
   return null;
 };
 
+// Name validation
 export const validateName = (name, fieldName = 'Name') => {
   if (!name || safeTrim(name) === '') {
     return `${fieldName} is required`;
@@ -103,6 +106,7 @@ export const validateName = (name, fieldName = 'Name') => {
   return null;
 };
 
+// Phone validation
 export const validatePhone = (phone) => {
   if (!phone || safeTrim(phone) === '') {
     return 'Phone number is required';
@@ -110,7 +114,6 @@ export const validatePhone = (phone) => {
   // Remove all non-digit characters
   const cleanPhone = phone.replace(/[^\d]/g, '');
   
-  // Check if it's exactly 10 digits
   if (cleanPhone.length !== 10) {
     return 'Phone number must be exactly 10 digits (e.g., 0704949394)';
   }
@@ -123,6 +126,7 @@ export const validatePhone = (phone) => {
   return null;
 };
 
+// Date of birth validation
 export const validateDateOfBirth = (dateOfBirth) => {
   if (!dateOfBirth) {
     return 'Date of birth is required';
@@ -130,13 +134,12 @@ export const validateDateOfBirth = (dateOfBirth) => {
   
   const birthDate = new Date(dateOfBirth);
   const today = new Date();
-  const age = today.getFullYear() - birthDate.getFullYear();
+  const actualAge = today.getFullYear() - birthDate.getFullYear();
   const monthDiff = today.getMonth() - birthDate.getMonth();
   
-  // Adjust age if birthday hasn't occurred this year
-  const actualAge = monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate()) 
-    ? age - 1 
-    : age;
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+    actualAge--;
+  }
   
   if (actualAge < MIN_AGE) {
     return `You must be at least ${MIN_AGE} years old to register`;
@@ -150,6 +153,7 @@ export const validateDateOfBirth = (dateOfBirth) => {
   return null;
 };
 
+// Gender validation
 export const validateGender = (gender) => {
   if (!gender || gender.trim() === '') {
     return 'Gender is required';
@@ -161,6 +165,7 @@ export const validateGender = (gender) => {
   return null;
 };
 
+// Address validation
 export const validateAddress = (address, fieldName) => {
   if (!address || address.trim() === '') {
     return `${fieldName} is required`;
@@ -174,6 +179,7 @@ export const validateAddress = (address, fieldName) => {
   return null;
 };
 
+// ZIP code validation
 export const validateZipCode = (zipCode) => {
   if (!zipCode || zipCode.trim() === '') {
     return 'ZIP code is required';
@@ -185,6 +191,7 @@ export const validateZipCode = (zipCode) => {
   return null;
 };
 
+// License number validation
 export const validateLicenseNumber = (licenseNumber) => {
   if (!licenseNumber || licenseNumber.trim() === '') {
     return 'Medical license number is required';
@@ -198,6 +205,7 @@ export const validateLicenseNumber = (licenseNumber) => {
   return null;
 };
 
+// Specialization validation
 export const validateSpecialization = (specialization) => {
   if (!specialization || specialization.trim() === '') {
     return 'Specialization is required';
@@ -211,6 +219,7 @@ export const validateSpecialization = (specialization) => {
   return null;
 };
 
+// Experience validation
 export const validateExperience = (experience) => {
   if (experience === '' || experience === null || experience === undefined) {
     return 'Years of experience is required';
@@ -228,6 +237,7 @@ export const validateExperience = (experience) => {
   return null;
 };
 
+// Consultation fee validation
 export const validateConsultationFee = (fee) => {
   if (fee === '' || fee === null || fee === undefined) {
     return 'Consultation fee is required';
@@ -245,6 +255,7 @@ export const validateConsultationFee = (fee) => {
   return null;
 };
 
+// Bio validation
 export const validateBio = (bio) => {
   if (!bio || bio.trim() === '') {
     return 'Bio is required';
@@ -258,21 +269,18 @@ export const validateBio = (bio) => {
   return null;
 };
 
+// Qualification validation
 export const validateQualification = (qualification) => {
   const errors = {};
   
   if (!qualification.degree || qualification.degree.trim() === '') {
     errors.degree = 'Degree is required';
-  } else if (qualification.degree.trim().length < 2) {
-    errors.degree = 'Degree must be at least 2 characters long';
   } else if (qualification.degree.trim().length > 100) {
     errors.degree = 'Degree must be no more than 100 characters long';
   }
   
   if (!qualification.institution || qualification.institution.trim() === '') {
     errors.institution = 'Institution is required';
-  } else if (qualification.institution.trim().length < 2) {
-    errors.institution = 'Institution must be at least 2 characters long';
   } else if (qualification.institution.trim().length > 200) {
     errors.institution = 'Institution must be no more than 200 characters long';
   }
@@ -284,8 +292,8 @@ export const validateQualification = (qualification) => {
     const currentYear = new Date().getFullYear();
     if (isNaN(year)) {
       errors.year = 'Please enter a valid year';
-    } else if (year < 1900) {
-      errors.year = 'Year must be 1900 or later';
+    } else if (year < 1950) {
+      errors.year = 'Year cannot be before 1950';
     } else if (year > currentYear) {
       errors.year = 'Year cannot be in the future';
     }
@@ -294,6 +302,7 @@ export const validateQualification = (qualification) => {
   return Object.keys(errors).length > 0 ? errors : null;
 };
 
+// Language validation
 export const validateLanguage = (language) => {
   if (!language || language.trim() === '') {
     return 'Language cannot be empty';
@@ -353,27 +362,62 @@ export const validateRegisterForm = (formData) => {
   
   // Address information
   if (formData.address) {
-    const streetError = validateAddress(formData.address.street, 'Street address');
-    if (streetError) errors['address.street'] = streetError;
+    if (formData.address.street) {
+      const streetError = validateAddress(formData.address.street, 'Street address');
+      if (streetError) errors['address.street'] = streetError;
+    }
     
-    const cityError = validateAddress(formData.address.city, 'City');
-    if (cityError) errors['address.city'] = cityError;
+    if (formData.address.city) {
+      const cityError = validateAddress(formData.address.city, 'City');
+      if (cityError) errors['address.city'] = cityError;
+    }
     
-    const stateError = validateAddress(formData.address.state, 'State');
-    if (stateError) errors['address.state'] = stateError;
+    if (formData.address.state) {
+      const stateError = validateAddress(formData.address.state, 'State');
+      if (stateError) errors['address.state'] = stateError;
+    }
     
-    const zipCodeError = validateZipCode(formData.address.zipCode);
-    if (zipCodeError) errors['address.zipCode'] = zipCodeError;
+    if (formData.address.zipCode) {
+      const zipCodeError = validateZipCode(formData.address.zipCode);
+      if (zipCodeError) errors['address.zipCode'] = zipCodeError;
+    }
     
-    const countryError = validateAddress(formData.address.country, 'Country');
-    if (countryError) errors['address.country'] = countryError;
+    if (formData.address.country) {
+      const countryError = validateAddress(formData.address.country, 'Country');
+      if (countryError) errors['address.country'] = countryError;
+    }
   }
   
   return errors;
 };
 
 export const validateDoctorRegisterForm = (formData, qualifications = []) => {
-  const errors = validateRegisterForm(formData);
+  const errors = {};
+  
+  // Basic information
+  const firstNameError = validateName(formData.firstName, 'First name');
+  if (firstNameError) errors.firstName = firstNameError;
+  
+  const lastNameError = validateName(formData.lastName, 'Last name');
+  if (lastNameError) errors.lastName = lastNameError;
+  
+  const emailError = validateEmail(formData.email);
+  if (emailError) errors.email = emailError;
+  
+  const passwordError = validatePassword(formData.password);
+  if (passwordError) errors.password = passwordError;
+  
+  const confirmPasswordError = validatePasswordMatch(formData.password, formData.confirmPassword);
+  if (confirmPasswordError) errors.confirmPassword = confirmPasswordError;
+  
+  const phoneError = validatePhone(formData.phone);
+  if (phoneError) errors.phone = phoneError;
+  
+  const dateOfBirthError = validateDateOfBirth(formData.dateOfBirth);
+  if (dateOfBirthError) errors.dateOfBirth = dateOfBirthError;
+  
+  const genderError = validateGender(formData.gender);
+  if (genderError) errors.gender = genderError;
   
   // Professional information
   const licenseError = validateLicenseNumber(formData.licenseNumber);
@@ -385,27 +429,22 @@ export const validateDoctorRegisterForm = (formData, qualifications = []) => {
   const experienceError = validateExperience(formData.experience);
   if (experienceError) errors.experience = experienceError;
   
-  const consultationFeeError = validateConsultationFee(formData.consultationFee);
-  if (consultationFeeError) errors.consultationFee = consultationFeeError;
+  const feeError = validateConsultationFee(formData.consultationFee);
+  if (feeError) errors.consultationFee = feeError;
   
   const bioError = validateBio(formData.bio);
   if (bioError) errors.bio = bioError;
   
   // Validate qualifications
   if (qualifications && qualifications.length > 0) {
-    const validQualifications = qualifications.filter(q => q.degree && q.institution && q.year);
-    if (validQualifications.length === 0) {
-      errors.qualifications = 'At least one complete qualification is required';
-    } else {
-      qualifications.forEach((qual, index) => {
-        const qualErrors = validateQualification(qual);
-        if (qualErrors) {
-          Object.keys(qualErrors).forEach(field => {
-            errors[`qualification_${index}_${field}`] = qualErrors[field];
-          });
-        }
-      });
-    }
+    qualifications.forEach((qualification, index) => {
+      const qualErrors = validateQualification(qualification);
+      if (qualErrors) {
+        Object.keys(qualErrors).forEach(field => {
+          errors[`qualification_${index}_${field}`] = qualErrors[field];
+        });
+      }
+    });
   }
   
   // Validate languages
@@ -421,12 +460,11 @@ export const validateDoctorRegisterForm = (formData, qualifications = []) => {
   return errors;
 };
 
-// Helper function to check if form is valid
+// Helper functions
 export const isFormValid = (errors) => {
   return Object.keys(errors).length === 0;
 };
 
-// Helper function to get first error message
 export const getFirstError = (errors) => {
   const firstKey = Object.keys(errors)[0];
   return firstKey ? errors[firstKey] : null;
@@ -453,7 +491,7 @@ export const validateAppointmentBooking = (formData) => {
   }
   
   if (!formData.reason || safeTrim(formData.reason) === '') {
-    errors.reason = 'Please provide a reason for the appointment';
+    errors.reason = 'Reason for appointment is required';
   } else if (safeTrim(formData.reason).length < 10) {
     errors.reason = 'Reason must be at least 10 characters long';
   }
@@ -539,29 +577,26 @@ export const validateHealthGoal = (formData) => {
       errors['targetMetric.unit'] = 'Target metric unit is required';
     }
     
-    if (!formData.targetMetric.targetValue || formData.targetMetric.targetValue === '') {
+    if (!formData.targetMetric.targetValue || safeTrim(formData.targetMetric.targetValue) === '') {
       errors['targetMetric.targetValue'] = 'Target value is required';
-    } else {
-      const targetValue = parseFloat(formData.targetMetric.targetValue);
-      if (isNaN(targetValue) || targetValue <= 0) {
-        errors['targetMetric.targetValue'] = 'Target value must be a positive number';
-      }
     }
   }
   
-  if (formData.timeframe) {
-    if (!formData.timeframe.startDate) {
-      errors['timeframe.startDate'] = 'Start date is required';
-    }
+  if (!formData.priority || safeTrim(formData.priority) === '') {
+    errors.priority = 'Priority is required';
+  }
+  
+  if (!formData.targetDate) {
+    errors.targetDate = 'Target date is required';
+  } else {
+    const targetDate = new Date(formData.targetDate);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
     
-    if (!formData.timeframe.endDate) {
-      errors['timeframe.endDate'] = 'End date is required';
-    } else if (formData.timeframe.startDate && formData.timeframe.endDate) {
-      const startDate = new Date(formData.timeframe.startDate);
-      const endDate = new Date(formData.timeframe.endDate);
-      if (endDate <= startDate) {
-        errors['timeframe.endDate'] = 'End date must be after start date';
-      }
+    if (isNaN(targetDate.getTime())) {
+      errors.targetDate = 'Please enter a valid target date';
+    } else if (targetDate < today) {
+      errors.targetDate = 'Target date cannot be in the past';
     }
   }
   
@@ -587,67 +622,22 @@ export const validateHealthLog = (formData) => {
   
   // Validate vital signs - Required fields
   if (formData.vitalSigns) {
-    if (!formData.vitalSigns.bloodPressure || !formData.vitalSigns.bloodPressure.systolic) {
-      errors['vitalSigns.bloodPressure.systolic'] = 'Systolic pressure is required';
+    if (!formData.vitalSigns.bloodPressure || !formData.vitalSigns.bloodPressure.systolic || !formData.vitalSigns.bloodPressure.diastolic) {
+      errors['vitalSigns.bloodPressure'] = 'Blood pressure is required';
     } else {
       const systolic = parseInt(formData.vitalSigns.bloodPressure.systolic);
-      if (isNaN(systolic) || systolic < 50 || systolic > 250) {
-        errors['vitalSigns.bloodPressure.systolic'] = 'Systolic pressure must be between 50-250 mmHg';
-      }
-    }
-    
-    if (!formData.vitalSigns.bloodPressure || !formData.vitalSigns.bloodPressure.diastolic) {
-      errors['vitalSigns.bloodPressure.diastolic'] = 'Diastolic pressure is required';
-    } else {
       const diastolic = parseInt(formData.vitalSigns.bloodPressure.diastolic);
-      if (isNaN(diastolic) || diastolic < 30 || diastolic > 150) {
-        errors['vitalSigns.bloodPressure.diastolic'] = 'Diastolic pressure must be between 30-150 mmHg';
-      }
-    }
-    
-    if (!formData.vitalSigns.heartRate) {
-      errors['vitalSigns.heartRate'] = 'Heart rate is required';
-    } else {
-      const heartRate = parseInt(formData.vitalSigns.heartRate);
-      if (isNaN(heartRate) || heartRate < 30 || heartRate > 220) {
-        errors['vitalSigns.heartRate'] = 'Heart rate must be between 30-220 bpm';
-      }
-    }
-    
-    if (!formData.vitalSigns.temperature) {
-      errors['vitalSigns.temperature'] = 'Temperature is required';
-    } else {
-      const temperature = parseFloat(formData.vitalSigns.temperature);
-      if (isNaN(temperature) || temperature < 20 || temperature > 45) {
-        errors['vitalSigns.temperature'] = 'Temperature must be between 20-45°C (68-113°F)';
-      }
-    }
-    
-    if (!formData.vitalSigns.weight) {
-      errors['vitalSigns.weight'] = 'Weight is required';
-    } else {
-      const weight = parseFloat(formData.vitalSigns.weight);
-      if (isNaN(weight) || weight < 20 || weight > 500) {
-        errors['vitalSigns.weight'] = 'Weight must be between 20-500 kg';
-      }
-    }
-    
-    if (!formData.vitalSigns.height) {
-      errors['vitalSigns.height'] = 'Height is required';
-    } else {
-      const height = parseFloat(formData.vitalSigns.height);
-      if (isNaN(height) || height < 50 || height > 250) {
-        errors['vitalSigns.height'] = 'Height must be between 50-250 cm';
-      }
-    }
       
-      // Validate blood pressure relationship
-      if (formData.vitalSigns.bloodPressure.systolic && formData.vitalSigns.bloodPressure.diastolic) {
-        const systolic = parseInt(formData.vitalSigns.bloodPressure.systolic);
-        const diastolic = parseInt(formData.vitalSigns.bloodPressure.diastolic);
-        if (!isNaN(systolic) && !isNaN(diastolic) && systolic <= diastolic) {
-          errors['vitalSigns.bloodPressure.systolic'] = 'Systolic pressure must be higher than diastolic pressure';
-        }
+      if (isNaN(systolic) || systolic < 70 || systolic > 250) {
+        errors['vitalSigns.bloodPressure.systolic'] = 'Systolic pressure must be between 70-250 mmHg';
+      }
+      
+      if (isNaN(diastolic) || diastolic < 40 || diastolic > 150) {
+        errors['vitalSigns.bloodPressure.diastolic'] = 'Diastolic pressure must be between 40-150 mmHg';
+      }
+      
+      if (systolic <= diastolic) {
+        errors['vitalSigns.bloodPressure'] = 'Systolic pressure must be higher than diastolic pressure';
       }
     }
     
