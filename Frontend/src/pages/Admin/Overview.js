@@ -66,6 +66,7 @@ import {
   PieChart as PieChartIcon,
   ShowChart as LineChartIcon,
   CalendarToday,
+  Refresh,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
@@ -88,6 +89,7 @@ const AdminOverview = () => {
     try {
       setLoading(true);
       const response = await api.get('/users/dashboard/admin');
+      console.log('Dashboard data received:', response.data.data);
       setDashboardData(response.data.data);
     } catch (err) {
       setError('Failed to load dashboard data');
@@ -150,8 +152,8 @@ const AdminOverview = () => {
   const generateRevenueData = () => {
     if (!dashboardData) return [];
     
-    const totalSales = dashboardData.dashboard.totalSales;
-    const totalOrders = dashboardData.dashboard.totalOrders;
+    const totalSales = dashboardData.dashboard.totalSales || 0;
+    const totalOrders = dashboardData.dashboard.totalOrders || 0;
     
     // Generate monthly data based on current totals
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
@@ -221,6 +223,17 @@ const AdminOverview = () => {
           <Typography variant="h6" color="text.secondary">
             System overview and comprehensive analytics for platform management
           </Typography>
+          <Box sx={{ display: 'flex', gap: 2, mt: 2 }}>
+            <Button
+              variant="outlined"
+              startIcon={<Refresh />}
+              onClick={fetchDashboardData}
+              disabled={loading}
+              sx={{ borderRadius: '10px' }}
+            >
+              Refresh Data
+            </Button>
+          </Box>
         </Box>
       </Fade>
 
@@ -292,7 +305,7 @@ const AdminOverview = () => {
                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
                   <AttachMoney sx={{ fontSize: 40 }} />
                   <Chip 
-                    label={`$${dashboard.totalSales || 0}`} 
+                    label={`Rs ${(dashboard.totalSales || 0).toLocaleString()}`} 
                     size="small" 
                     sx={{ bgcolor: 'rgba(255,255,255,0.2)', color: 'white' }}
                   />

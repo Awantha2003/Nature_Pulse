@@ -805,10 +805,10 @@ router.get('/dashboard/admin', protect, checkActive, restrictTo('admin'), async 
     // Calculate sales (last 7 days)
     const recentOrdersSales = await Order.find({
       createdAt: { $gte: sevenDaysAgo },
-      status: 'completed'
+      status: { $in: ['delivered', 'completed', 'confirmed'] }
     });
     
-    const totalSales = recentOrdersSales.reduce((sum, order) => sum + order.totalAmount, 0);
+    const totalSales = recentOrdersSales.reduce((sum, order) => sum + (order.pricing?.total || 0), 0);
 
     res.status(200).json({
       status: 'success',
