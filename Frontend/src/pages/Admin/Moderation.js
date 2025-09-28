@@ -49,7 +49,11 @@ import {
   Psychology,
   Warning,
   ThumbUp,
-  Comment
+  Comment,
+  Healing,
+  Favorite,
+  Report,
+  Analytics
 } from '@mui/icons-material';
 import { useAuth } from '../../contexts/AuthContext';
 import api from '../../utils/api';
