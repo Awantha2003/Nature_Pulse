@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import {
   Box,
@@ -44,6 +44,7 @@ import {
 } from '@mui/icons-material';
 import { useAuth } from '../../contexts/AuthContext';
 import Breadcrumbs from '../Navigation/Breadcrumbs';
+import api from '../../utils/api';
 import NotificationCenter from '../Notifications/NotificationCenter';
 
 const drawerWidth = 280;
@@ -52,6 +53,7 @@ const AuthenticatedShell = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [anchorEl, setAnchorEl] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [appointmentCount, setAppointmentCount] = useState(0);
   
   const navigate = useNavigate();
   const location = useLocation();
@@ -76,6 +78,33 @@ const AuthenticatedShell = () => {
     navigate('/');
     handleProfileMenuClose();
   };
+
+  // Fetch appointment count for doctors
+  const fetchAppointmentCount = async () => {
+    if (hasRole('doctor')) {
+      try {
+        const response = await api.get('/appointments?status=scheduled');
+        if (response.data.status === 'success') {
+          const appointments = response.data.data.appointments || [];
+          setAppointmentCount(appointments.length);
+        }
+      } catch (err) {
+        console.error('Fetch appointment count error:', err);
+        setAppointmentCount(0);
+      }
+    }
+  };
+
+  useEffect(() => {
+    fetchAppointmentCount();
+  }, [user]);
+
+  // Refresh appointment count when navigating to appointments
+  useEffect(() => {
+    if (location.pathname === '/app/doctor/appointments') {
+      fetchAppointmentCount();
+    }
+  }, [location.pathname]);
 
   const getNavigationItems = () => {
     if (hasRole('patient')) {
@@ -129,7 +158,7 @@ const AuthenticatedShell = () => {
           text: 'Appointments',
           icon: <CalendarToday />,
           path: '/app/doctor/appointments',
-          badge: '3', // Pending requests
+          badge: appointmentCount > 0 ? appointmentCount.toString() : null,
         },
         {
           text: 'Patients',
