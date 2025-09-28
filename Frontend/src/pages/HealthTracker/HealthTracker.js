@@ -18,6 +18,7 @@ import {
   TextField,
   FormControl,
   InputLabel,
+  FormHelperText,
   Chip,
   Select,
   MenuItem,
@@ -553,8 +554,209 @@ const HealthTracker = () => {
     }
   };
 
-  // Validation handlers for health goals
-  // Removed unused handleGoalChange and handleGoalBlur functions
+  // Real-time validation for health goal fields
+  const handleGoalTitleChange = (e) => {
+    const { value } = e.target;
+    setGoalFormData({ ...goalFormData, title: value });
+    
+    if (value !== '') {
+      let errorMessage = '';
+      if (value.length < 5) {
+        errorMessage = 'Goal title must be at least 5 characters long';
+      } else if (value.length > 100) {
+        errorMessage = 'Goal title must be no more than 100 characters';
+      }
+      
+      setFieldErrors(prev => ({
+        ...prev,
+        'goal.title': errorMessage || undefined
+      }));
+    } else {
+      setFieldErrors(prev => ({
+        ...prev,
+        'goal.title': undefined
+      }));
+    }
+  };
+
+  const handleGoalDescriptionChange = (e) => {
+    const { value } = e.target;
+    setGoalFormData({ ...goalFormData, description: value });
+    
+    if (value !== '') {
+      let errorMessage = '';
+      if (value.length < 10) {
+        errorMessage = 'Goal description must be at least 10 characters long';
+      } else if (value.length > 500) {
+        errorMessage = 'Goal description must be no more than 500 characters';
+      }
+      
+      setFieldErrors(prev => ({
+        ...prev,
+        'goal.description': errorMessage || undefined
+      }));
+    } else {
+      setFieldErrors(prev => ({
+        ...prev,
+        'goal.description': undefined
+      }));
+    }
+  };
+
+  const handleGoalTargetMetricNameChange = (e) => {
+    const { value } = e.target;
+    setGoalFormData({
+      ...goalFormData,
+      targetMetric: { ...goalFormData.targetMetric, name: value }
+    });
+    
+    if (value !== '') {
+      let errorMessage = '';
+      if (value.length < 2) {
+        errorMessage = 'Metric name must be at least 2 characters long';
+      } else if (value.length > 50) {
+        errorMessage = 'Metric name must be no more than 50 characters';
+      }
+      
+      setFieldErrors(prev => ({
+        ...prev,
+        'goal.targetMetric.name': errorMessage || undefined
+      }));
+    } else {
+      setFieldErrors(prev => ({
+        ...prev,
+        'goal.targetMetric.name': undefined
+      }));
+    }
+  };
+
+  const handleGoalTargetMetricUnitChange = (e) => {
+    const { value } = e.target;
+    setGoalFormData({
+      ...goalFormData,
+      targetMetric: { ...goalFormData.targetMetric, unit: value }
+    });
+    
+    if (value !== '') {
+      let errorMessage = '';
+      if (value.length < 1) {
+        errorMessage = 'Unit is required';
+      } else if (value.length > 20) {
+        errorMessage = 'Unit must be no more than 20 characters';
+      }
+      
+      setFieldErrors(prev => ({
+        ...prev,
+        'goal.targetMetric.unit': errorMessage || undefined
+      }));
+    } else {
+      setFieldErrors(prev => ({
+        ...prev,
+        'goal.targetMetric.unit': undefined
+      }));
+    }
+  };
+
+  const handleGoalTargetValueChange = (e) => {
+    const { value } = e.target;
+    
+    // Only allow numbers and decimal point
+    if (value !== '' && !/^\d*\.?\d*$/.test(value)) {
+      return;
+    }
+    
+    setGoalFormData({
+      ...goalFormData,
+      targetMetric: { ...goalFormData.targetMetric, targetValue: value }
+    });
+    
+    if (value !== '') {
+      const targetValue = parseFloat(value);
+      if (!isNaN(targetValue)) {
+        let errorMessage = '';
+        if (targetValue <= 0) {
+          errorMessage = 'Target value must be greater than 0';
+        } else if (targetValue > 10000) {
+          errorMessage = 'Target value cannot exceed 10,000';
+        }
+        
+        setFieldErrors(prev => ({
+          ...prev,
+          'goal.targetMetric.targetValue': errorMessage || undefined
+        }));
+      }
+    } else {
+      setFieldErrors(prev => ({
+        ...prev,
+        'goal.targetMetric.targetValue': undefined
+      }));
+    }
+  };
+
+  const handleGoalEndDateChange = (newValue) => {
+    setGoalFormData({
+      ...goalFormData,
+      timeframe: { ...goalFormData.timeframe, endDate: newValue }
+    });
+    
+    if (newValue) {
+      const targetDate = new Date(newValue);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      let errorMessage = '';
+      if (isNaN(targetDate.getTime())) {
+        errorMessage = 'Please enter a valid target date';
+      } else if (targetDate < today) {
+        errorMessage = 'Target date cannot be in the past';
+      } else if (targetDate > new Date(today.getTime() + (365 * 24 * 60 * 60 * 1000))) {
+        errorMessage = 'Target date cannot be more than 1 year in the future';
+      }
+      
+      setFieldErrors(prev => ({
+        ...prev,
+        'goal.timeframe.endDate': errorMessage || undefined
+      }));
+    } else {
+      setFieldErrors(prev => ({
+        ...prev,
+        'goal.timeframe.endDate': undefined
+      }));
+    }
+  };
+
+  const handleGoalCategoryChange = (e) => {
+    const { value } = e.target;
+    setGoalFormData({ ...goalFormData, category: value });
+    
+    // Clear any existing category error
+    setFieldErrors(prev => ({
+      ...prev,
+      'goal.category': undefined
+    }));
+  };
+
+  const handleGoalTypeChange = (e) => {
+    const { value } = e.target;
+    setGoalFormData({ ...goalFormData, type: value });
+    
+    // Clear any existing type error
+    setFieldErrors(prev => ({
+      ...prev,
+      'goal.type': undefined
+    }));
+  };
+
+  const handleGoalPriorityChange = (e) => {
+    const { value } = e.target;
+    setGoalFormData({ ...goalFormData, priority: value });
+    
+    // Clear any existing priority error
+    setFieldErrors(prev => ({
+      ...prev,
+      'goal.priority': undefined
+    }));
+  };
 
   // Real-time validation - only validate specific fields on change
   // Removed automatic validation on every formData change to prevent input blocking
@@ -2299,36 +2501,37 @@ const HealthTracker = () => {
             <DialogContent>
               <Grid container spacing={3}>
                 <Grid size={{ xs: 12 }}>
-                  <TextField
+                  <ValidatedTextField
                     fullWidth
-                    label="Goal Title"
+                    label="Goal Title *"
                     value={goalFormData.title}
-                    onChange={(e) => setGoalFormData({ ...goalFormData, title: e.target.value })}
-                    required
-                    error={Array.isArray(validationErrors) && validationErrors.some(err => err.path === 'title')}
-                    helperText={(Array.isArray(validationErrors) && validationErrors.find(err => err.path === 'title')?.msg) || 'Enter a descriptive title for your goal (3-100 characters)'}
+                    onChange={handleGoalTitleChange}
+                    error={fieldErrors['goal.title']}
+                    helperText={fieldErrors['goal.title'] ? fieldErrors['goal.title'] : 'Enter a descriptive title for your goal (5-100 characters)'}
+                    placeholder="e.g., Lose 10 pounds, Run 5K, Improve sleep quality"
                   />
                 </Grid>
 
                 <Grid size={{ xs: 12 }}>
-                  <TextField
+                  <ValidatedTextField
                     fullWidth
                     multiline
                     rows={3}
-                    label="Description"
+                    label="Description *"
                     value={goalFormData.description}
-                    onChange={(e) => setGoalFormData({ ...goalFormData, description: e.target.value })}
-                    error={Array.isArray(validationErrors) && validationErrors.some(err => err.path === 'description')}
-                    helperText={(Array.isArray(validationErrors) && validationErrors.find(err => err.path === 'description')?.msg) || 'Describe your goal in detail (10-500 characters)'}
+                    onChange={handleGoalDescriptionChange}
+                    error={fieldErrors['goal.description']}
+                    helperText={fieldErrors['goal.description'] ? fieldErrors['goal.description'] : 'Describe your goal in detail (10-500 characters)'}
+                    placeholder="Describe what you want to achieve, why it's important, and how you plan to reach it..."
                   />
                 </Grid>
 
                 <Grid size={{ xs: 12, sm: 6 }}>
-                  <FormControl fullWidth>
-                    <InputLabel>Category</InputLabel>
+                  <FormControl fullWidth error={!!fieldErrors['goal.category']}>
+                    <InputLabel>Category *</InputLabel>
                     <Select
                       value={goalFormData.category}
-                      onChange={(e) => setGoalFormData({ ...goalFormData, category: e.target.value })}
+                      onChange={handleGoalCategoryChange}
                       required
                     >
                       <MenuItem value="weight_management">Weight Management</MenuItem>
@@ -2342,15 +2545,18 @@ const HealthTracker = () => {
                       <MenuItem value="lifestyle">Lifestyle</MenuItem>
                       <MenuItem value="other">Other</MenuItem>
                     </Select>
+                    {fieldErrors['goal.category'] && (
+                      <FormHelperText error>{fieldErrors['goal.category']}</FormHelperText>
+                    )}
                   </FormControl>
                 </Grid>
 
                 <Grid size={{ xs: 12, sm: 6 }}>
-                  <FormControl fullWidth>
-                    <InputLabel>Type</InputLabel>
+                  <FormControl fullWidth error={!!fieldErrors['goal.type']}>
+                    <InputLabel>Type *</InputLabel>
                     <Select
                       value={goalFormData.type}
-                      onChange={(e) => setGoalFormData({ ...goalFormData, type: e.target.value })}
+                      onChange={handleGoalTypeChange}
                       required
                     >
                       <MenuItem value="increase">Increase</MenuItem>
@@ -2359,76 +2565,78 @@ const HealthTracker = () => {
                       <MenuItem value="achieve">Achieve</MenuItem>
                       <MenuItem value="track">Track</MenuItem>
                     </Select>
+                    {fieldErrors['goal.type'] && (
+                      <FormHelperText error>{fieldErrors['goal.type']}</FormHelperText>
+                    )}
                   </FormControl>
                 </Grid>
 
                 <Grid size={{ xs: 12, sm: 6 }}>
-                  <TextField
+                  <ValidatedTextField
                     fullWidth
-                    label="Target Metric Name"
+                    label="Target Metric Name *"
                     value={goalFormData.targetMetric.name}
-                    onChange={(e) => setGoalFormData({
-                      ...goalFormData,
-                      targetMetric: { ...goalFormData.targetMetric, name: e.target.value }
-                    })}
-                    required
+                    onChange={handleGoalTargetMetricNameChange}
+                    error={fieldErrors['goal.targetMetric.name']}
+                    helperText={fieldErrors['goal.targetMetric.name'] ? fieldErrors['goal.targetMetric.name'] : 'What you want to measure (2-50 characters)'}
+                    placeholder="e.g., Weight, Steps, Sleep Hours, Water Intake"
                   />
                 </Grid>
 
                 <Grid size={{ xs: 12, sm: 6 }}>
-                  <TextField
+                  <ValidatedTextField
                     fullWidth
-                    label="Unit"
+                    label="Unit *"
                     value={goalFormData.targetMetric.unit}
-                    onChange={(e) => setGoalFormData({
-                      ...goalFormData,
-                      targetMetric: { ...goalFormData.targetMetric, unit: e.target.value }
-                    })}
-                    required
+                    onChange={handleGoalTargetMetricUnitChange}
+                    error={fieldErrors['goal.targetMetric.unit']}
+                    helperText={fieldErrors['goal.targetMetric.unit'] ? fieldErrors['goal.targetMetric.unit'] : 'Unit of measurement (1-20 characters)'}
+                    placeholder="e.g., kg, lbs, steps, hours, oz, miles"
                   />
                 </Grid>
 
                 <Grid size={{ xs: 12, sm: 6 }}>
-                  <TextField
+                  <ValidatedTextField
                     fullWidth
-                    label="Target Value"
+                    label="Target Value *"
                     type="number"
                     value={goalFormData.targetMetric.targetValue}
-                    onChange={(e) => setGoalFormData({
-                      ...goalFormData,
-                      targetMetric: { ...goalFormData.targetMetric, targetValue: e.target.value }
-                    })}
-                    required
+                    onChange={handleGoalTargetValueChange}
+                    error={fieldErrors['goal.targetMetric.targetValue']}
+                    helperText={fieldErrors['goal.targetMetric.targetValue'] ? fieldErrors['goal.targetMetric.targetValue'] : 'Your target value (0-10,000)'}
+                    placeholder="e.g., 70, 10000, 8, 64"
                   />
                 </Grid>
 
                 <Grid size={{ xs: 12, sm: 6 }}>
-                  <FormControl fullWidth>
-                    <InputLabel>Priority</InputLabel>
+                  <FormControl fullWidth error={!!fieldErrors['goal.priority']}>
+                    <InputLabel>Priority *</InputLabel>
                     <Select
                       value={goalFormData.priority}
-                      onChange={(e) => setGoalFormData({ ...goalFormData, priority: e.target.value })}
+                      onChange={handleGoalPriorityChange}
                     >
                       <MenuItem value="low">Low</MenuItem>
                       <MenuItem value="medium">Medium</MenuItem>
                       <MenuItem value="high">High</MenuItem>
                       <MenuItem value="critical">Critical</MenuItem>
                     </Select>
+                    {fieldErrors['goal.priority'] && (
+                      <FormHelperText error>{fieldErrors['goal.priority']}</FormHelperText>
+                    )}
                   </FormControl>
                 </Grid>
 
                 <Grid size={{ xs: 12, sm: 6 }}>
                   <DatePicker
-                    label="End Date"
+                    label="End Date *"
                     value={goalFormData.timeframe.endDate instanceof Date ? goalFormData.timeframe.endDate : new Date(goalFormData.timeframe.endDate)}
-                    onChange={(newValue) => setGoalFormData({
-                      ...goalFormData,
-                      timeframe: { ...goalFormData.timeframe, endDate: newValue }
-                    })}
+                    onChange={handleGoalEndDateChange}
                     format="yyyy-MM-dd"
                     slotProps={{
                       textField: {
-                        fullWidth: true
+                        fullWidth: true,
+                        error: !!fieldErrors['goal.timeframe.endDate'],
+                        helperText: fieldErrors['goal.timeframe.endDate'] ? fieldErrors['goal.timeframe.endDate'] : 'When do you want to achieve this goal?'
                       }
                     }}
                     required
