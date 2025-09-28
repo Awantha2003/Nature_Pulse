@@ -185,6 +185,8 @@ const DoctorEDRC = () => {
   const fetchReports = async () => {
     try {
       setLoading(true);
+      setError(null); // Clear previous errors
+      
       const params = new URLSearchParams({
         page: currentPage,
         limit: 12,
@@ -203,11 +205,29 @@ const DoctorEDRC = () => {
       }
 
       const response = await api.get(`/community/reports?${params}`);
-      setReports(response.data.data.reports);
-      setTotalPages(response.data.data.pagination?.totalPages || 1);
+      
+      if (response.data.status === 'success') {
+        setReports(response.data.data.reports || []);
+        setTotalPages(response.data.data.pagination?.totalPages || 1);
+      } else {
+        setError('Failed to fetch community reports');
+        setReports([]);
+      }
     } catch (err) {
-      setError('Failed to fetch community reports');
       console.error('Reports error:', err);
+      
+      // Handle different types of errors
+      if (err.response?.status === 401) {
+        setError('Please log in to view community reports');
+      } else if (err.response?.status === 403) {
+        setError('You do not have permission to view community reports');
+      } else if (err.response?.status === 404) {
+        setError('Community reports service not available');
+      } else {
+        setError('Failed to fetch community reports. Please try again later.');
+      }
+      
+      setReports([]);
     } finally {
       setLoading(false);
     }
@@ -699,14 +719,73 @@ const DoctorEDRC = () => {
         </Tabs>
       </Paper>
 
+      {/* Error Display */}
+      {error && (
+        <Alert 
+          severity="error" 
+          sx={{ mb: 3, borderRadius: '15px' }}
+          action={
+            <Button color="inherit" size="small" onClick={fetchReports}>
+              Retry
+            </Button>
+          }
+        >
+          {error}
+        </Alert>
+      )}
+
       {/* Reports Grid */}
-      <Grid container spacing={3} sx={{ mb: 4 }}>
-        {reports.map((report, index) => (
-          <Grid size={{ xs: 12, md: 6 }} lg={4} key={report._id}>
-            {renderReportCard(report)}
-          </Grid>
-        ))}
-      </Grid>
+      {!loading && reports.length === 0 && !error ? (
+        <Box sx={{ textAlign: 'center', py: 8 }}>
+          <Box sx={{ 
+            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            borderRadius: '50%',
+            width: 120,
+            height: 120,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            mx: 'auto',
+            mb: 3
+          }}>
+            {currentTab === 0 && <Check sx={{ fontSize: 60, color: 'white' }} />}
+            {currentTab === 1 && <Warning sx={{ fontSize: 60, color: 'white' }} />}
+            {currentTab === 2 && <Flag sx={{ fontSize: 60, color: 'white' }} />}
+          </Box>
+          <Typography variant="h5" color="text.secondary" gutterBottom>
+            {currentTab === 0 && 'No Approved Reports Yet'}
+            {currentTab === 1 && 'No Pending Reports'}
+            {currentTab === 2 && 'No Flagged Content'}
+          </Typography>
+          <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
+            {currentTab === 0 && 'Be the first to share your clinical insights and research findings with the medical community.'}
+            {currentTab === 1 && 'All reports are currently under review. Check back later for updates.'}
+            {currentTab === 2 && 'No content has been flagged for review at this time.'}
+          </Typography>
+          {currentTab === 0 && (
+            <Button
+              variant="contained"
+              startIcon={<Add />}
+              onClick={() => {
+                setEditingReport(null);
+                resetForm();
+                setCreateDialogOpen(true);
+              }}
+              sx={{ borderRadius: '15px', px: 4, py: 1.5 }}
+            >
+              Share Your First Insight
+            </Button>
+          )}
+        </Box>
+      ) : (
+        <Grid container spacing={3} sx={{ mb: 4 }}>
+          {reports.map((report, index) => (
+            <Grid size={{ xs: 12, md: 6 }} lg={4} key={report._id}>
+              {renderReportCard(report)}
+            </Grid>
+          ))}
+        </Grid>
+      )}
 
       {/* Pagination */}
       {totalPages > 1 && (
