@@ -215,7 +215,7 @@ const DoctorPatients = () => {
 
           {/* Stats Cards */}
           <Grid container spacing={3} sx={{ mb: 4 }}>
-            <Grid item xs={12} sm={6} md={3}>
+            <Grid size={{ xs: 12, sm: 6, md: 3 }}>
               <Card sx={{ 
                 background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                 color: 'white',
@@ -225,7 +225,7 @@ const DoctorPatients = () => {
                 <CardContent>
                   <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <Box>
-                      <Typography variant="h4" component="div" sx={{ fontWeight: 'bold' }}>
+                      <Typography variant="h4" sx={{ fontWeight: 'bold' }}>
                         {stats.total}
                       </Typography>
                       <Typography variant="body2" sx={{ opacity: 0.9 }}>
@@ -238,7 +238,7 @@ const DoctorPatients = () => {
               </Card>
             </Grid>
             
-            <Grid item xs={12} sm={6} md={3}>
+            <Grid size={{ xs: 12, sm: 6, md: 3 }}>
               <Card sx={{ 
                 background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
                 color: 'white',
@@ -248,7 +248,7 @@ const DoctorPatients = () => {
                 <CardContent>
                   <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <Box>
-                      <Typography variant="h4" component="div" sx={{ fontWeight: 'bold' }}>
+                      <Typography variant="h4" sx={{ fontWeight: 'bold' }}>
                         {stats.active}
                       </Typography>
                       <Typography variant="body2" sx={{ opacity: 0.9 }}>
@@ -261,7 +261,7 @@ const DoctorPatients = () => {
               </Card>
             </Grid>
             
-            <Grid item xs={12} sm={6} md={3}>
+            <Grid size={{ xs: 12, sm: 6, md: 3 }}>
               <Card sx={{ 
                 background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
                 color: 'white',
@@ -271,7 +271,7 @@ const DoctorPatients = () => {
                 <CardContent>
                   <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <Box>
-                      <Typography variant="h4" component="div" sx={{ fontWeight: 'bold' }}>
+                      <Typography variant="h4" sx={{ fontWeight: 'bold' }}>
                         {stats.new}
                       </Typography>
                       <Typography variant="body2" sx={{ opacity: 0.9 }}>
@@ -284,7 +284,7 @@ const DoctorPatients = () => {
               </Card>
             </Grid>
             
-            <Grid item xs={12} sm={6} md={3}>
+            <Grid size={{ xs: 12, sm: 6, md: 3 }}>
               <Card sx={{ 
                 background: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
                 color: 'white',
@@ -294,7 +294,7 @@ const DoctorPatients = () => {
                 <CardContent>
                   <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <Box>
-                      <Typography variant="h4" component="div" sx={{ fontWeight: 'bold' }}>
+                      <Typography variant="h4" sx={{ fontWeight: 'bold' }}>
                         {stats.recent}
                       </Typography>
                       <Typography variant="body2" sx={{ opacity: 0.9 }}>
@@ -311,7 +311,7 @@ const DoctorPatients = () => {
           {/* Search and Filters */}
           <Paper sx={{ p: 3, mb: 3, borderRadius: 2 }}>
             <Grid container spacing={2} alignItems="center">
-              <Grid item xs={12} md={6}>
+              <Grid size={{ xs: 12, md: 6 }}>
                 <TextField
                   fullWidth
                   placeholder="Search patients by name or email..."
@@ -331,7 +331,7 @@ const DoctorPatients = () => {
                   }}
                 />
               </Grid>
-              <Grid item xs={12} md={3}>
+              <Grid size={{ xs: 12, md: 3 }}>
                 <FormControl fullWidth>
                   <InputLabel>Status</InputLabel>
                   <Select
@@ -346,7 +346,7 @@ const DoctorPatients = () => {
                   </Select>
                 </FormControl>
               </Grid>
-              <Grid item xs={12} md={3}>
+              <Grid size={{ xs: 12, md: 3 }}>
                 <Box sx={{ display: 'flex', gap: 1 }}>
                   <Chip
                     icon={<People />}
@@ -384,7 +384,7 @@ const DoctorPatients = () => {
         <>
           <Grid container spacing={3}>
             {patients.map((patient) => (
-              <Grid item xs={12} sm={6} md={4} key={patient._id}>
+              <Grid size={{ xs: 12, sm: 6, md: 4 }} key={patient._id}>
                 <Card sx={{ 
                   height: '100%', 
                   display: 'flex', 
@@ -525,7 +525,7 @@ const DoctorPatients = () => {
           {selectedPatient && (
             <Box>
               <Grid container spacing={3}>
-                <Grid item xs={12} md={6}>
+                <Grid size={{ xs: 12, md: 6 }}>
                   <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: 'bold' }}>
                     Personal Information
                   </Typography>
@@ -556,7 +556,7 @@ const DoctorPatients = () => {
                     </ListItem>
                   </List>
                 </Grid>
-                <Grid item xs={12} md={6}>
+                <Grid size={{ xs: 12, md: 6 }}>
                   <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: 'bold' }}>
                     Account Information
                   </Typography>
