@@ -54,6 +54,12 @@ import {
   Backdrop,
   useTheme,
   alpha,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
 } from '@mui/material';
 import {
   ShoppingCart,
@@ -107,6 +113,26 @@ import {
   Cancel,
   Check,
   Close,
+  Assessment,
+  PictureAsPdf,
+  FileDownload,
+  DateRange,
+  Print,
+  GetApp,
+  TableChart,
+  PieChart,
+  ShowChart,
+  Timeline as TimelineIcon,
+  TrendingFlat,
+  CompareArrows,
+  Insights,
+  DataUsage,
+  DonutLarge,
+  ScatterPlot,
+  MultilineChart,
+  StackedLineChart,
+  BubbleChart,
+  ShowChart as AreaChart,
 } from '@mui/icons-material';
 import { useAuth } from '../../contexts/AuthContext';
 import api from '../../utils/api';
@@ -175,6 +201,23 @@ const DoctorProducts = () => {
   const [selectedImages, setSelectedImages] = useState([]);
   const [imageUploadProgress, setImageUploadProgress] = useState(0);
   const [uploadingImages, setUploadingImages] = useState(false);
+  
+  // Report Generation States
+  const [reportDialogOpen, setReportDialogOpen] = useState(false);
+  const [reportType, setReportType] = useState('');
+  const [reportDateRange, setReportDateRange] = useState({
+    startDate: '',
+    endDate: ''
+  });
+  const [reportFormat, setReportFormat] = useState('pdf');
+  const [reportFilters, setReportFilters] = useState({
+    category: '',
+    status: '',
+    stockLevel: 'all'
+  });
+  const [generatingReport, setGeneratingReport] = useState(false);
+  const [reportData, setReportData] = useState(null);
+  const [reportPreviewOpen, setReportPreviewOpen] = useState(false);
   const [categories] = useState([
     { name: 'herbal_supplements', displayName: 'Herbal Supplements' },
     { name: 'ayurvedic_medicines', displayName: 'Ayurvedic Medicines' },
@@ -509,6 +552,478 @@ const DoctorProducts = () => {
     return (sum / reviews.length).toFixed(1);
   };
 
+  // Simplified Report Generation Function
+  const generateReport = async () => {
+    try {
+      setGeneratingReport(true);
+      setError(null);
+
+      // Generate simple summary report with basic statistics
+      const reportData = generateSimpleSummaryReport(products);
+
+      setReportData(reportData);
+      setReportPreviewOpen(true);
+      setReportDialogOpen(false);
+
+    } catch (err) {
+      setError('Failed to generate report: ' + err.message);
+      console.error('Report generation error:', err);
+    } finally {
+      setGeneratingReport(false);
+    }
+  };
+
+  const generateInventoryReport = (products) => {
+    const totalProducts = products.length;
+    const activeProducts = products.filter(p => p.isActive).length;
+    const featuredProducts = products.filter(p => p.isFeatured).length;
+    const lowStockProducts = products.filter(p => {
+      const stock = p.inventory?.stock || p.stock || 0;
+      const threshold = p.inventory?.lowStockThreshold || p.lowStockThreshold || 5;
+      return stock <= threshold;
+    }).length;
+    const outOfStockProducts = products.filter(p => (p.inventory?.stock || p.stock || 0) === 0).length;
+
+    const categoryBreakdown = products.reduce((acc, product) => {
+      const category = product.category;
+      acc[category] = (acc[category] || 0) + 1;
+      return acc;
+    }, {});
+
+    const statusBreakdown = products.reduce((acc, product) => {
+      const status = product.approvalStatus || 'unknown';
+      acc[status] = (acc[status] || 0) + 1;
+      return acc;
+    }, {});
+
+    return {
+      type: 'inventory',
+      title: 'Inventory Report',
+      generatedAt: new Date().toISOString(),
+      summary: {
+        totalProducts,
+        activeProducts,
+        featuredProducts,
+        lowStockProducts,
+        outOfStockProducts
+      },
+      breakdowns: {
+        category: categoryBreakdown,
+        status: statusBreakdown
+      },
+      products: products.map(p => ({
+        name: p.name,
+        category: p.category,
+        brand: p.brand,
+        stock: p.inventory?.stock || p.stock || 0,
+        price: p.price?.current || p.price,
+        status: p.approvalStatus,
+        isActive: p.isActive,
+        isFeatured: p.isFeatured,
+        createdAt: p.createdAt
+      }))
+    };
+  };
+
+  const generateSalesReport = (products) => {
+    const totalValue = products.reduce((sum, p) => {
+      const price = p.price?.current || p.price || 0;
+      const stock = p.inventory?.stock || p.stock || 0;
+      return sum + (price * stock);
+    }, 0);
+
+    const averagePrice = products.length > 0 ? 
+      products.reduce((sum, p) => sum + (p.price?.current || p.price || 0), 0) / products.length : 0;
+
+    const priceRange = {
+      min: Math.min(...products.map(p => p.price?.current || p.price || 0)),
+      max: Math.max(...products.map(p => p.price?.current || p.price || 0))
+    };
+
+    return {
+      type: 'sales',
+      title: 'Sales Analysis Report',
+      generatedAt: new Date().toISOString(),
+      summary: {
+        totalValue,
+        averagePrice,
+        priceRange,
+        totalProducts: products.length
+      },
+      products: products.map(p => ({
+        name: p.name,
+        price: p.price?.current || p.price,
+        stock: p.inventory?.stock || p.stock || 0,
+        totalValue: (p.price?.current || p.price || 0) * (p.inventory?.stock || p.stock || 0),
+        category: p.category,
+        brand: p.brand
+      })).sort((a, b) => b.totalValue - a.totalValue)
+    };
+  };
+
+  const generateAnalyticsReport = (products) => {
+    const categoryStats = products.reduce((acc, product) => {
+      const category = product.category;
+      if (!acc[category]) {
+        acc[category] = {
+          count: 0,
+          totalValue: 0,
+          averagePrice: 0,
+          products: []
+        };
+      }
+      acc[category].count++;
+      const price = product.price?.current || product.price || 0;
+      const stock = product.inventory?.stock || product.stock || 0;
+      const value = price * stock;
+      acc[category].totalValue += value;
+      acc[category].products.push(product.name);
+      return acc;
+    }, {});
+
+    // Calculate averages
+    Object.keys(categoryStats).forEach(category => {
+      const stats = categoryStats[category];
+      stats.averagePrice = stats.totalValue / stats.count;
+    });
+
+    return {
+      type: 'analytics',
+      title: 'Product Analytics Report',
+      generatedAt: new Date().toISOString(),
+      categoryStats,
+      insights: {
+        topCategory: Object.keys(categoryStats).reduce((a, b) => 
+          categoryStats[a].count > categoryStats[b].count ? a : b, ''),
+        totalCategories: Object.keys(categoryStats).length,
+        averageProductsPerCategory: products.length / Object.keys(categoryStats).length
+      }
+    };
+  };
+
+  const generatePerformanceReport = (products) => {
+    const performanceMetrics = {
+      totalProducts: products.length,
+      activeProducts: products.filter(p => p.isActive).length,
+      featuredProducts: products.filter(p => p.isFeatured).length,
+      pendingApproval: products.filter(p => p.approvalStatus === 'pending').length,
+      approvedProducts: products.filter(p => p.approvalStatus === 'approved').length,
+      rejectedProducts: products.filter(p => p.approvalStatus === 'rejected').length
+    };
+
+    const approvalRate = performanceMetrics.totalProducts > 0 ? 
+      (performanceMetrics.approvedProducts / performanceMetrics.totalProducts) * 100 : 0;
+
+    const activeRate = performanceMetrics.totalProducts > 0 ? 
+      (performanceMetrics.activeProducts / performanceMetrics.totalProducts) * 100 : 0;
+
+    return {
+      type: 'performance',
+      title: 'Product Performance Report',
+      generatedAt: new Date().toISOString(),
+      metrics: performanceMetrics,
+      rates: {
+        approvalRate,
+        activeRate
+      },
+      recommendations: generateRecommendations(performanceMetrics)
+    };
+  };
+
+  const generateSimpleSummaryReport = (products) => {
+    const totalProducts = products.length;
+    const activeProducts = products.filter(p => p.isActive).length;
+    const featuredProducts = products.filter(p => p.isFeatured).length;
+    const lowStockProducts = products.filter(p => {
+      const stock = p.inventory?.stock || p.stock || 0;
+      const threshold = p.inventory?.lowStockThreshold || p.lowStockThreshold || 5;
+      return stock <= threshold;
+    }).length;
+    const pendingProducts = products.filter(p => p.approvalStatus === 'pending').length;
+    const approvedProducts = products.filter(p => p.approvalStatus === 'approved').length;
+
+    return {
+      type: 'summary',
+      title: 'Product Statistics Report',
+      generatedAt: new Date().toISOString(),
+      summary: {
+        totalProducts,
+        activeProducts,
+        featuredProducts,
+        lowStockProducts,
+        pendingProducts,
+        approvedProducts
+      },
+      stats: [
+        {
+          title: 'Total Products',
+          value: totalProducts,
+          subtitle: `${activeProducts} active`,
+          color: '#667eea'
+        },
+        {
+          title: 'Featured',
+          value: featuredProducts,
+          subtitle: 'Highlighted items',
+          color: '#f093fb'
+        },
+        {
+          title: 'Low Stock',
+          value: lowStockProducts,
+          subtitle: 'Needs attention',
+          color: '#f5576c'
+        },
+        {
+          title: 'Pending',
+          value: pendingProducts,
+          subtitle: 'Awaiting review',
+          color: '#ff9800'
+        },
+        {
+          title: 'Approved',
+          value: approvedProducts,
+          subtitle: 'Live & ready',
+          color: '#43e97b'
+        }
+      ]
+    };
+  };
+
+  const generateRecommendations = (metrics) => {
+    const recommendations = [];
+    
+    if (metrics.pendingApproval > 0) {
+      recommendations.push(`You have ${metrics.pendingApproval} products pending approval. Consider following up with admin.`);
+    }
+    
+    if (metrics.rejectedProducts > 0) {
+      recommendations.push(`You have ${metrics.rejectedProducts} rejected products. Review and update them for resubmission.`);
+    }
+    
+    if (metrics.featuredProducts === 0) {
+      recommendations.push('Consider featuring some of your best products to increase visibility.');
+    }
+    
+    if (metrics.activeProducts < metrics.totalProducts * 0.8) {
+      recommendations.push('Consider activating more products to increase your catalog visibility.');
+    }
+    
+    return recommendations;
+  };
+
+  const exportReport = (format) => {
+    if (!reportData) {
+      alert('No report data available. Please generate a report first.');
+      return;
+    }
+
+    try {
+      const timestamp = new Date().toISOString().split('T')[0];
+      const filename = `${reportData.type}_report_${timestamp}`;
+
+      if (format === 'pdf') {
+        // Simple PDF export using window.print()
+        const printWindow = window.open('', '_blank');
+        const reportHTML = generateReportHTML(reportData);
+        printWindow.document.write(reportHTML);
+        printWindow.document.close();
+        printWindow.focus();
+        printWindow.print();
+        alert('PDF export initiated! Use your browser\'s print dialog to save as PDF.');
+      } else if (format === 'csv') {
+        // Convert report data to CSV
+        const csvContent = convertToCSV(reportData);
+        if (csvContent && csvContent !== 'Report data not available for CSV export') {
+          downloadCSV(csvContent, `${filename}.csv`);
+          alert('CSV file download started!');
+        } else {
+          alert('Unable to convert report data to CSV format.');
+        }
+      } else if (format === 'json') {
+        const jsonContent = JSON.stringify(reportData, null, 2);
+        downloadJSON(jsonContent, `${filename}.json`);
+        alert('JSON file download started!');
+      }
+    } catch (error) {
+      console.error('Export error:', error);
+      alert('Failed to export report. Please try again.');
+    }
+  };
+
+  const convertToCSV = (data) => {
+    try {
+      if (data.type === 'summary' && data.stats) {
+        let csvContent = '';
+        
+        // Add statistics section
+        csvContent += 'PRODUCT STATISTICS\n';
+        csvContent += 'Metric,Value,Description\n';
+        data.stats.forEach(stat => {
+          csvContent += `"${stat.title}",${stat.value},"${stat.subtitle}"\n`;
+        });
+        
+        // Add product details section
+        csvContent += '\n\nPRODUCT DETAILS\n';
+        csvContent += 'Name,Category,Brand,Stock,Price,Status,Active,Featured\n';
+        products.forEach(product => {
+          csvContent += `"${product.name}","${product.category}","${product.brand}",${product.inventory?.stock || product.stock || 0},${product.price?.current || product.price},"${product.approvalStatus || 'Unknown'}","${product.isActive ? 'Yes' : 'No'}","${product.isFeatured ? 'Yes' : 'No'}"\n`;
+        });
+        
+        return csvContent;
+      }
+      return 'Report data not available for CSV export';
+    } catch (error) {
+      console.error('CSV conversion error:', error);
+      return 'Error converting data to CSV format';
+    }
+  };
+
+  const downloadCSV = (content, filename) => {
+    try {
+      const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', filename);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      console.log('CSV download initiated:', filename);
+    } catch (error) {
+      console.error('CSV download error:', error);
+      alert('Failed to download CSV file. Please try again.');
+    }
+  };
+
+  const downloadJSON = (content, filename) => {
+    try {
+      const blob = new Blob([content], { type: 'application/json;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', filename);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      console.log('JSON download initiated:', filename);
+    } catch (error) {
+      console.error('JSON download error:', error);
+      alert('Failed to download JSON file. Please try again.');
+    }
+  };
+
+  const generateReportHTML = (data) => {
+    const timestamp = new Date().toLocaleString();
+    let html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>${data.title}</title>
+        <style>
+          body { font-family: Arial, sans-serif; margin: 20px; }
+          .header { text-align: center; margin-bottom: 30px; }
+          .title { font-size: 24px; font-weight: bold; color: #333; }
+          .subtitle { font-size: 14px; color: #666; margin-top: 5px; }
+          .summary { background: #f5f5f5; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
+          .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; }
+          .summary-item { text-align: center; padding: 15px; background: white; border-radius: 5px; }
+          .summary-value { font-size: 24px; font-weight: bold; color: #667eea; }
+          .summary-label { font-size: 12px; color: #666; margin-top: 5px; }
+          table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+          th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+          th { background-color: #f2f2f2; font-weight: bold; }
+          .recommendations { margin-top: 20px; }
+          .recommendation { background: #e3f2fd; padding: 10px; margin: 5px 0; border-radius: 5px; border-left: 4px solid #2196f3; }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <div class="title">${data.title}</div>
+          <div class="subtitle">Generated on ${timestamp}</div>
+        </div>
+    `;
+
+    // Add statistics section
+    if (data.stats && data.stats.length > 0) {
+      html += `
+        <div class="summary">
+          <h3>Product Statistics</h3>
+          <div class="summary-grid">
+      `;
+      data.stats.forEach(stat => {
+        html += `
+          <div class="summary-item">
+            <div class="summary-value" style="color: ${stat.color}">${stat.value}</div>
+            <div class="summary-label">${stat.title}</div>
+            <div class="summary-sublabel" style="font-size: 12px; color: #666; margin-top: 5px;">${stat.subtitle}</div>
+          </div>
+        `;
+      });
+      html += `</div></div>`;
+    }
+
+    // Add product details table
+    html += `
+      <h3 style="margin-top: 30px; margin-bottom: 15px; color: #333;">Product Details</h3>
+      <table style="width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 12px;">
+        <thead>
+          <tr style="background-color: #f8f9fa;">
+            <th style="border: 1px solid #ddd; padding: 8px; text-align: left; font-weight: bold;">Product Name</th>
+            <th style="border: 1px solid #ddd; padding: 8px; text-align: left; font-weight: bold;">Category</th>
+            <th style="border: 1px solid #ddd; padding: 8px; text-align: left; font-weight: bold;">Brand</th>
+            <th style="border: 1px solid #ddd; padding: 8px; text-align: left; font-weight: bold;">Stock</th>
+            <th style="border: 1px solid #ddd; padding: 8px; text-align: left; font-weight: bold;">Price</th>
+            <th style="border: 1px solid #ddd; padding: 8px; text-align: left; font-weight: bold;">Status</th>
+            <th style="border: 1px solid #ddd; padding: 8px; text-align: left; font-weight: bold;">Active</th>
+            <th style="border: 1px solid #ddd; padding: 8px; text-align: left; font-weight: bold;">Featured</th>
+          </tr>
+        </thead>
+        <tbody>
+    `;
+    
+    // Add product rows (limit to first 50 for PDF)
+    const productsToShow = products.slice(0, 50);
+    productsToShow.forEach(product => {
+      const stock = product.inventory?.stock || product.stock || 0;
+      const price = product.price?.current || product.price || 0;
+      const isLowStock = stock <= (product.inventory?.lowStockThreshold || product.lowStockThreshold || 5);
+      
+      html += `
+        <tr>
+          <td style="border: 1px solid #ddd; padding: 8px;">${product.name}</td>
+          <td style="border: 1px solid #ddd; padding: 8px;">${product.category}</td>
+          <td style="border: 1px solid #ddd; padding: 8px;">${product.brand}</td>
+          <td style="border: 1px solid #ddd; padding: 8px;">${stock}${isLowStock ? ' (Low)' : ''}</td>
+          <td style="border: 1px solid #ddd; padding: 8px;">$${price}</td>
+          <td style="border: 1px solid #ddd; padding: 8px;">${product.approvalStatus || 'Unknown'}</td>
+          <td style="border: 1px solid #ddd; padding: 8px;">${product.isActive ? 'Yes' : 'No'}</td>
+          <td style="border: 1px solid #ddd; padding: 8px;">${product.isFeatured ? 'Yes' : 'No'}</td>
+        </tr>
+      `;
+    });
+    
+    html += `</tbody></table>`;
+    
+    if (products.length > 50) {
+      html += `<p style="margin-top: 10px; color: #666; font-size: 12px;">Showing first 50 products. Total: ${products.length} products</p>`;
+    }
+
+    // Add simple summary message
+    html += `
+      <div style="margin-top: 30px; padding: 20px; background: #e3f2fd; border-radius: 8px; text-align: center;">
+        <h3 style="margin: 0 0 10px 0; color: #1976d2;">Quick Overview</h3>
+        <p style="margin: 0; color: #666;">This report shows your current product inventory status and detailed product list.</p>
+      </div>
+    `;
+
+    html += `</body></html>`;
+    return html;
+  };
+
   const StatCard = ({ title, value, icon, color, subtitle, delay = 0 }) => {
     const getGradientColors = (colorType) => {
       switch (colorType) {
@@ -840,6 +1355,37 @@ const DoctorProducts = () => {
                   fontSize: '0.9rem'
                 }}
               />
+            </Box>
+            
+            {/* Report Generation Button */}
+            <Box sx={{ 
+              display: 'flex', 
+              justifyContent: 'center', 
+              mt: 4
+            }}>
+              <Button
+                variant="contained"
+                startIcon={<Assessment sx={{ fontSize: '1.2rem' }} />}
+                onClick={() => setReportDialogOpen(true)}
+                sx={{ 
+                  borderRadius: '30px',
+                  background: 'linear-gradient(45deg, #f093fb 30%, #f5576c 90%)',
+                  boxShadow: '0 8px 25px rgba(240, 147, 251, 0.4)',
+                  fontWeight: 700,
+                  fontSize: '1.1rem',
+                  py: 2,
+                  px: 4,
+                  textTransform: 'none',
+                  '&:hover': {
+                    background: 'linear-gradient(45deg, #f5576c 30%, #f093fb 90%)',
+                    boxShadow: '0 12px 30px rgba(240, 147, 251, 0.6)',
+                    transform: 'translateY(-3px) scale(1.05)',
+                  },
+                  transition: 'all 0.3s ease',
+                }}
+              >
+                📊 Generate Reports
+              </Button>
             </Box>
           </Box>
         </Fade>
@@ -1736,6 +2282,334 @@ const DoctorProducts = () => {
           </Box>
         </Fade>
       )}
+
+      {/* Report Generation Dialog */}
+      <Dialog 
+        open={reportDialogOpen} 
+        onClose={() => { 
+          setReportDialogOpen(false); 
+          setError(null);
+          setReportType('');
+          setReportDateRange({ startDate: '', endDate: '' });
+          setReportFilters({ category: '', status: '', stockLevel: 'all' });
+        }} 
+        maxWidth="md" 
+        fullWidth
+      >
+        <DialogTitle sx={{ 
+          fontWeight: 700, 
+          fontSize: '1.5rem',
+          textAlign: 'center',
+          background: 'linear-gradient(45deg, #667eea 30%, #764ba2 90%)',
+          backgroundClip: 'text',
+          WebkitBackgroundClip: 'text',
+          WebkitTextFillColor: 'transparent',
+          mb: 2
+        }}>
+          📊 Generate Product Reports
+        </DialogTitle>
+        <DialogContent>
+          {error && (
+            <Alert severity="error" sx={{ mb: 3, borderRadius: '15px' }}>
+              {error}
+            </Alert>
+          )}
+          
+          <Stack spacing={4} sx={{ mt: 2 }}>
+            {/* Simple Product Summary Report */}
+            <Box>
+              <Typography variant="h6" sx={{ mb: 3, fontWeight: 600, color: 'text.primary', textAlign: 'center' }}>
+                📊 Product Summary Report
+              </Typography>
+              <Typography variant="body1" sx={{ mb: 3, color: 'text.secondary', textAlign: 'center' }}>
+                Generate a simple report with your product statistics
+              </Typography>
+              
+              <Card sx={{ 
+                p: 4, 
+                textAlign: 'center',
+                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                color: 'white',
+              borderRadius: '20px',
+                cursor: 'pointer',
+                transition: 'all 0.3s ease',
+                '&:hover': {
+                  transform: 'translateY(-4px)',
+                  boxShadow: '0 12px 30px rgba(102, 126, 234, 0.4)',
+                }
+              }}
+              onClick={() => setReportType('summary')}
+              >
+                <Assessment sx={{ fontSize: 48, mb: 2 }} />
+                <Typography variant="h5" sx={{ fontWeight: 700, mb: 1 }}>
+                  Product Statistics Report
+                </Typography>
+                <Typography variant="body1" sx={{ opacity: 0.9 }}>
+                  Get a quick overview of your product inventory
+                </Typography>
+              </Card>
+            </Box>
+
+
+            {/* Export Format */}
+            <Box>
+              <Typography variant="h6" sx={{ mb: 2, fontWeight: 600, color: 'text.primary' }}>
+                💾 Export Format
+              </Typography>
+              <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+                {[
+                  { format: 'pdf', label: 'PDF', icon: <PictureAsPdf />, color: '#f44336' },
+                  { format: 'csv', label: 'CSV', icon: <TableChart />, color: '#4caf50' },
+                  { format: 'json', label: 'JSON', icon: <DataUsage />, color: '#ff9800' }
+                ].map((format) => (
+                  <Chip
+                    key={format.format}
+                    icon={format.icon}
+                    label={format.label}
+                    onClick={() => setReportFormat(format.format)}
+                    sx={{
+                      background: reportFormat === format.format ? format.color : 'rgba(0,0,0,0.1)',
+                      color: reportFormat === format.format ? 'white' : 'text.primary',
+              fontWeight: 600,
+                      px: 2,
+                      py: 1,
+                      cursor: 'pointer',
+              '&:hover': {
+                        background: format.color,
+                        color: 'white'
+                      }
+                    }}
+                  />
+                ))}
+              </Box>
+            </Box>
+          </Stack>
+        </DialogContent>
+        <DialogActions sx={{ p: 3 }}>
+          <Button
+            onClick={() => setReportDialogOpen(false)}
+            sx={{ borderRadius: '15px', fontWeight: 600 }}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            onClick={generateReport}
+            disabled={!reportType || generatingReport}
+            startIcon={generatingReport ? <CircularProgress size={20} /> : <Assessment />}
+            sx={{ 
+              borderRadius: '15px',
+              background: 'linear-gradient(45deg, #667eea 30%, #764ba2 90%)',
+              fontWeight: 700,
+              '&:hover': {
+                background: 'linear-gradient(45deg, #764ba2 30%, #667eea 90%)',
+              },
+              '&:disabled': {
+                background: 'rgba(158, 158, 158, 0.3)',
+                color: 'rgba(255, 255, 255, 0.6)',
+              }
+            }}
+          >
+            {generatingReport ? 'Generating...' : 'Generate Report'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Report Preview Dialog */}
+      <Dialog 
+        open={reportPreviewOpen} 
+        onClose={() => setReportPreviewOpen(false)} 
+        maxWidth="lg" 
+        fullWidth
+      >
+        <DialogTitle sx={{ 
+          fontWeight: 700, 
+          fontSize: '1.5rem',
+          textAlign: 'center',
+          background: 'linear-gradient(45deg, #667eea 30%, #764ba2 90%)',
+          backgroundClip: 'text',
+          WebkitBackgroundClip: 'text',
+          WebkitTextFillColor: 'transparent',
+          mb: 2
+        }}>
+          📊 {reportData?.title}
+        </DialogTitle>
+        <DialogContent>
+          {reportData && (
+            <Box sx={{ mt: 2 }}>
+              {/* Product Statistics */}
+              <Card sx={{ p: 4, mb: 3, borderRadius: '20px', background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)' }}>
+                <Typography variant="h6" sx={{ mb: 3, fontWeight: 700, textAlign: 'center' }}>
+                  📊 Your Product Statistics
+                </Typography>
+                <Grid container spacing={3}>
+                  {reportData.stats?.map((stat, index) => (
+                    <Grid size={{ xs: 12, sm: 6, md: 2.4 }} key={index}>
+                      <Card sx={{ 
+                        p: 3, 
+                        textAlign: 'center',
+                        background: 'rgba(255,255,255,0.9)',
+                        borderRadius: '15px',
+                        border: `3px solid ${stat.color}20`,
+                        transition: 'all 0.3s ease',
+                        '&:hover': {
+                          transform: 'translateY(-4px)',
+                          boxShadow: '0 8px 25px rgba(0,0,0,0.15)',
+                        }
+                      }}>
+                        <Typography variant="h3" sx={{ 
+                          fontWeight: 900, 
+                          color: stat.color,
+                          mb: 1
+                        }}>
+                          {stat.value}
+                        </Typography>
+                        <Typography variant="h6" sx={{ 
+                          fontWeight: 700, 
+                          color: 'text.primary',
+                          mb: 0.5
+                        }}>
+                          {stat.title}
+                        </Typography>
+                        <Typography variant="body2" sx={{ 
+                          color: 'text.secondary',
+                          fontWeight: 500
+                        }}>
+                          {stat.subtitle}
+                        </Typography>
+                      </Card>
+                    </Grid>
+                  ))}
+                </Grid>
+              </Card>
+
+              {/* Product Details Table */}
+              <Card sx={{ p: 3, borderRadius: '15px', background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)' }}>
+                <Typography variant="h6" sx={{ fontWeight: 700, mb: 3, textAlign: 'center' }}>
+                  📦 Your Products
+                </Typography>
+                <TableContainer component={Paper} sx={{ borderRadius: '15px', maxHeight: 400 }}>
+                  <Table stickyHeader>
+                    <TableHead>
+                      <TableRow>
+                        <TableCell sx={{ fontWeight: 700, background: '#f8f9fa' }}>Product Name</TableCell>
+                        <TableCell sx={{ fontWeight: 700, background: '#f8f9fa' }}>Category</TableCell>
+                        <TableCell sx={{ fontWeight: 700, background: '#f8f9fa' }}>Brand</TableCell>
+                        <TableCell sx={{ fontWeight: 700, background: '#f8f9fa' }}>Stock</TableCell>
+                        <TableCell sx={{ fontWeight: 700, background: '#f8f9fa' }}>Price</TableCell>
+                        <TableCell sx={{ fontWeight: 700, background: '#f8f9fa' }}>Status</TableCell>
+                        <TableCell sx={{ fontWeight: 700, background: '#f8f9fa' }}>Active</TableCell>
+                        <TableCell sx={{ fontWeight: 700, background: '#f8f9fa' }}>Featured</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {products.slice(0, 20).map((product, index) => (
+                        <TableRow key={index} sx={{ '&:hover': { background: '#f8f9fa' } }}>
+                          <TableCell sx={{ fontWeight: 600 }}>{product.name}</TableCell>
+                          <TableCell>
+                            <Chip 
+                              label={categories.find(c => c.name === product.category)?.displayName || product.category}
+                              size="small"
+                              sx={{ 
+                                background: '#e3f2fd',
+                                color: '#1976d2',
+                                fontWeight: 500
+                              }}
+                            />
+                          </TableCell>
+                          <TableCell>{product.brand}</TableCell>
+                          <TableCell>
+                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                              <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                                {product.inventory?.stock || product.stock || 0}
+                              </Typography>
+                              {(product.inventory?.stock || product.stock || 0) <= (product.inventory?.lowStockThreshold || product.lowStockThreshold || 5) && (
+                                <Chip 
+                                  label="Low" 
+                                  size="small" 
+                                  color="warning"
+                                  sx={{ ml: 1, fontSize: '0.7rem' }}
+                                />
+                              )}
+        </Box>
+                          </TableCell>
+                          <TableCell sx={{ fontWeight: 600, color: '#2e7d32' }}>
+                            ${product.price?.current || product.price}
+                          </TableCell>
+                          <TableCell>
+                            <Chip 
+                              label={product.approvalStatus || 'Unknown'} 
+                              size="small"
+                              color={
+                                product.approvalStatus === 'approved' ? 'success' : 
+                                product.approvalStatus === 'pending' ? 'warning' : 
+                                'error'
+                              }
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <Chip 
+                              label={product.isActive ? 'Yes' : 'No'} 
+                              size="small"
+                              color={product.isActive ? 'success' : 'default'}
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <Chip 
+                              label={product.isFeatured ? 'Yes' : 'No'} 
+                              size="small"
+                              color={product.isFeatured ? 'warning' : 'default'}
+                            />
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+                {products.length > 20 && (
+                  <Typography variant="body2" sx={{ mt: 2, textAlign: 'center', color: 'text.secondary' }}>
+                    Showing first 20 products. Total: {products.length} products
+                  </Typography>
+                )}
+              </Card>
+
+              {/* Simple Summary Message */}
+              <Card sx={{ p: 3, borderRadius: '15px', background: 'linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%)' }}>
+                <Typography variant="h6" sx={{ fontWeight: 700, mb: 2, textAlign: 'center' }}>
+                  📈 Quick Overview
+                </Typography>
+                <Typography variant="body1" sx={{ textAlign: 'center', color: 'text.secondary' }}>
+                  This report shows your current product inventory status and detailed product list. 
+                  Use the export options below to save this data for your records.
+                </Typography>
+              </Card>
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions sx={{ p: 3 }}>
+          <Button
+            onClick={() => setReportPreviewOpen(false)}
+            sx={{ borderRadius: '15px', fontWeight: 600 }}
+          >
+            Close
+          </Button>
+          <Button
+            variant="contained"
+            startIcon={<FileDownload />}
+            onClick={() => exportReport(reportFormat)}
+            sx={{ 
+              borderRadius: '15px',
+              background: 'linear-gradient(45deg, #43e97b 30%, #38f9d7 90%)',
+              fontWeight: 700,
+              '&:hover': {
+                background: 'linear-gradient(45deg, #38f9d7 30%, #43e97b 90%)',
+              }
+            }}
+          >
+            Export {reportFormat.toUpperCase()}
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* Add Product Dialog */}
       <Dialog open={addDialogOpen} onClose={() => { setAddDialogOpen(false); setError(null); }} maxWidth="md" fullWidth>
