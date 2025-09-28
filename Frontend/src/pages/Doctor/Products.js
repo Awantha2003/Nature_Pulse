@@ -42,6 +42,18 @@ import {
   Avatar,
   Tooltip,
   LinearProgress,
+  Collapse,
+  Slide,
+  Grow,
+  Skeleton,
+  CardActionArea,
+  CardHeader,
+  CardOverflow,
+  AspectRatio,
+  Modal,
+  Backdrop,
+  useTheme,
+  alpha,
 } from '@mui/material';
 import {
   ShoppingCart,
@@ -497,34 +509,47 @@ const DoctorProducts = () => {
     return (sum / reviews.length).toFixed(1);
   };
 
-  const StatCard = ({ title, value, icon, color, subtitle }) => {
+  const StatCard = ({ title, value, icon, color, subtitle, delay = 0 }) => {
     const getGradientColors = (colorType) => {
       switch (colorType) {
         case 'primary':
-          return 'linear-gradient(135deg, #2E7D32 0%, #4CAF50 100%)'; // Nature Green
+          return 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
         case 'warning':
-          return 'linear-gradient(135deg, #FFC107 0%, #FFEB3B 100%)'; // Motivation Yellow
+          return 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)';
         case 'error':
-          return 'linear-gradient(135deg, #F44336 0%, #FF5722 100%)'; // Keep red for errors
+          return 'linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%)';
         case 'success':
-          return 'linear-gradient(135deg, #4CAF50 0%, #8BC34A 100%)'; // Wellness Green
+          return 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)';
         case 'info':
-          return 'linear-gradient(135deg, #1976D2 0%, #42A5F5 100%)'; // Trust Blue
+          return 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)';
         default:
-          return 'linear-gradient(135deg, #9E9E9E 0%, #BDBDBD 100%)'; // Balance Grey
+          return 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)';
       }
     };
 
     return (
+      <Grow in timeout={800 + delay}>
       <Card sx={{ 
-        borderRadius: '24px', 
+          borderRadius: '28px', 
         height: '100%', 
-        background: 'rgba(255, 255, 255, 0.1)',
-        backdropFilter: 'blur(20px)',
-        border: '1px solid rgba(255, 255, 255, 0.2)',
-        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
+          background: 'rgba(255, 255, 255, 0.15)',
+          backdropFilter: 'blur(25px)',
+          border: '1px solid rgba(255, 255, 255, 0.3)',
+          boxShadow: '0 20px 40px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
         position: 'relative',
         overflow: 'hidden',
+          transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+          cursor: 'pointer',
+          '&:hover': {
+            transform: 'translateY(-8px) scale(1.02)',
+            boxShadow: '0 32px 64px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.3)',
+            '& .stat-icon': {
+              transform: 'scale(1.1) rotate(5deg)',
+            },
+            '& .stat-value': {
+              transform: 'scale(1.05)',
+            }
+          },
         '&::before': {
           content: '""',
           position: 'absolute',
@@ -533,37 +558,114 @@ const DoctorProducts = () => {
           right: 0,
           bottom: 0,
           background: getGradientColors(color),
-          opacity: 0.9,
-          zIndex: -1
-        }
-      }}>
-      <CardContent sx={{ p: 3, position: 'relative', zIndex: 1 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Box>
-            <Typography variant="h4" sx={{ fontWeight: 800, mb: 1, color: 'white', textShadow: '0 2px 4px rgba(0,0,0,0.3)' }}>
+            opacity: 0.8,
+            zIndex: -1,
+            transition: 'opacity 0.3s ease'
+          },
+          '&::after': {
+            content: '""',
+            position: 'absolute',
+            top: -50,
+            right: -50,
+            width: '100px',
+            height: '100px',
+            background: 'radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%)',
+            borderRadius: '50%',
+            zIndex: -1,
+            transition: 'all 0.3s ease'
+          },
+          '&:hover::after': {
+            transform: 'scale(1.5)',
+            opacity: 0.3
+          }
+        }}>
+        <CardContent sx={{ p: 4, position: 'relative', zIndex: 1 }}>
+          <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 2 }}>
+            <Box sx={{ flex: 1 }}>
+              <Typography 
+                variant="h3" 
+                className="stat-value"
+                sx={{ 
+                  fontWeight: 900, 
+                  mb: 1, 
+                  color: 'white', 
+                  textShadow: '0 4px 8px rgba(0,0,0,0.3)',
+                  fontSize: { xs: '2rem', md: '2.5rem' },
+                  transition: 'transform 0.3s ease'
+                }}
+              >
               {value}
             </Typography>
-            <Typography variant="h6" sx={{ fontWeight: 600, mb: 0.5, color: 'white', opacity: 0.95 }}>
+              <Typography 
+                variant="h6" 
+                sx={{ 
+                  fontWeight: 700, 
+                  mb: 0.5, 
+                  color: 'white', 
+                  opacity: 0.95,
+                  fontSize: { xs: '0.9rem', md: '1rem' },
+                  letterSpacing: '0.02em'
+                }}
+              >
               {title}
             </Typography>
             {subtitle && (
-              <Typography variant="body2" sx={{ opacity: 0.85, color: 'white' }}>
+                <Typography 
+                  variant="body2" 
+                  sx={{ 
+                    opacity: 0.85, 
+                    color: 'white',
+                    fontSize: '0.8rem',
+                    fontWeight: 500
+                  }}
+                >
                 {subtitle}
               </Typography>
             )}
           </Box>
-          <Box sx={{ 
+            <Box 
+              className="stat-icon"
+              sx={{ 
             opacity: 0.9,
-            background: 'rgba(255, 255, 255, 0.2)',
-            borderRadius: '16px',
-            p: 1.5,
-            backdropFilter: 'blur(10px)'
-          }}>
-            {icon}
+                background: 'rgba(255, 255, 255, 0.25)',
+                borderRadius: '20px',
+                p: 2,
+                backdropFilter: 'blur(15px)',
+                border: '1px solid rgba(255, 255, 255, 0.2)',
+                transition: 'all 0.3s ease',
+                boxShadow: '0 8px 16px rgba(0, 0, 0, 0.1)'
+              }}
+            >
+              {React.cloneElement(icon, { 
+                sx: { 
+                  fontSize: { xs: 28, md: 32 },
+                  color: 'white',
+                  filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))'
+                } 
+              })}
+            </Box>
           </Box>
+          
+          {/* Progress indicator */}
+          <Box sx={{ 
+            width: '100%', 
+            height: '4px', 
+            background: 'rgba(255, 255, 255, 0.2)',
+            borderRadius: '2px',
+            overflow: 'hidden',
+            mt: 2
+          }}>
+            <Box sx={{
+              width: '100%',
+              height: '100%',
+              background: 'linear-gradient(90deg, rgba(255,255,255,0.6) 0%, rgba(255,255,255,0.3) 100%)',
+              borderRadius: '2px',
+              animation: 'shimmer 2s ease-in-out infinite'
+            }} />
         </Box>
       </CardContent>
     </Card>
+      </Grow>
     );
   };
 
@@ -580,8 +682,9 @@ const DoctorProducts = () => {
   return (
     <Box sx={{ 
       minHeight: '100vh',
-      background: 'linear-gradient(135deg, #2E7D32 0%, #1976D2 50%, #4CAF50 100%)',
+      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 25%, #f093fb 50%, #f5576c 75%, #4facfe 100%)',
       position: 'relative',
+      overflow: 'hidden',
       '&::before': {
         content: '""',
         position: 'absolute',
@@ -589,29 +692,155 @@ const DoctorProducts = () => {
         left: 0,
         right: 0,
         bottom: 0,
-        background: 'radial-gradient(circle at 20% 50%, rgba(46, 125, 50, 0.15) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(25, 118, 210, 0.15) 0%, transparent 50%), radial-gradient(circle at 40% 80%, rgba(255, 193, 7, 0.1) 0%, transparent 50%), radial-gradient(circle at 60% 40%, rgba(158, 158, 158, 0.08) 0%, transparent 50%)',
-        zIndex: 0
+        background: `
+          radial-gradient(circle at 20% 20%, rgba(102, 126, 234, 0.3) 0%, transparent 50%),
+          radial-gradient(circle at 80% 80%, rgba(118, 75, 162, 0.3) 0%, transparent 50%),
+          radial-gradient(circle at 40% 60%, rgba(240, 147, 251, 0.2) 0%, transparent 50%),
+          radial-gradient(circle at 60% 40%, rgba(245, 87, 108, 0.2) 0%, transparent 50%),
+          radial-gradient(circle at 10% 90%, rgba(79, 172, 254, 0.3) 0%, transparent 50%)
+        `,
+        zIndex: 0,
+        animation: 'float 20s ease-in-out infinite'
+      },
+      '&::after': {
+        content: '""',
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        background: 'url("data:image/svg+xml,%3Csvg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"%3E%3Cg fill="none" fill-rule="evenodd"%3E%3Cg fill="%23ffffff" fill-opacity="0.05"%3E%3Ccircle cx="30" cy="30" r="2"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")',
+        zIndex: 0,
+        animation: 'drift 30s linear infinite'
+      },
+      '@keyframes float': {
+        '0%, 100%': { transform: 'translateY(0px) rotate(0deg)' },
+        '50%': { transform: 'translateY(-20px) rotate(5deg)' }
+      },
+      '@keyframes drift': {
+        '0%': { transform: 'translateX(0px)' },
+        '100%': { transform: 'translateX(60px)' }
       }
     }}>
       <Container maxWidth="lg" sx={{ position: 'relative', zIndex: 1, py: 4 }}>
         <Fade in timeout={800}>
-          <Box sx={{ mb: 4 }}>
+          <Box sx={{ 
+            mb: 6, 
+            textAlign: 'center',
+            position: 'relative',
+            '&::before': {
+              content: '""',
+              position: 'absolute',
+              top: -20,
+              left: '50%',
+              transform: 'translateX(-50%)',
+              width: '200px',
+              height: '200px',
+              background: 'radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%)',
+              borderRadius: '50%',
+              zIndex: -1,
+              animation: 'pulse 3s ease-in-out infinite'
+            },
+            '@keyframes pulse': {
+              '0%, 100%': { transform: 'translateX(-50%) scale(1)', opacity: 0.5 },
+              '50%': { transform: 'translateX(-50%) scale(1.1)', opacity: 0.8 }
+            }
+          }}>
             <Typography 
-              variant="h3" 
+              variant="h2" 
               component="h1" 
               gutterBottom
               sx={{ 
-                fontWeight: 800,
-                color: 'white',
-                textShadow: '0 4px 8px rgba(0,0,0,0.3)',
-                mb: 2
+                fontWeight: 900,
+                background: 'linear-gradient(45deg, #ffffff 30%, #f0f0f0 70%)',
+                backgroundClip: 'text',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                textShadow: '0 4px 20px rgba(0,0,0,0.3)',
+                mb: 2,
+                fontSize: { xs: '2.5rem', md: '3.5rem' },
+                letterSpacing: '-0.02em',
+                position: 'relative',
+                '&::after': {
+                  content: '""',
+                  position: 'absolute',
+                  bottom: -10,
+                  left: '50%',
+                  transform: 'translateX(-50%)',
+                  width: '100px',
+                  height: '4px',
+                  background: 'linear-gradient(90deg, transparent, #ffffff, transparent)',
+                  borderRadius: '2px'
+                }
               }}
             >
-              My Products 🛒
+              🌿 My Product Universe 🌿
             </Typography>
-            <Typography variant="h6" sx={{ color: 'rgba(255,255,255,0.9)', fontWeight: 500 }}>
-              Manage your Ayurvedic products and inventory
+            <Typography 
+              variant="h5" 
+              sx={{ 
+                color: 'rgba(255,255,255,0.95)', 
+                fontWeight: 400,
+                mb: 3,
+                fontSize: { xs: '1.1rem', md: '1.3rem' },
+                letterSpacing: '0.02em',
+                maxWidth: '600px',
+                mx: 'auto',
+                lineHeight: 1.6
+              }}
+            >
+              Craft, manage, and showcase your Ayurvedic treasures with precision and passion
             </Typography>
+            <Box sx={{ 
+              display: 'flex', 
+              justifyContent: 'center', 
+              gap: 2, 
+              flexWrap: 'wrap',
+              mt: 3
+            }}>
+              <Chip 
+                icon={<MedicalServices />}
+                label="Natural Healing"
+                sx={{ 
+                  background: 'rgba(255,255,255,0.2)',
+                  color: 'white',
+                  backdropFilter: 'blur(10px)',
+                  border: '1px solid rgba(255,255,255,0.3)',
+                  fontWeight: 600,
+                  px: 2,
+                  py: 1,
+                  fontSize: '0.9rem'
+                }}
+              />
+              <Chip 
+                icon={<Inventory />}
+                label="Smart Inventory"
+                sx={{ 
+                  background: 'rgba(255,255,255,0.2)',
+                  color: 'white',
+                  backdropFilter: 'blur(10px)',
+                  border: '1px solid rgba(255,255,255,0.3)',
+                  fontWeight: 600,
+                  px: 2,
+                  py: 1,
+                  fontSize: '0.9rem'
+                }}
+              />
+              <Chip 
+                icon={<TrendingUp />}
+                label="Growth Analytics"
+                sx={{ 
+                  background: 'rgba(255,255,255,0.2)',
+                  color: 'white',
+                  backdropFilter: 'blur(10px)',
+                  border: '1px solid rgba(255,255,255,0.3)',
+                  fontWeight: 600,
+                  px: 2,
+                  py: 1,
+                  fontSize: '0.9rem'
+                }}
+              />
+            </Box>
           </Box>
         </Fade>
 
@@ -629,26 +858,28 @@ const DoctorProducts = () => {
       )}
 
       {/* Summary Cards */}
-      <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+      <Grid container spacing={4} sx={{ mb: 6 }}>
+        <Grid size={{ xs: 12, sm: 6, md: 2.4 }}>
           <StatCard
             title="Total Products"
             value={products.length}
-            icon={<Inventory sx={{ fontSize: 30 }} />}
+            icon={<Inventory />}
             color="primary"
             subtitle={`${products.filter(p => p.isActive).length} active`}
+            delay={0}
           />
         </Grid>
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+        <Grid size={{ xs: 12, sm: 6, md: 2.4 }}>
           <StatCard
-            title="Featured Products"
+            title="Featured"
             value={products.filter(p => p.isFeatured).length}
-            icon={<Star sx={{ fontSize: 30 }} />}
+            icon={<Star />}
             color="warning"
             subtitle="Highlighted items"
+            delay={100}
           />
         </Grid>
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+        <Grid size={{ xs: 12, sm: 6, md: 2.4 }}>
           <StatCard
             title="Low Stock"
             value={products.filter(p => {
@@ -656,111 +887,165 @@ const DoctorProducts = () => {
               const threshold = p.inventory?.lowStockThreshold || p.lowStockThreshold || 5;
               return stock <= threshold;
             }).length}
-            icon={<Warning sx={{ fontSize: 30 }} />}
+            icon={<Warning />}
             color="error"
             subtitle="Needs attention"
+            delay={200}
           />
         </Grid>
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+        <Grid size={{ xs: 12, sm: 6, md: 2.4 }}>
           <StatCard
-            title="Pending Approval"
+            title="Pending"
             value={products.filter(p => p.approvalStatus === 'pending').length}
-            icon={<Warning sx={{ fontSize: 30 }} />}
+            icon={<Schedule />}
             color="warning"
-            subtitle="Awaiting admin review"
+            subtitle="Awaiting review"
+            delay={300}
           />
         </Grid>
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+        <Grid size={{ xs: 12, sm: 6, md: 2.4 }}>
           <StatCard
             title="Approved"
             value={products.filter(p => p.approvalStatus === 'approved').length}
-            icon={<CheckCircle sx={{ fontSize: 30 }} />}
+            icon={<CheckCircle />}
             color="success"
-            subtitle="Ready for customers"
+            subtitle="Live & ready"
+            delay={400}
           />
         </Grid>
       </Grid>
 
       {/* Filters and Search */}
+      <Slide in timeout={1000} direction="up">
       <Card sx={{ 
-        p: 3, 
-        borderRadius: '24px', 
-        mb: 4,
-        background: 'rgba(255, 255, 255, 0.1)',
-        backdropFilter: 'blur(20px)',
-        border: '1px solid rgba(255, 255, 255, 0.2)',
-        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)'
-      }}>
-        <Grid container spacing={3} alignItems="center">
+          p: 4, 
+          borderRadius: '32px', 
+          mb: 6,
+          background: 'rgba(255, 255, 255, 0.12)',
+          backdropFilter: 'blur(30px)',
+          border: '1px solid rgba(255, 255, 255, 0.25)',
+          boxShadow: '0 20px 40px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
+          position: 'relative',
+          overflow: 'hidden',
+          '&::before': {
+            content: '""',
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            height: '2px',
+            background: 'linear-gradient(90deg, #667eea, #764ba2, #f093fb, #f5576c, #4facfe)',
+            backgroundSize: '200% 100%',
+            animation: 'gradientShift 3s ease infinite'
+          },
+          '@keyframes gradientShift': {
+            '0%': { backgroundPosition: '0% 50%' },
+            '50%': { backgroundPosition: '100% 50%' },
+            '100%': { backgroundPosition: '0% 50%' }
+          }
+        }}>
+        <Grid container spacing={4} alignItems="center">
           <Grid size={{ xs: 12, md: 4 }}>
             <TextField
               fullWidth
-              placeholder="Search products..."
+              placeholder="🔍 Search your products..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
-                    <Search sx={{ color: 'rgba(255,255,255,0.7)' }} />
+                    <Search sx={{ 
+                      color: 'rgba(255,255,255,0.8)',
+                      fontSize: '1.2rem'
+                    }} />
                   </InputAdornment>
                 ),
               }}
               sx={{ 
-                borderRadius: '20px',
                 '& .MuiOutlinedInput-root': {
-                  background: 'rgba(255, 255, 255, 0.1)',
-                  backdropFilter: 'blur(10px)',
-                  border: '1px solid rgba(255, 255, 255, 0.2)',
+                  borderRadius: '25px',
+                  background: 'rgba(255, 255, 255, 0.15)',
+                  backdropFilter: 'blur(15px)',
+                  border: '2px solid rgba(255, 255, 255, 0.2)',
                   color: 'white',
+                  fontSize: '1rem',
+                  fontWeight: 500,
+                  transition: 'all 0.3s ease',
                   '& fieldset': {
                     border: 'none',
                   },
-                  '&:hover fieldset': {
-                    border: 'none',
+                  '&:hover': {
+                    background: 'rgba(255, 255, 255, 0.2)',
+                    border: '2px solid rgba(255, 255, 255, 0.3)',
+                    transform: 'translateY(-2px)',
+                    boxShadow: '0 8px 25px rgba(0, 0, 0, 0.15)'
                   },
-                  '&.Mui-focused fieldset': {
-                    border: '2px solid rgba(255, 255, 255, 0.5)',
+                  '&.Mui-focused': {
+                    background: 'rgba(255, 255, 255, 0.25)',
+                    border: '2px solid rgba(255, 255, 255, 0.6)',
+                    transform: 'translateY(-2px)',
+                    boxShadow: '0 12px 30px rgba(0, 0, 0, 0.2)'
                   },
                 },
                 '& .MuiInputBase-input::placeholder': {
-                  color: 'rgba(255,255,255,0.7)',
+                  color: 'rgba(255,255,255,0.8)',
                   opacity: 1,
+                  fontWeight: 500
                 }
               }}
             />
           </Grid>
           <Grid size={{ xs: 12, md: 2 }}>
             <FormControl fullWidth>
-              <InputLabel sx={{ color: 'rgba(255,255,255,0.7)' }}>Category</InputLabel>
+              <InputLabel sx={{ 
+                color: 'rgba(255,255,255,0.8)',
+                fontWeight: 600,
+                fontSize: '0.9rem'
+              }}>📂 Category</InputLabel>
               <Select
                 value={categoryFilter}
                 onChange={(e) => setCategoryFilter(e.target.value)}
-                label="Category"
+                label="📂 Category"
                 sx={{
-                  borderRadius: '20px',
                   '& .MuiOutlinedInput-root': {
-                    background: 'rgba(255, 255, 255, 0.1)',
-                    backdropFilter: 'blur(10px)',
-                    border: '1px solid rgba(255, 255, 255, 0.2)',
+                    borderRadius: '25px',
+                    background: 'rgba(255, 255, 255, 0.15)',
+                    backdropFilter: 'blur(15px)',
+                    border: '2px solid rgba(255, 255, 255, 0.2)',
                     color: 'white',
+                    fontSize: '0.95rem',
+                    fontWeight: 500,
+                    transition: 'all 0.3s ease',
                     '& fieldset': {
                       border: 'none',
                     },
-                    '&:hover fieldset': {
-                      border: 'none',
+                    '&:hover': {
+                      background: 'rgba(255, 255, 255, 0.2)',
+                      border: '2px solid rgba(255, 255, 255, 0.3)',
+                      transform: 'translateY(-2px)',
+                      boxShadow: '0 8px 25px rgba(0, 0, 0, 0.15)'
                     },
-                    '&.Mui-focused fieldset': {
-                      border: '2px solid rgba(255, 255, 255, 0.5)',
+                    '&.Mui-focused': {
+                      background: 'rgba(255, 255, 255, 0.25)',
+                      border: '2px solid rgba(255, 255, 255, 0.6)',
+                      transform: 'translateY(-2px)',
+                      boxShadow: '0 12px 30px rgba(0, 0, 0, 0.2)'
                     },
                   },
                   '& .MuiSvgIcon-root': {
-                    color: 'rgba(255,255,255,0.7)',
+                    color: 'rgba(255,255,255,0.8)',
+                    fontSize: '1.2rem'
                   }
                 }}
               >
                 <MenuItem value="">All Categories</MenuItem>
                 {categories.map((category) => (
-                  <MenuItem key={category.name} value={category.name}>
+                  <MenuItem key={category.name} value={category.name} sx={{
+                    fontWeight: 500,
+                    '&:hover': {
+                      background: 'rgba(255, 255, 255, 0.1)'
+                    }
+                  }}>
                     {category.displayName}
                   </MenuItem>
                 ))}
@@ -769,96 +1054,127 @@ const DoctorProducts = () => {
           </Grid>
           <Grid size={{ xs: 12, md: 2 }}>
             <FormControl fullWidth>
-              <InputLabel sx={{ color: 'rgba(255,255,255,0.7)' }}>Approval Status</InputLabel>
+              <InputLabel sx={{ 
+                color: 'rgba(255,255,255,0.8)',
+                fontWeight: 600,
+                fontSize: '0.9rem'
+              }}>⚡ Status</InputLabel>
               <Select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                label="Approval Status"
+                label="⚡ Status"
                 sx={{
-                  borderRadius: '20px',
                   '& .MuiOutlinedInput-root': {
-                    background: 'rgba(255, 255, 255, 0.1)',
-                    backdropFilter: 'blur(10px)',
-                    border: '1px solid rgba(255, 255, 255, 0.2)',
+                    borderRadius: '25px',
+                    background: 'rgba(255, 255, 255, 0.15)',
+                    backdropFilter: 'blur(15px)',
+                    border: '2px solid rgba(255, 255, 255, 0.2)',
                     color: 'white',
-                    '& fieldset': {
-                      border: 'none',
+                    fontSize: '0.95rem',
+                    fontWeight: 500,
+                    transition: 'all 0.3s ease',
+                    '& fieldset': { border: 'none' },
+                    '&:hover': {
+                      background: 'rgba(255, 255, 255, 0.2)',
+                      border: '2px solid rgba(255, 255, 255, 0.3)',
+                      transform: 'translateY(-2px)',
+                      boxShadow: '0 8px 25px rgba(0, 0, 0, 0.15)'
                     },
-                    '&:hover fieldset': {
-                      border: 'none',
-                    },
-                    '&.Mui-focused fieldset': {
-                      border: '2px solid rgba(255, 255, 255, 0.5)',
+                    '&.Mui-focused': {
+                      background: 'rgba(255, 255, 255, 0.25)',
+                      border: '2px solid rgba(255, 255, 255, 0.6)',
+                      transform: 'translateY(-2px)',
+                      boxShadow: '0 12px 30px rgba(0, 0, 0, 0.2)'
                     },
                   },
                   '& .MuiSvgIcon-root': {
-                    color: 'rgba(255,255,255,0.7)',
+                    color: 'rgba(255,255,255,0.8)',
+                    fontSize: '1.2rem'
                   }
                 }}
               >
                 <MenuItem value="">All Status</MenuItem>
-                <MenuItem value="pending">Pending Approval</MenuItem>
-                <MenuItem value="approved">Approved</MenuItem>
-                <MenuItem value="rejected">Rejected</MenuItem>
+                <MenuItem value="pending">⏳ Pending</MenuItem>
+                <MenuItem value="approved">✅ Approved</MenuItem>
+                <MenuItem value="rejected">❌ Rejected</MenuItem>
               </Select>
             </FormControl>
           </Grid>
           <Grid size={{ xs: 12, md: 2 }}>
             <FormControl fullWidth>
-              <InputLabel sx={{ color: 'rgba(255,255,255,0.7)' }}>Sort By</InputLabel>
+              <InputLabel sx={{ 
+                color: 'rgba(255,255,255,0.8)',
+                fontWeight: 600,
+                fontSize: '0.9rem'
+              }}>🔀 Sort By</InputLabel>
               <Select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
-                label="Sort By"
+                label="🔀 Sort By"
                 sx={{
-                  borderRadius: '20px',
                   '& .MuiOutlinedInput-root': {
-                    background: 'rgba(255, 255, 255, 0.1)',
-                    backdropFilter: 'blur(10px)',
-                    border: '1px solid rgba(255, 255, 255, 0.2)',
+                    borderRadius: '25px',
+                    background: 'rgba(255, 255, 255, 0.15)',
+                    backdropFilter: 'blur(15px)',
+                    border: '2px solid rgba(255, 255, 255, 0.2)',
                     color: 'white',
-                    '& fieldset': {
-                      border: 'none',
+                    fontSize: '0.95rem',
+                    fontWeight: 500,
+                    transition: 'all 0.3s ease',
+                    '& fieldset': { border: 'none' },
+                    '&:hover': {
+                      background: 'rgba(255, 255, 255, 0.2)',
+                      border: '2px solid rgba(255, 255, 255, 0.3)',
+                      transform: 'translateY(-2px)',
+                      boxShadow: '0 8px 25px rgba(0, 0, 0, 0.15)'
                     },
-                    '&:hover fieldset': {
-                      border: 'none',
-                    },
-                    '&.Mui-focused fieldset': {
-                      border: '2px solid rgba(255, 255, 255, 0.5)',
+                    '&.Mui-focused': {
+                      background: 'rgba(255, 255, 255, 0.25)',
+                      border: '2px solid rgba(255, 255, 255, 0.6)',
+                      transform: 'translateY(-2px)',
+                      boxShadow: '0 12px 30px rgba(0, 0, 0, 0.2)'
                     },
                   },
                   '& .MuiSvgIcon-root': {
-                    color: 'rgba(255,255,255,0.7)',
+                    color: 'rgba(255,255,255,0.8)',
+                    fontSize: '1.2rem'
                   }
                 }}
               >
-                <MenuItem value="name">Name</MenuItem>
-                <MenuItem value="price">Price</MenuItem>
-                <MenuItem value="stock">Stock</MenuItem>
-                <MenuItem value="createdAt">Date Added</MenuItem>
+                <MenuItem value="name">📝 Name</MenuItem>
+                <MenuItem value="price">💰 Price</MenuItem>
+                <MenuItem value="stock">📦 Stock</MenuItem>
+                <MenuItem value="createdAt">📅 Date Added</MenuItem>
               </Select>
             </FormControl>
           </Grid>
-          <Grid size={{ xs: 12, md: 2 }}>
+          <Grid size={{ xs: 12, md: 1 }}>
             <Button
               variant="outlined"
               onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
               sx={{ 
-                borderRadius: '20px',
-                border: '1px solid rgba(255, 255, 255, 0.3)',
+                borderRadius: '25px',
+                border: '2px solid rgba(255, 255, 255, 0.3)',
                 color: 'white',
-                background: 'rgba(255, 255, 255, 0.1)',
-                backdropFilter: 'blur(10px)',
+                background: 'rgba(255, 255, 255, 0.15)',
+                backdropFilter: 'blur(15px)',
+                fontWeight: 600,
+                fontSize: '0.9rem',
+                px: 2,
+                py: 1.5,
+                transition: 'all 0.3s ease',
                 '&:hover': {
-                  background: 'rgba(255, 255, 255, 0.2)',
-                  border: '1px solid rgba(255, 255, 255, 0.5)',
+                  background: 'rgba(255, 255, 255, 0.25)',
+                  border: '2px solid rgba(255, 255, 255, 0.5)',
+                  transform: 'translateY(-2px)',
+                  boxShadow: '0 8px 25px rgba(0, 0, 0, 0.15)'
                 }
               }}
             >
-              {sortOrder === 'asc' ? 'Ascending' : 'Descending'}
+              {sortOrder === 'asc' ? '⬆️' : '⬇️'}
             </Button>
           </Grid>
-          <Grid size={{ xs: 12, md: 2 }}>
+          <Grid size={{ xs: 12, md: 1 }}>
             <Button
               variant="contained"
               startIcon={<Refresh />}
@@ -867,27 +1183,31 @@ const DoctorProducts = () => {
                 fetchProducts();
               }}
               sx={{ 
-                borderRadius: '20px',
-                background: 'linear-gradient(45deg, #2E7D32 30%, #4CAF50 90%)',
-                boxShadow: '0 4px 15px rgba(46, 125, 50, 0.4)',
-                fontWeight: 600,
+                borderRadius: '25px',
+                background: 'linear-gradient(45deg, #667eea 30%, #764ba2 90%)',
+                boxShadow: '0 8px 25px rgba(102, 126, 234, 0.4)',
+                fontWeight: 700,
+                fontSize: '0.9rem',
+                px: 2,
+                py: 1.5,
                 '&:hover': {
-                  background: 'linear-gradient(45deg, #4CAF50 30%, #2E7D32 90%)',
-                  boxShadow: '0 6px 20px rgba(46, 125, 50, 0.6)',
-                  transform: 'translateY(-1px)',
+                  background: 'linear-gradient(45deg, #764ba2 30%, #667eea 90%)',
+                  boxShadow: '0 12px 30px rgba(102, 126, 234, 0.6)',
+                  transform: 'translateY(-2px) scale(1.02)',
                 },
-                transition: 'all 0.2s ease',
+                transition: 'all 0.3s ease',
               }}
             >
-              Refresh
+              🔄
             </Button>
           </Grid>
         </Grid>
       </Card>
+      </Slide>
 
       {/* Products Grid */}
-      <Grid container spacing={3}>
-        {products.map((product) => {
+      <Grid container spacing={4}>
+        {products.map((product, index) => {
           const stockStatus = getStockStatus(product);
           const approvalStatus = getApprovalStatus(product);
           const rating = getProductRating(product.reviews);
@@ -895,220 +1215,526 @@ const DoctorProducts = () => {
           
           return (
             <Grid size={{ xs: 12, sm: 6, md: 4, lg: 3 }} key={product._id}>
+              <Zoom in timeout={1000 + (index * 100)}>
               <Card sx={{ 
-                borderRadius: '24px', 
+                  borderRadius: '32px', 
                 height: '100%', 
                 position: 'relative',
-                background: 'rgba(255, 255, 255, 0.1)',
-                backdropFilter: 'blur(20px)',
-                border: '1px solid rgba(255, 255, 255, 0.2)',
-                boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
-                transition: 'all 0.3s ease',
+                  background: 'rgba(255, 255, 255, 0.12)',
+                  backdropFilter: 'blur(25px)',
+                  border: '1px solid rgba(255, 255, 255, 0.25)',
+                  boxShadow: '0 20px 40px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
+                  transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+                  cursor: 'pointer',
+                  overflow: 'hidden',
                 '&:hover': {
-                  transform: 'translateY(-8px)',
-                  boxShadow: '0 16px 48px rgba(0, 0, 0, 0.2)',
+                    transform: 'translateY(-12px) scale(1.02)',
+                    boxShadow: '0 32px 64px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.3)',
+                    '& .product-image': {
+                      transform: 'scale(1.1)',
+                    },
+                    '& .product-actions': {
+                      opacity: 1,
+                      transform: 'translateY(0)',
+                    },
+                    '& .product-overlay': {
+                      opacity: 1,
+                    }
+                  },
+                  '&::before': {
+                    content: '""',
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    background: 'linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 50%, rgba(240, 147, 251, 0.1) 100%)',
+                    opacity: 0,
+                    transition: 'opacity 0.3s ease',
+                    zIndex: 1
+                  },
+                  '&:hover::before': {
+                    opacity: 1
                 }
               }}>
                 {/* Product Image */}
-                <Box sx={{ position: 'relative' }}>
+                <Box sx={{ 
+                  position: 'relative', 
+                  overflow: 'hidden',
+                  borderRadius: '32px 32px 0 0',
+                  height: '220px'
+                }}>
                   <CardMedia
                     component="img"
-                    height="200"
+                    height="220"
                     image={getImageUrl(product.images?.[0]?.url)}
                     alt={product.name}
-                    sx={{ borderRadius: '24px 24px 0 0' }}
+                    className="product-image"
+                    sx={{ 
+                      borderRadius: '32px 32px 0 0',
+                      transition: 'transform 0.4s ease',
+                      objectFit: 'cover',
+                      width: '100%'
+                    }}
                     onError={(e) => {
                       console.log('Doctor - Image failed to load:', e.target.src);
                       e.target.src = 'http://localhost:5000/api/products/placeholder/300/200';
                     }}
                   />
+                  
+                  {/* Gradient Overlay */}
+                  <Box className="product-overlay" sx={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    background: 'linear-gradient(135deg, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.3) 100%)',
+                    opacity: 0,
+                    transition: 'opacity 0.3s ease',
+                    zIndex: 2
+                  }} />
+                  
+                  {/* Status Chips */}
+                  <Box sx={{ 
+                    position: 'absolute', 
+                    top: 16, 
+                    right: 16, 
+                    zIndex: 3,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 1
+                  }}>
                   <Chip
                     label={`${approvalStatus.icon} ${approvalStatus.status}`}
-                    color={approvalStatus.color}
                     size="small"
                     sx={{ 
-                      position: 'absolute', 
-                      top: 12, 
-                      right: 12,
-                      background: approvalStatus.color === 'warning' ? 'rgba(255, 193, 7, 0.9)' : 
-                                 approvalStatus.color === 'success' ? 'rgba(46, 125, 50, 0.9)' : 
-                                 'rgba(244, 67, 54, 0.9)',
-                      backdropFilter: 'blur(10px)',
-                      fontWeight: 600,
-                      color: 'white'
+                        background: approvalStatus.color === 'warning' ? 'rgba(255, 193, 7, 0.95)' : 
+                                   approvalStatus.color === 'success' ? 'rgba(46, 125, 50, 0.95)' : 
+                                   'rgba(244, 67, 54, 0.95)',
+                        backdropFilter: 'blur(15px)',
+                        fontWeight: 700,
+                        color: 'white',
+                        fontSize: '0.75rem',
+                        height: '28px',
+                        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)',
+                        border: '1px solid rgba(255, 255, 255, 0.2)'
                     }}
                   />
                   {product.isFeatured && (
                     <Chip
-                      icon={<Star />}
+                        icon={<Star sx={{ fontSize: '0.8rem' }} />}
                       label="Featured"
-                      color="warning"
                       size="small"
                       sx={{ 
-                        position: 'absolute', 
-                        top: 12, 
-                        left: 12,
-                        background: 'rgba(255, 193, 7, 0.9)',
-                        backdropFilter: 'blur(10px)',
-                        fontWeight: 600,
-                        color: 'white'
+                          background: 'rgba(255, 193, 7, 0.95)',
+                          backdropFilter: 'blur(15px)',
+                          fontWeight: 700,
+                          color: 'white',
+                          fontSize: '0.75rem',
+                          height: '28px',
+                          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)',
+                          border: '1px solid rgba(255, 255, 255, 0.2)'
                       }}
                     />
                   )}
                 </Box>
 
-                <CardContent sx={{ p: 3 }}>
-                  <Typography variant="h6" sx={{ fontWeight: 700, mb: 1, color: 'white' }}>
+                  {/* Stock Status Indicator */}
+                  <Box sx={{
+                    position: 'absolute',
+                    bottom: 16,
+                    left: 16,
+                    zIndex: 3
+                  }}>
+                    <Chip
+                      label={stockStatus.status}
+                      size="small"
+                      sx={{
+                        background: stockStatus.color === 'success' ? 'rgba(76, 175, 80, 0.95)' :
+                                   stockStatus.color === 'warning' ? 'rgba(255, 152, 0, 0.95)' :
+                                   'rgba(244, 67, 54, 0.95)',
+                        backdropFilter: 'blur(15px)',
+                        fontWeight: 700,
+                        color: 'white',
+                        fontSize: '0.75rem',
+                        height: '28px',
+                        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)',
+                        border: '1px solid rgba(255, 255, 255, 0.2)'
+                      }}
+                    />
+                  </Box>
+                </Box>
+
+                <CardContent sx={{ p: 4, position: 'relative', zIndex: 2 }}>
+                  {/* Product Title */}
+                  <Typography 
+                    variant="h6" 
+                    sx={{ 
+                      fontWeight: 800, 
+                      mb: 2, 
+                      color: 'white',
+                      fontSize: '1.1rem',
+                      lineHeight: 1.3,
+                      textShadow: '0 2px 4px rgba(0,0,0,0.3)',
+                      minHeight: '2.6rem',
+                      display: '-webkit-box',
+                      WebkitLineClamp: 2,
+                      WebkitBoxOrient: 'vertical',
+                      overflow: 'hidden'
+                    }}
+                  >
                     {product.name}
                   </Typography>
-                  <Typography variant="body2" sx={{ mb: 2, color: 'rgba(255,255,255,0.8)' }}>
-                    {product.description?.substring(0, 100)}...
+                  
+                  {/* Product Description */}
+                  <Typography 
+                    variant="body2" 
+                    sx={{ 
+                      mb: 3, 
+                      color: 'rgba(255,255,255,0.85)',
+                      fontSize: '0.9rem',
+                      lineHeight: 1.5,
+                      minHeight: '2.7rem',
+                      display: '-webkit-box',
+                      WebkitLineClamp: 2,
+                      WebkitBoxOrient: 'vertical',
+                      overflow: 'hidden'
+                    }}
+                  >
+                    {product.description?.substring(0, 120)}...
                   </Typography>
                   
-                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                    <Typography variant="h6" sx={{ fontWeight: 800, color: '#2E7D32', textShadow: '0 1px 2px rgba(0,0,0,0.3)' }}>
+                  {/* Price and Rating */}
+                  <Box sx={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'space-between',
+                    mb: 3,
+                    p: 2,
+                    background: 'rgba(255, 255, 255, 0.1)',
+                    borderRadius: '16px',
+                    backdropFilter: 'blur(10px)',
+                    border: '1px solid rgba(255, 255, 255, 0.2)'
+                  }}>
+                    <Typography 
+                      variant="h5" 
+                      sx={{ 
+                        fontWeight: 900, 
+                        color: 'white', 
+                        textShadow: '0 2px 4px rgba(0,0,0,0.3)',
+                        fontSize: '1.3rem'
+                      }}
+                    >
                       ${price}
                     </Typography>
                     {rating > 0 && (
-                      <Box sx={{ display: 'flex', alignItems: 'center', ml: 2 }}>
-                        <Star sx={{ fontSize: 16, color: '#FFC107' }} />
-                        <Typography variant="body2" sx={{ ml: 0.5, color: 'white', fontWeight: 600 }}>
+                      <Box sx={{ 
+                        display: 'flex', 
+                        alignItems: 'center',
+                        background: 'rgba(255, 193, 7, 0.2)',
+                        borderRadius: '12px',
+                        px: 1.5,
+                        py: 0.5
+                      }}>
+                        <Star sx={{ fontSize: 18, color: '#FFC107', mr: 0.5 }} />
+                        <Typography 
+                          variant="body2" 
+                          sx={{ 
+                            color: 'white', 
+                            fontWeight: 700,
+                            fontSize: '0.9rem'
+                          }}
+                        >
                           {rating}
                         </Typography>
                       </Box>
                     )}
                   </Box>
 
-                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                  {/* Category and Brand */}
+                  <Box sx={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'space-between',
+                    mb: 3
+                  }}>
                     <Chip
                       label={categories.find(c => c.name === product.category)?.displayName || product.category}
                       size="small"
                       sx={{
-                        background: 'rgba(158, 158, 158, 0.2)',
+                        background: 'rgba(255, 255, 255, 0.2)',
                         color: 'white',
-                        border: '1px solid rgba(158, 158, 158, 0.3)',
-                        fontWeight: 500
+                        border: '1px solid rgba(255, 255, 255, 0.3)',
+                        fontWeight: 600,
+                        fontSize: '0.8rem',
+                        height: '32px',
+                        backdropFilter: 'blur(10px)'
                       }}
                     />
-                    <Typography variant="body2" sx={{ ml: 1, color: 'rgba(255,255,255,0.7)' }}>
+                    <Typography 
+                      variant="body2" 
+                      sx={{ 
+                        color: 'rgba(255,255,255,0.8)',
+                        fontWeight: 500,
+                        fontSize: '0.85rem'
+                      }}
+                    >
                       {product.brand}
                     </Typography>
                   </Box>
 
-                  <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.7)' }}>
-                    Stock: {product.inventory?.stock || product.stock || 0} units
+                  {/* Stock Info */}
+                  <Box sx={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'space-between',
+                    p: 2,
+                    background: 'rgba(255, 255, 255, 0.08)',
+                    borderRadius: '12px',
+                    mb: 2
+                  }}>
+                    <Typography 
+                      variant="body2" 
+                      sx={{ 
+                        color: 'rgba(255,255,255,0.9)',
+                        fontWeight: 600,
+                        fontSize: '0.85rem'
+                      }}
+                    >
+                      📦 Stock: {product.inventory?.stock || product.stock || 0} units
                   </Typography>
-                  
-                  {product.approvalNotes && (
-                    <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.6)', mt: 1, fontStyle: 'italic' }}>
-                      Note: {product.approvalNotes}
+                    <Typography 
+                      variant="body2" 
+                      sx={{ 
+                        color: 'rgba(255,255,255,0.7)',
+                        fontSize: '0.8rem'
+                      }}
+                    >
+                      Threshold: {product.inventory?.lowStockThreshold || product.lowStockThreshold || 5}
                     </Typography>
+                  </Box>
+                  
+                  {/* Approval Notes */}
+                  {product.approvalNotes && (
+                    <Box sx={{
+                      p: 2,
+                      background: 'rgba(255, 152, 0, 0.1)',
+                      borderRadius: '12px',
+                      border: '1px solid rgba(255, 152, 0, 0.2)',
+                      mb: 2
+                    }}>
+                      <Typography 
+                        variant="body2" 
+                        sx={{ 
+                          color: 'rgba(255,255,255,0.9)', 
+                          fontStyle: 'italic',
+                          fontSize: '0.8rem',
+                          fontWeight: 500
+                        }}
+                      >
+                        💬 Note: {product.approvalNotes}
+                    </Typography>
+                    </Box>
                   )}
                 </CardContent>
 
-                <CardActions sx={{ p: 3, pt: 0 }}>
+                <CardActions 
+                  className="product-actions"
+                  sx={{ 
+                    p: 4, 
+                    pt: 0, 
+                    position: 'relative', 
+                    zIndex: 2,
+                    opacity: 0,
+                    transform: 'translateY(20px)',
+                    transition: 'all 0.3s ease',
+                    display: 'flex',
+                    gap: 1,
+                    flexWrap: 'wrap'
+                  }}
+                >
                   <Button
                     size="small"
-                    startIcon={<Visibility />}
+                    startIcon={<Visibility sx={{ fontSize: '1rem' }} />}
                     onClick={() => openViewDialog(product)}
                     sx={{ 
-                      borderRadius: '20px',
-                      background: 'linear-gradient(45deg, #1976D2 30%, #42A5F5 90%)',
+                      borderRadius: '25px',
+                      background: 'linear-gradient(45deg, #667eea 30%, #764ba2 90%)',
                       color: 'white',
                       border: 'none',
-                      fontWeight: 600,
-                      boxShadow: '0 2px 8px rgba(25, 118, 210, 0.3)',
+                      fontWeight: 700,
+                      fontSize: '0.85rem',
+                      px: 2,
+                      py: 1,
+                      boxShadow: '0 4px 15px rgba(102, 126, 234, 0.4)',
+                      flex: 1,
+                      minWidth: '80px',
                       '&:hover': {
-                        background: 'linear-gradient(45deg, #42A5F5 30%, #1976D2 90%)',
-                        boxShadow: '0 4px 12px rgba(25, 118, 210, 0.4)',
-                        transform: 'translateY(-1px)',
+                        background: 'linear-gradient(45deg, #764ba2 30%, #667eea 90%)',
+                        boxShadow: '0 6px 20px rgba(102, 126, 234, 0.6)',
+                        transform: 'translateY(-2px) scale(1.02)',
                       },
-                      transition: 'all 0.2s ease',
+                      transition: 'all 0.3s ease',
                     }}
                   >
-                    View
+                    👁️ View
                   </Button>
                   <Button
                     size="small"
-                    startIcon={<Edit />}
+                    startIcon={<Edit sx={{ fontSize: '1rem' }} />}
                     onClick={() => openEditDialog(product)}
                     sx={{ 
-                      borderRadius: '20px',
-                      background: 'linear-gradient(45deg, #2E7D32 30%, #4CAF50 90%)',
+                      borderRadius: '25px',
+                      background: 'linear-gradient(45deg, #43e97b 30%, #38f9d7 90%)',
                       color: 'white',
                       border: 'none',
-                      fontWeight: 600,
-                      boxShadow: '0 2px 8px rgba(46, 125, 50, 0.3)',
+                      fontWeight: 700,
+                      fontSize: '0.85rem',
+                      px: 2,
+                      py: 1,
+                      boxShadow: '0 4px 15px rgba(67, 233, 123, 0.4)',
+                      flex: 1,
+                      minWidth: '80px',
                       '&:hover': {
-                        background: 'linear-gradient(45deg, #4CAF50 30%, #2E7D32 90%)',
-                        boxShadow: '0 4px 12px rgba(46, 125, 50, 0.4)',
-                        transform: 'translateY(-1px)',
+                        background: 'linear-gradient(45deg, #38f9d7 30%, #43e97b 90%)',
+                        boxShadow: '0 6px 20px rgba(67, 233, 123, 0.6)',
+                        transform: 'translateY(-2px) scale(1.02)',
                       },
-                      transition: 'all 0.2s ease',
+                      transition: 'all 0.3s ease',
                     }}
                   >
-                    Edit
+                    ✏️ Edit
                   </Button>
                   <Button
                     size="small"
-                    startIcon={<Delete />}
+                    startIcon={<Delete sx={{ fontSize: '1rem' }} />}
                     onClick={() => handleDeleteProduct(product._id)}
                     sx={{ 
-                      borderRadius: '20px',
-                      background: 'linear-gradient(45deg, #9E9E9E 30%, #F44336 90%)',
+                      borderRadius: '25px',
+                      background: 'linear-gradient(45deg, #ff6b6b 30%, #ee5a24 90%)',
                       color: 'white',
                       border: 'none',
-                      fontWeight: 600,
-                      boxShadow: '0 2px 8px rgba(158, 158, 158, 0.3)',
+                      fontWeight: 700,
+                      fontSize: '0.85rem',
+                      px: 2,
+                      py: 1,
+                      boxShadow: '0 4px 15px rgba(255, 107, 107, 0.4)',
+                      flex: 1,
+                      minWidth: '80px',
                       '&:hover': {
-                        background: 'linear-gradient(45deg, #F44336 30%, #9E9E9E 90%)',
-                        boxShadow: '0 4px 12px rgba(158, 158, 158, 0.4)',
-                        transform: 'translateY(-1px)',
+                        background: 'linear-gradient(45deg, #ee5a24 30%, #ff6b6b 90%)',
+                        boxShadow: '0 6px 20px rgba(255, 107, 107, 0.6)',
+                        transform: 'translateY(-2px) scale(1.02)',
                       },
-                      transition: 'all 0.2s ease',
+                      transition: 'all 0.3s ease',
                     }}
                   >
-                    Delete
+                    🗑️ Delete
                   </Button>
                 </CardActions>
               </Card>
+              </Zoom>
             </Grid>
           );
         })}
       </Grid>
 
       {products.length === 0 && !loading && (
-      <Box sx={{ textAlign: 'center', py: 8 }}>
-          <Inventory sx={{ fontSize: 80, color: 'rgba(255,255,255,0.6)', mb: 2 }} />
-        <Typography variant="h5" sx={{ color: 'white', mb: 2, fontWeight: 600 }}>
-            No Products Found
+        <Fade in timeout={1200}>
+          <Box sx={{ 
+            textAlign: 'center', 
+            py: 12,
+            position: 'relative',
+            '&::before': {
+              content: '""',
+              position: 'absolute',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              width: '300px',
+              height: '300px',
+              background: 'radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%)',
+              borderRadius: '50%',
+              zIndex: 0
+            }
+          }}>
+            <Box sx={{ position: 'relative', zIndex: 1 }}>
+              <Box sx={{
+                display: 'inline-flex',
+                p: 4,
+                background: 'rgba(255, 255, 255, 0.1)',
+                borderRadius: '50%',
+                backdropFilter: 'blur(20px)',
+                border: '2px solid rgba(255, 255, 255, 0.2)',
+                mb: 4,
+                animation: 'pulse 2s ease-in-out infinite'
+              }}>
+                <Inventory sx={{ 
+                  fontSize: 100, 
+                  color: 'rgba(255,255,255,0.8)',
+                  filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.3))'
+                }} />
+              </Box>
+              
+              <Typography 
+                variant="h3" 
+                sx={{ 
+                  color: 'white', 
+                  mb: 3, 
+                  fontWeight: 800,
+                  textShadow: '0 4px 8px rgba(0,0,0,0.3)',
+                  background: 'linear-gradient(45deg, #ffffff 30%, #f0f0f0 70%)',
+                  backgroundClip: 'text',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent'
+                }}
+              >
+                🌱 No Products Yet
           </Typography>
-          <Typography variant="body1" sx={{ mb: 3, color: 'rgba(255,255,255,0.8)' }}>
-            Start by adding your first Ayurvedic product to the inventory.
+              
+              <Typography 
+                variant="h6" 
+                sx={{ 
+                  mb: 4, 
+                  color: 'rgba(255,255,255,0.9)',
+                  maxWidth: '500px',
+                  mx: 'auto',
+                  lineHeight: 1.6,
+                  fontWeight: 400
+                }}
+              >
+                Ready to share your Ayurvedic wisdom with the world? 
+                <br />
+                Let's create your first product masterpiece! ✨
           </Typography>
+              
           <Button
             variant="contained"
-            startIcon={<Add />}
+                startIcon={<Add sx={{ fontSize: '1.2rem' }} />}
             onClick={() => setAddDialogOpen(true)}
             sx={{ 
-              borderRadius: '20px',
-              background: 'linear-gradient(45deg, #2E7D32 30%, #4CAF50 90%)',
-              boxShadow: '0 4px 15px rgba(46, 125, 50, 0.4)',
-              fontWeight: 600,
+                  borderRadius: '30px',
+                  background: 'linear-gradient(45deg, #667eea 30%, #764ba2 90%)',
+                  boxShadow: '0 8px 25px rgba(102, 126, 234, 0.4)',
+                  fontWeight: 700,
               fontSize: '1.1rem',
-              py: 1.5,
-              px: 3,
+                  py: 2,
+                  px: 4,
+                  textTransform: 'none',
               '&:hover': {
-                background: 'linear-gradient(45deg, #4CAF50 30%, #2E7D32 90%)',
-                boxShadow: '0 6px 20px rgba(46, 125, 50, 0.6)',
-                transform: 'translateY(-2px)',
-              },
-              transition: 'all 0.2s ease',
-            }}
-          >
-            Add Product
+                    background: 'linear-gradient(45deg, #764ba2 30%, #667eea 90%)',
+                    boxShadow: '0 12px 30px rgba(102, 126, 234, 0.6)',
+                    transform: 'translateY(-3px) scale(1.05)',
+                  },
+                  transition: 'all 0.3s ease',
+                }}
+              >
+                🚀 Create Your First Product
           </Button>
         </Box>
+          </Box>
+        </Fade>
       )}
 
       {/* Add Product Dialog */}
@@ -1550,20 +2176,32 @@ const DoctorProducts = () => {
         onClick={() => setAddDialogOpen(true)}
         sx={{
           position: 'fixed',
-          bottom: 24,
-          right: 24,
-          borderRadius: '24px',
-          background: 'linear-gradient(45deg, #2E7D32 30%, #4CAF50 90%)',
-          boxShadow: '0 8px 32px rgba(46, 125, 50, 0.4)',
+          bottom: 32,
+          right: 32,
+          borderRadius: '32px',
+          width: 64,
+          height: 64,
+          background: 'linear-gradient(45deg, #667eea 30%, #764ba2 90%)',
+          boxShadow: '0 12px 40px rgba(102, 126, 234, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
+          border: '2px solid rgba(255, 255, 255, 0.2)',
+          backdropFilter: 'blur(20px)',
           '&:hover': {
-            background: 'linear-gradient(45deg, #4CAF50 30%, #2E7D32 90%)',
-            boxShadow: '0 12px 40px rgba(46, 125, 50, 0.6)',
-            transform: 'scale(1.05)',
+            background: 'linear-gradient(45deg, #764ba2 30%, #667eea 90%)',
+            boxShadow: '0 16px 50px rgba(102, 126, 234, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.3)',
+            transform: 'scale(1.1) rotate(5deg)',
           },
-          transition: 'all 0.3s ease',
+          '&:active': {
+            transform: 'scale(0.95)',
+          },
+          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+          animation: 'float 3s ease-in-out infinite'
         }}
       >
-        <Add sx={{ color: 'white', fontSize: 28 }} />
+        <Add sx={{ 
+          color: 'white', 
+          fontSize: 32,
+          filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))'
+        }} />
       </Fab>
       </Container>
     </Box>
