@@ -15,6 +15,7 @@ import About from './pages/Public/About';
 import Login from './pages/Auth/Login';
 import Register from './pages/Auth/Register';
 import RegisterDoctor from './pages/Auth/RegisterDoctor';
+import UnifiedRegister from './pages/Auth/UnifiedRegister';
 
 // Authenticated Shell
 import AuthenticatedShell from './components/Shells/AuthenticatedShell';
@@ -178,8 +179,9 @@ function App() {
               <Route path="doctors" element={<Doctors />} />
               <Route path="about" element={<About />} />
               <Route path="login" element={<Login />} />
-              <Route path="register" element={<Register />} />
-              <Route path="register-doctor" element={<RegisterDoctor />} />
+              <Route path="register" element={<UnifiedRegister />} />
+              <Route path="register-old" element={<Register />} />
+              <Route path="register-doctor-old" element={<RegisterDoctor />} />
             </Route>
             
             {/* Authenticated Routes */}

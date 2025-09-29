@@ -58,6 +58,10 @@ import {
   Refresh,
   Add,
   Assessment,
+  PictureAsPdf,
+  TableChart,
+  FileDownload,
+  DateRange,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
@@ -82,6 +86,13 @@ const DoctorPatients = () => {
     new: 0,
     recent: 0
   });
+  const [reportData, setReportData] = useState(null);
+  const [reportDialogOpen, setReportDialogOpen] = useState(false);
+  const [reportDateRange, setReportDateRange] = useState({
+    start: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0],
+    end: new Date().toISOString().split('T')[0]
+  });
+  const [generatingReport, setGeneratingReport] = useState(false);
 
   useEffect(() => {
     fetchPatients();
@@ -170,6 +181,251 @@ const DoctorPatients = () => {
     return isActive ? <CheckCircle /> : <Warning />;
   };
 
+  const generateReport = async () => {
+    try {
+      setGeneratingReport(true);
+      
+      // Try the dedicated report endpoint first
+      let response;
+      try {
+        const params = new URLSearchParams();
+        params.append('startDate', reportDateRange.start);
+        params.append('endDate', reportDateRange.end);
+        
+        response = await api.get(`/users/patients/report?${params}`);
+      } catch (reportError) {
+        console.log('Report endpoint failed, falling back to regular patients endpoint:', reportError);
+        // Fallback to regular patients endpoint with higher limit
+        const params = new URLSearchParams();
+        params.append('limit', '1000');
+        response = await api.get(`/users/patients?${params}`);
+      }
+      
+      if (response.data.status === 'success') {
+        const allPatients = response.data.data.patients || [];
+        
+        // Filter patients by date range on frontend if using fallback
+        const filteredPatients = allPatients.filter(patient => {
+          const patientDate = new Date(patient.createdAt);
+          const startDate = new Date(reportDateRange.start);
+          const endDate = new Date(reportDateRange.end);
+          return patientDate >= startDate && patientDate <= endDate;
+        });
+
+        // Calculate report statistics
+        const reportStats = {
+          totalPatients: filteredPatients.length,
+          activePatients: filteredPatients.filter(p => p.isActive).length,
+          inactivePatients: filteredPatients.filter(p => !p.isActive).length,
+          newPatients: filteredPatients.filter(p => {
+            const patientDate = new Date(p.createdAt);
+            const thirtyDaysAgo = new Date();
+            thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+            return patientDate > thirtyDaysAgo;
+          }).length,
+          verifiedPatients: filteredPatients.filter(p => p.isEmailVerified).length,
+          unverifiedPatients: filteredPatients.filter(p => !p.isEmailVerified).length
+        };
+
+        const reportData = {
+          title: 'Patient Report',
+          generatedAt: new Date().toISOString(),
+          dateRange: reportDateRange,
+          summary: reportStats,
+          patients: filteredPatients.map(patient => ({
+            id: patient._id,
+            name: `${patient.firstName} ${patient.lastName}`,
+            email: patient.email,
+            phone: patient.phone || 'Not provided',
+            status: patient.isActive ? 'Active' : 'Inactive',
+            emailVerified: patient.isEmailVerified ? 'Yes' : 'No',
+            joinedDate: new Date(patient.createdAt).toLocaleDateString(),
+            lastLogin: patient.lastLogin ? new Date(patient.lastLogin).toLocaleDateString() : 'Never',
+            gender: patient.gender || 'Not specified',
+            dateOfBirth: patient.dateOfBirth ? new Date(patient.dateOfBirth).toLocaleDateString() : 'Not provided'
+          }))
+        };
+
+        setReportData(reportData);
+        setReportDialogOpen(true);
+      } else {
+        setError('Failed to generate report');
+      }
+    } catch (err) {
+      setError('Failed to generate report');
+      console.error('Generate report error:', err);
+    } finally {
+      setGeneratingReport(false);
+    }
+  };
+
+  const exportReport = (format) => {
+    if (!reportData) {
+      alert('No report data available. Please generate a report first.');
+      return;
+    }
+
+    try {
+      const timestamp = new Date().toISOString().split('T')[0];
+      const filename = `patients_report_${timestamp}`;
+
+      if (format === 'pdf') {
+        generatePDFReport(reportData, filename);
+      } else if (format === 'csv') {
+        generateCSVReport(reportData, filename);
+      } else if (format === 'json') {
+        generateJSONReport(reportData, filename);
+      }
+    } catch (error) {
+      console.error('Export error:', error);
+      setError('Failed to export report. Please try again.');
+    }
+  };
+
+  const generatePDFReport = (data, filename) => {
+    const printWindow = window.open('', '_blank');
+    const reportHTML = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Patient Report - ${filename}</title>
+        <style>
+          body { font-family: Arial, sans-serif; margin: 20px; line-height: 1.6; }
+          .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #1976d2; padding-bottom: 20px; }
+          .section { margin-bottom: 25px; }
+          .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 20px; }
+          .stat-card { border: 1px solid #ddd; padding: 15px; text-align: center; background-color: #f9f9f9; }
+          .stat-number { font-size: 24px; font-weight: bold; color: #1976d2; }
+          .stat-label { font-size: 14px; color: #666; }
+          table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+          th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+          th { background-color: #f5f5f5; font-weight: bold; }
+          .footer { margin-top: 30px; font-size: 12px; color: #666; text-align: center; }
+          .status-active { color: #4caf50; font-weight: bold; }
+          .status-inactive { color: #f44336; font-weight: bold; }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h1>Patient Report</h1>
+          <p>Generated on: ${new Date(data.generatedAt).toLocaleString()}</p>
+          <p>Date Range: ${data.dateRange.start} to ${data.dateRange.end}</p>
+        </div>
+        
+        <div class="section">
+          <h2>Summary Statistics</h2>
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-number">${data.summary.totalPatients}</div>
+              <div class="stat-label">Total Patients</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-number">${data.summary.activePatients}</div>
+              <div class="stat-label">Active Patients</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-number">${data.summary.inactivePatients}</div>
+              <div class="stat-label">Inactive Patients</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-number">${data.summary.newPatients}</div>
+              <div class="stat-label">New This Month</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-number">${data.summary.verifiedPatients}</div>
+              <div class="stat-label">Email Verified</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-number">${data.summary.unverifiedPatients}</div>
+              <div class="stat-label">Email Unverified</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <h2>Patient Details</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Phone</th>
+                <th>Status</th>
+                <th>Email Verified</th>
+                <th>Joined Date</th>
+                <th>Last Login</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${data.patients.map(patient => `
+                <tr>
+                  <td>${patient.name}</td>
+                  <td>${patient.email}</td>
+                  <td>${patient.phone}</td>
+                  <td class="${patient.status === 'Active' ? 'status-active' : 'status-inactive'}">${patient.status}</td>
+                  <td>${patient.emailVerified}</td>
+                  <td>${patient.joinedDate}</td>
+                  <td>${patient.lastLogin}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+
+        <div class="footer">
+          <p>Report generated by Nature Pulse Healthcare System</p>
+          <p>This report contains confidential patient information and should be handled securely.</p>
+        </div>
+      </body>
+      </html>
+    `;
+    
+    printWindow.document.write(reportHTML);
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
+  };
+
+  const generateCSVReport = (data, filename) => {
+    const csvContent = [
+      ['Name', 'Email', 'Phone', 'Status', 'Email Verified', 'Joined Date', 'Last Login', 'Gender', 'Date of Birth'],
+      ...data.patients.map(patient => [
+        patient.name,
+        patient.email,
+        patient.phone,
+        patient.status,
+        patient.emailVerified,
+        patient.joinedDate,
+        patient.lastLogin,
+        patient.gender,
+        patient.dateOfBirth
+      ])
+    ].map(row => row.map(field => `"${field}"`).join(',')).join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `${filename}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const generateJSONReport = (data, filename) => {
+    const jsonContent = JSON.stringify(data, null, 2);
+    const blob = new Blob([jsonContent], { type: 'application/json;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `${filename}.json`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   if (loading && patients.length === 0) {
     return (
       <Container maxWidth="lg">
@@ -186,25 +442,38 @@ const DoctorPatients = () => {
         <Box sx={{ mb: 4 }}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
             <Box>
-          <Typography 
-            variant="h3" 
-            component="h1" 
-            gutterBottom
-            sx={{ 
-              fontWeight: 700,
-              background: 'linear-gradient(45deg, #2E7D32 30%, #1976D2 90%)',
-              backgroundClip: 'text',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-            }}
-          >
-            My Patients 👥
-          </Typography>
-          <Typography variant="h6" color="text.secondary">
-            Manage your patient records and health data
-          </Typography>
+              <Typography 
+                variant="h3" 
+                component="h1" 
+                gutterBottom
+                sx={{ 
+                  fontWeight: 700,
+                  background: 'linear-gradient(45deg, #2E7D32 30%, #1976D2 90%)',
+                  backgroundClip: 'text',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                }}
+              >
+                My Patients 👥
+              </Typography>
+              <Typography variant="h6" color="text.secondary">
+                Manage your patient records and health data
+              </Typography>
             </Box>
             <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+              <Button
+                variant="contained"
+                startIcon={<Assessment />}
+                onClick={() => setReportDialogOpen(true)}
+                sx={{
+                  background: 'linear-gradient(45deg, #FF6B6B 30%, #4ECDC4 90%)',
+                  '&:hover': {
+                    background: 'linear-gradient(45deg, #FF5252 30%, #26A69A 90%)',
+                  }
+                }}
+              >
+                Generate Report
+              </Button>
               <Tooltip title="Refresh">
                 <IconButton onClick={fetchPatients} color="primary">
                   <Refresh />
@@ -368,12 +637,12 @@ const DoctorPatients = () => {
       )}
 
       {patients.length === 0 ? (
-      <Box sx={{ textAlign: 'center', py: 8 }}>
-        <People sx={{ fontSize: 80, color: 'text.secondary', mb: 2 }} />
-        <Typography variant="h5" color="text.secondary" gutterBottom>
+        <Box sx={{ textAlign: 'center', py: 8 }}>
+          <People sx={{ fontSize: 80, color: 'text.secondary', mb: 2 }} />
+          <Typography variant="h5" color="text.secondary" gutterBottom>
             No Patients Found
-        </Typography>
-        <Typography variant="body1" color="text.secondary">
+          </Typography>
+          <Typography variant="body1" color="text.secondary">
             {searchTerm || statusFilter !== 'all' 
               ? 'No patients match your search criteria.' 
               : 'You don\'t have any patients yet.'
@@ -517,8 +786,8 @@ const DoctorPatients = () => {
               </Typography>
               <Typography variant="body2" color="text.secondary">
                 Patient Details
-        </Typography>
-      </Box>
+              </Typography>
+            </Box>
           </Box>
         </DialogTitle>
         <DialogContent>
@@ -616,6 +885,129 @@ const DoctorPatients = () => {
           >
             View Full Profile
           </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Report Generation Dialog */}
+      <Dialog
+        open={reportDialogOpen}
+        onClose={() => setReportDialogOpen(false)}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle>
+          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            <Assessment sx={{ mr: 2, color: 'primary.main' }} />
+            <Typography variant="h6">Generate Patient Report</Typography>
+          </Box>
+        </DialogTitle>
+        <DialogContent>
+          <Box sx={{ mt: 2 }}>
+            <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: 'bold', mb: 2 }}>
+              Select Date Range
+            </Typography>
+            <Grid container spacing={2}>
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <TextField
+                  fullWidth
+                  label="Start Date"
+                  type="date"
+                  value={reportDateRange.start}
+                  onChange={(e) => setReportDateRange(prev => ({ ...prev, start: e.target.value }))}
+                  InputLabelProps={{ shrink: true }}
+                />
+              </Grid>
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <TextField
+                  fullWidth
+                  label="End Date"
+                  type="date"
+                  value={reportDateRange.end}
+                  onChange={(e) => setReportDateRange(prev => ({ ...prev, end: e.target.value }))}
+                  InputLabelProps={{ shrink: true }}
+                />
+              </Grid>
+            </Grid>
+            
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 2, mb: 3 }}>
+              This report will include all patients who joined within the selected date range.
+            </Typography>
+
+            {reportData && (
+              <Box sx={{ mt: 3 }}>
+                <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: 'bold' }}>
+                  Report Summary
+                </Typography>
+                <Grid container spacing={2}>
+                  <Grid size={{ xs: 6, sm: 3 }}>
+                    <Paper sx={{ p: 2, textAlign: 'center', bgcolor: 'primary.light', color: 'white' }}>
+                      <Typography variant="h6">{reportData.summary.totalPatients}</Typography>
+                      <Typography variant="body2">Total Patients</Typography>
+                    </Paper>
+                  </Grid>
+                  <Grid size={{ xs: 6, sm: 3 }}>
+                    <Paper sx={{ p: 2, textAlign: 'center', bgcolor: 'success.light', color: 'white' }}>
+                      <Typography variant="h6">{reportData.summary.activePatients}</Typography>
+                      <Typography variant="body2">Active</Typography>
+                    </Paper>
+                  </Grid>
+                  <Grid size={{ xs: 6, sm: 3 }}>
+                    <Paper sx={{ p: 2, textAlign: 'center', bgcolor: 'info.light', color: 'white' }}>
+                      <Typography variant="h6">{reportData.summary.newPatients}</Typography>
+                      <Typography variant="body2">New This Month</Typography>
+                    </Paper>
+                  </Grid>
+                  <Grid size={{ xs: 6, sm: 3 }}>
+                    <Paper sx={{ p: 2, textAlign: 'center', bgcolor: 'warning.light', color: 'white' }}>
+                      <Typography variant="h6">{reportData.summary.verifiedPatients}</Typography>
+                      <Typography variant="body2">Verified</Typography>
+                    </Paper>
+                  </Grid>
+                </Grid>
+              </Box>
+            )}
+          </Box>
+        </DialogContent>
+        <DialogActions sx={{ p: 3 }}>
+          <Button onClick={() => setReportDialogOpen(false)}>
+            Cancel
+          </Button>
+          <Button
+            variant="outlined"
+            onClick={generateReport}
+            disabled={generatingReport}
+            startIcon={generatingReport ? <CircularProgress size={20} /> : <DateRange />}
+          >
+            {generatingReport ? 'Generating...' : 'Generate Report'}
+          </Button>
+          {reportData && (
+            <>
+              <Button
+                variant="contained"
+                startIcon={<PictureAsPdf />}
+                onClick={() => exportReport('pdf')}
+                sx={{ bgcolor: '#d32f2f', '&:hover': { bgcolor: '#b71c1c' } }}
+              >
+                Export PDF
+              </Button>
+              <Button
+                variant="contained"
+                startIcon={<TableChart />}
+                onClick={() => exportReport('csv')}
+                sx={{ bgcolor: '#2e7d32', '&:hover': { bgcolor: '#1b5e20' } }}
+              >
+                Export CSV
+              </Button>
+              <Button
+                variant="contained"
+                startIcon={<FileDownload />}
+                onClick={() => exportReport('json')}
+                sx={{ bgcolor: '#1976d2', '&:hover': { bgcolor: '#0d47a1' } }}
+              >
+                Export JSON
+              </Button>
+            </>
+          )}
         </DialogActions>
       </Dialog>
     </Container>

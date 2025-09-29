@@ -383,6 +383,71 @@ router.get('/patients', protect, checkActive, restrictTo('doctor', 'admin'), val
   }
 });
 
+// @route   GET /api/users/patients/report
+// @desc    Get all patients for report generation (no pagination limits)
+// @access  Private (Doctor/Admin only)
+router.get('/patients/report', protect, checkActive, restrictTo('doctor', 'admin'), async (req, res) => {
+  try {
+    console.log('Report endpoint hit with query:', req.query);
+    const { search, isActive, startDate, endDate } = req.query;
+
+    // Build filter
+    const filter = { role: 'patient' };
+    console.log('Initial filter:', filter);
+    
+    if (isActive !== undefined) {
+      filter.isActive = isActive === 'true';
+    }
+
+    // Add date range filter if provided
+    if (startDate && endDate) {
+      filter.createdAt = {
+        $gte: new Date(startDate),
+        $lte: new Date(endDate)
+      };
+      console.log('Date filter added:', filter.createdAt);
+    }
+
+    // Build search
+    let searchFilter = {};
+    if (search) {
+      searchFilter = {
+        $or: [
+          { firstName: new RegExp(search, 'i') },
+          { lastName: new RegExp(search, 'i') },
+          { email: new RegExp(search, 'i') }
+        ]
+      };
+    }
+
+    const finalFilter = { ...filter, ...searchFilter };
+    console.log('Final filter:', finalFilter);
+
+    const patients = await User.find(finalFilter)
+      .select('-password -emailVerificationToken -emailVerificationExpires -passwordResetToken -passwordResetExpires')
+      .sort({ createdAt: -1 });
+
+    console.log(`Found ${patients.length} patients for report`);
+
+    res.status(200).json({
+      status: 'success',
+      data: {
+        patients,
+        totalPatients: patients.length
+      }
+    });
+  } catch (error) {
+    console.error('Get patients for report error:', error);
+    console.error('Error details:', error.message);
+    console.error('Error stack:', error.stack);
+    res.status(500).json({
+      status: 'error',
+      message: 'Failed to fetch patients for report',
+      error: error.message
+    });
+  }
+});
+
 // @route   GET /api/users/patients/:id
 // @desc    Get patient profile by ID
 // @access  Private (Doctor/Admin only)

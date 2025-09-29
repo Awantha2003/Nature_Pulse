@@ -180,12 +180,6 @@ const Login = () => {
               </Link>
             </Box>
             
-            <Box sx={{ textAlign: 'center', mt: 2 }}>
-              <Link component={RouterLink} to="/register-doctor" variant="body2">
-                Register as a Doctor
-              </Link>
-            </Box>
-            
           </Box>
         </Paper>
       </Box>
