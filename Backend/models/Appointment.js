@@ -197,7 +197,7 @@ appointmentSchema.methods.canBeCancelled = function() {
   
   const hoursUntilAppointment = (appointmentDateTime - now) / (1000 * 60 * 60);
   
-  return hoursUntilAppointment > 24 && ['scheduled', 'confirmed'].includes(this.status);
+  return hoursUntilAppointment > 5 && ['scheduled', 'confirmed'].includes(this.status);
 };
 
 module.exports = mongoose.model('Appointment', appointmentSchema);

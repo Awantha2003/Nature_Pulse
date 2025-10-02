@@ -386,7 +386,7 @@ router.put('/:id/cancel', protect, checkActive, validateMongoId('id'), handleVal
     if (!appointment.canBeCancelled()) {
       return res.status(400).json({
         status: 'error',
-        message: 'Appointment cannot be cancelled. Please contact support.'
+        message: 'Appointment cannot be cancelled. You can only cancel appointments that are more than 5 hours away and are in scheduled or confirmed status.'
       });
     }
 

@@ -230,12 +230,77 @@ const emailTemplates = {
       </body>
       </html>
     `
+  }),
+
+  paymentSuccess: (data) => ({
+    subject: 'Payment Successful - Appointment Confirmed',
+    html: `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Payment Successful</title>
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: #4CAF50; color: white; padding: 20px; text-align: center; }
+          .content { padding: 20px; background: #f9f9f9; }
+          .payment-details { background: white; padding: 15px; border-radius: 5px; margin: 15px 0; border-left: 4px solid #4CAF50; }
+          .appointment-details { background: white; padding: 15px; border-radius: 5px; margin: 15px 0; }
+          .footer { text-align: center; padding: 20px; color: #666; font-size: 12px; }
+          .success-icon { color: #4CAF50; font-size: 48px; text-align: center; margin: 20px 0; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>Payment Successful!</h1>
+          </div>
+          <div class="content">
+            <div class="success-icon">✅</div>
+            <h2>Hello ${data.patientName}!</h2>
+            <p>Great news! Your payment has been processed successfully and your appointment is now confirmed.</p>
+            
+            <div class="payment-details">
+              <h3>Payment Details</h3>
+              <p><strong>Amount:</strong> $${data.amount}</p>
+              <p><strong>Transaction ID:</strong> ${data.transactionId}</p>
+              <p><strong>Payment Method:</strong> ${data.paymentMethod}</p>
+              <p><strong>Date:</strong> ${data.paymentDate}</p>
+            </div>
+
+            <div class="appointment-details">
+              <h3>Appointment Details</h3>
+              <p><strong>Doctor:</strong> Dr. ${data.doctorName}</p>
+              <p><strong>Date:</strong> ${data.appointmentDate}</p>
+              <p><strong>Time:</strong> ${data.appointmentTime}</p>
+              <p><strong>Type:</strong> ${data.appointmentType || 'Consultation'}</p>
+              ${data.meetingLink ? `<p><strong>Meeting Link:</strong> <a href="${data.meetingLink}">Join Meeting</a></p>` : ''}
+            </div>
+
+            <p>You will receive a reminder email 24 hours before your appointment.</p>
+            <p>If you need to cancel or reschedule, please do so at least 5 hours before your appointment time.</p>
+          </div>
+          <div class="footer">
+            <p>&copy; 2024 Nature Pulse. All rights reserved.</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `
   })
 };
 
 // Send email function
 const sendEmail = async (options) => {
   try {
+    // Check if email is configured
+    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+      console.log('Email not configured, skipping email send for:', options.template);
+      return { messageId: 'demo-email-disabled' };
+    }
+
     const transporter = createTransporter();
     
     // Get email template
@@ -258,7 +323,8 @@ const sendEmail = async (options) => {
     return info;
   } catch (error) {
     console.error('Email sending failed:', error);
-    throw error;
+    // Don't throw error to prevent blocking the main process
+    return { messageId: 'email-failed', error: error.message };
   }
 };
 

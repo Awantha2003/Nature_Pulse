@@ -18,6 +18,12 @@ import {
   Zoom,
   CircularProgress,
   Alert,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  Snackbar,
 } from '@mui/material';
 import {
   CalendarToday,
@@ -38,6 +44,10 @@ const PatientAppointments = () => {
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [cancelDialog, setCancelDialog] = useState({ open: false, appointment: null });
+  const [cancelReason, setCancelReason] = useState('');
+  const [cancelling, setCancelling] = useState(false);
+  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
 
   useEffect(() => {
     fetchAppointments();
@@ -80,11 +90,73 @@ const PatientAppointments = () => {
     });
   };
 
-  const formatTime = (dateString) => {
-    return new Date(dateString).toLocaleTimeString('en-US', {
+  const formatTime = (timeString) => {
+    // Handle time string format (HH:MM)
+    if (typeof timeString === 'string' && timeString.includes(':')) {
+      return timeString;
+    }
+    // Fallback for date string
+    return new Date(timeString).toLocaleTimeString('en-US', {
       hour: '2-digit',
       minute: '2-digit',
     });
+  };
+
+  const canCancelAppointment = (appointment) => {
+    const now = new Date();
+    const appointmentDateTime = new Date(appointment.appointmentDate);
+    const [hours, minutes] = appointment.appointmentTime.split(':');
+    appointmentDateTime.setHours(parseInt(hours), parseInt(minutes));
+    
+    const hoursUntilAppointment = (appointmentDateTime - now) / (1000 * 60 * 60);
+    
+    return hoursUntilAppointment > 5 && ['scheduled', 'confirmed'].includes(appointment.status);
+  };
+
+  const handleCancelClick = (appointment) => {
+    setCancelDialog({ open: true, appointment });
+    setCancelReason('');
+  };
+
+  const handleCancelConfirm = async () => {
+    if (!cancelDialog.appointment) return;
+    
+    setCancelling(true);
+    try {
+      await api.put(`/appointments/${cancelDialog.appointment._id}/cancel`, {
+        reason: cancelReason || 'No reason provided'
+      });
+      
+      setSnackbar({
+        open: true,
+        message: 'Appointment cancelled successfully',
+        severity: 'success'
+      });
+      
+      // Refresh appointments
+      fetchAppointments();
+      
+      setCancelDialog({ open: false, appointment: null });
+      setCancelReason('');
+    } catch (err) {
+      console.error('Cancel appointment error:', err);
+      setSnackbar({
+        open: true,
+        message: err.response?.data?.message || 'Failed to cancel appointment',
+        severity: 'error'
+      });
+    } finally {
+      setCancelling(false);
+    }
+  };
+
+  const handleCancelDialogClose = () => {
+    setCancelDialog({ open: false, appointment: null });
+    setCancelReason('');
+  };
+
+  const handleSnackbarClose = () => {
+    setSnackbar({ ...snackbar, open: false });
   };
 
   if (loading) {
@@ -196,7 +268,7 @@ const PatientAppointments = () => {
                       <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                         <Schedule sx={{ fontSize: 16, color: 'text.secondary', mr: 1 }} />
                         <Typography variant="body2" color="text.secondary">
-                          {formatTime(appointment.appointmentDate)}
+                          {formatTime(appointment.appointmentTime)}
                         </Typography>
                       </Box>
                       {appointment.notes && (
@@ -215,12 +287,13 @@ const PatientAppointments = () => {
                       >
                         View Details
                       </Button>
-                      {appointment.status === 'pending' && (
+                      {canCancelAppointment(appointment) && (
                         <Button
                           variant="outlined"
                           color="error"
                           size="small"
                           startIcon={<Cancel />}
+                          onClick={() => handleCancelClick(appointment)}
                           sx={{ borderRadius: '15px' }}
                         >
                           Cancel
@@ -252,6 +325,79 @@ const PatientAppointments = () => {
           </Button>
         </Box>
       )}
+
+      {/* Cancel Appointment Dialog */}
+      <Dialog
+        open={cancelDialog.open}
+        onClose={handleCancelDialogClose}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>
+          Cancel Appointment
+        </DialogTitle>
+        <DialogContent>
+          <Typography variant="body1" sx={{ mb: 2 }}>
+            Are you sure you want to cancel your appointment with{' '}
+            <strong>
+              Dr. {cancelDialog.appointment?.doctor?.user?.firstName}{' '}
+              {cancelDialog.appointment?.doctor?.user?.lastName}
+            </strong>{' '}
+            on{' '}
+            <strong>
+              {cancelDialog.appointment && formatDate(cancelDialog.appointment.appointmentDate)}
+            </strong>{' '}
+            at{' '}
+            <strong>
+              {cancelDialog.appointment && formatTime(cancelDialog.appointment.appointmentTime)}
+            </strong>
+            ?
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            Note: You can only cancel appointments that are more than 5 hours away.
+          </Typography>
+          <TextField
+            fullWidth
+            multiline
+            rows={3}
+            label="Reason for cancellation (optional)"
+            value={cancelReason}
+            onChange={(e) => setCancelReason(e.target.value)}
+            placeholder="Please provide a reason for cancelling this appointment..."
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCancelDialogClose} disabled={cancelling}>
+            Keep Appointment
+          </Button>
+          <Button
+            onClick={handleCancelConfirm}
+            color="error"
+            variant="contained"
+            disabled={cancelling}
+            startIcon={cancelling ? <CircularProgress size={16} /> : <Cancel />}
+          >
+            {cancelling ? 'Cancelling...' : 'Cancel Appointment'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Snackbar for notifications */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={6000}
+        onClose={handleSnackbarClose}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert
+          onClose={handleSnackbarClose}
+          severity={snackbar.severity}
+          variant="filled"
+          sx={{ width: '100%' }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Container>
   );
 };

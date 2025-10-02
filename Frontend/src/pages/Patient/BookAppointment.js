@@ -53,7 +53,6 @@ import {
   Phone,
   Schedule,
   CreditCard,
-  LocalHospital,
 } from '@mui/icons-material';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -835,16 +834,6 @@ const BookAppointment = () => {
                               <Box sx={{ display: 'flex', alignItems: 'center' }}>
                                 <CreditCard sx={{ mr: 1 }} />
                                 Credit/Debit Card
-                              </Box>
-                            } 
-                          />
-                          <FormControlLabel 
-                            value="insurance" 
-                            control={<Radio />} 
-                            label={
-                              <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                <LocalHospital sx={{ mr: 1 }} />
-                                Insurance
                               </Box>
                             } 
                           />

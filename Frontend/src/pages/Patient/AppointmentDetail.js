@@ -21,7 +21,8 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  TextField
+  TextField,
+  Snackbar
 } from '@mui/material';
 import {
   CalendarToday,
@@ -54,6 +55,7 @@ const PatientAppointmentDetail = () => {
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
   const [cancelling, setCancelling] = useState(false);
+  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
 
   const statusColors = {
     scheduled: 'primary',
@@ -128,13 +130,27 @@ const PatientAppointmentDetail = () => {
       if (response.data.status === 'success') {
         setCancelDialogOpen(false);
         setCancelReason('');
+        setSnackbar({
+          open: true,
+          message: 'Appointment cancelled successfully',
+          severity: 'success'
+        });
         fetchAppointment();
       }
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to cancel appointment');
+      console.error('Cancel appointment error:', err);
+      setSnackbar({
+        open: true,
+        message: err.response?.data?.message || 'Failed to cancel appointment',
+        severity: 'error'
+      });
     } finally {
       setCancelling(false);
     }
+  };
+
+  const handleSnackbarClose = () => {
+    setSnackbar({ ...snackbar, open: false });
   };
 
   const canCancelAppointment = () => {
@@ -147,7 +163,8 @@ const PatientAppointmentDetail = () => {
     const now = new Date();
     const hoursUntilAppointment = (appointmentDate - now) / (1000 * 60 * 60);
     
-    return hoursUntilAppointment > 24 && ['scheduled', 'confirmed'].includes(appointment.status);
+    
+    return hoursUntilAppointment > 5 && ['scheduled', 'confirmed'].includes(appointment.status);
   };
 
   const formatDate = (dateString) => {
@@ -437,6 +454,7 @@ const PatientAppointmentDetail = () => {
                 </Typography>
                 <Divider sx={{ mb: 2 }} />
                 
+                
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
                   <Typography variant="body2">Consultation Fee</Typography>
                   <Typography variant="body2">${appointment.payment.amount}</Typography>
@@ -468,7 +486,7 @@ const PatientAppointmentDetail = () => {
                       </Button>
                   )}
                   
-                  {canCancelAppointment() && (
+                  {canCancelAppointment() ? (
                     <Button
                       variant="outlined"
                       color="error"
@@ -478,6 +496,15 @@ const PatientAppointmentDetail = () => {
                     >
                       Cancel Appointment
                     </Button>
+                  ) : (
+                    <Box sx={{ p: 1, bgcolor: 'grey.100', borderRadius: 1 }}>
+                      <Typography variant="body2" color="text.secondary" align="center">
+                        {appointment.status === 'cancelled' ? 'Appointment already cancelled' :
+                         appointment.status === 'completed' ? 'Appointment completed' :
+                         !['scheduled', 'confirmed'].includes(appointment.status) ? `Status: ${appointment.status}` :
+                         'Cannot cancel (less than 5 hours away)'}
+                      </Typography>
+                    </Box>
                   )}
                   
                   {appointment.payment.status === 'pending' && (
@@ -501,9 +528,15 @@ const PatientAppointmentDetail = () => {
         <Dialog open={cancelDialogOpen} onClose={() => setCancelDialogOpen(false)} maxWidth="sm" fullWidth>
         <DialogTitle>Cancel Appointment</DialogTitle>
         <DialogContent>
+            <Typography variant="body1" sx={{ mb: 2 }}>
+              Are you sure you want to cancel your appointment with{' '}
+              <strong>Dr. {appointment?.doctor?.user?.firstName} {appointment?.doctor?.user?.lastName}</strong>{' '}
+              on <strong>{appointment && formatDate(appointment.appointmentDate)}</strong>{' '}
+              at <strong>{appointment && formatTime(appointment.appointmentTime)}</strong>?
+            </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            Are you sure you want to cancel this appointment? This action cannot be undone.
-          </Typography>
+              Note: You can only cancel appointments that are more than 5 hours away. This action cannot be undone.
+            </Typography>
             <TextField
               fullWidth
               label="Reason for cancellation"
@@ -527,6 +560,23 @@ const PatientAppointmentDetail = () => {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Snackbar for notifications */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={6000}
+        onClose={handleSnackbarClose}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert
+          onClose={handleSnackbarClose}
+          severity={snackbar.severity}
+          variant="filled"
+          sx={{ width: '100%' }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
       </Box>
     </Container>
   );
